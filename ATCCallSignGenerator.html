@@ -435,6 +435,19 @@
         </div>
     </div>
 
+    <!-- Confirm Modal -->
+    <div id="confirmModal" class="modal-overlay hidden" style="z-index: 2000;">
+        <div class="modal" style="width: 400px; max-width: 90vw;">
+            <div class="modal-header">提示 (Warning)</div>
+            <div id="confirmMessage" class="text-sm"
+                style="white-space: pre-wrap; margin-bottom: 24px; color: #ddd; line-height: 1.5;"></div>
+            <div class="modal-footer flex gap-2 justify-end">
+                <button id="btnConfirmCancel">取消</button>
+                <button id="btnConfirmOk" class="primary">确定 (Continue)</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Audio Editor Modal -->
     <div id="audioEditorModal" class="modal-overlay hidden">
         <div class="modal" style="width: 700px; max-width: 95vw;">
@@ -711,8 +724,8 @@
             // Actions
             els.btnGenerateSelected.onclick = startSelectedGeneration;
             els.btnExportAll.onclick = exportAll;
-            els.btnClear.onclick = () => {
-                if (confirm('确定清空所有任务吗？(这将影响所有预设)')) {
+            els.btnClear.onclick = async () => {
+                if (await showConfirmModal('确定清空所有任务吗？(这将影响所有预设)')) {
                     appState.tasks = []; // Clear all 
                     appState.queue = [];
                     appState.processingCount = 0;
@@ -1183,7 +1196,7 @@
                     uncalibratedItems.slice(0, 10).join('\n') +
                     (uncalibratedItems.length > 10 ? `\n...等 ${uncalibratedItems.length} 个` : "") +
                     "\n\n是否继续导出?";
-                if (!confirm(msg)) {
+                if (!await showConfirmModal(msg)) {
                     return; // Abort
                 }
             }
@@ -1986,6 +1999,34 @@
                 curve[i] = (3 + k) * x * 20 * deg / (Math.PI + k * Math.abs(x));
             }
             return curve;
+        }
+
+        function showConfirmModal(message) {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('confirmModal');
+                const msgEl = document.getElementById('confirmMessage');
+                const btnOk = document.getElementById('btnConfirmOk');
+                const btnCancel = document.getElementById('btnConfirmCancel');
+
+                msgEl.textContent = message;
+                modal.classList.remove('hidden');
+
+                const cleanup = () => {
+                    modal.classList.add('hidden');
+                    btnOk.onclick = null;
+                    btnCancel.onclick = null;
+                };
+
+                btnOk.onclick = () => {
+                    cleanup();
+                    resolve(true);
+                };
+
+                btnCancel.onclick = () => {
+                    cleanup();
+                    resolve(false);
+                };
+            });
         }
 
         function bufferToWave(abuffer, offset, len) {
