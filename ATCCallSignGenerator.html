@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ground ATC - 航班时刻表编辑器</title>
+    <style>
+        :root {
+            --bg-color: #1e1e1e;
+            --panel-color: #252526;
+            --border-color: #3e3e42;
+            --text-color: #d4d4d4;
+            --accent-color: #007acc;
+            --accent-hover: #0062a3;
+            --danger-color: #f44336;
+            --header-bg: #333333;
+            --row-hover: #2a2d2e;
+            --input-bg: #3c3c3c;
+            --input-border: #3e3e42;
+            --locked-bg: #2d2d2d;
+            --locked-text: #888;
+            /* Visual States */
+            --duplicate-bg: rgba(255, 140, 0, 0.15);
+            --duplicate-border: #ff8c00;
+            --selected-bg: rgba(0, 120, 215, 0.3);
+            --selected-border: #007acc;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* Toolbar */
+        .toolbar {
+            background-color: var(--panel-color);
+            padding: 10px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            flex-wrap: wrap;
+        }
+
+        .title {
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-right: 10px;
+            color: #fff;
+        }
+
+        /* Input Group in Toolbar */
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background-color: #333;
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .input-group label {
+            font-size: 0.85em;
+            color: #aaa;
+        }
+        .input-group input {
+            background-color: transparent;
+            border: none;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            outline: none;
+        }
+        .input-group input:focus {
+            background-color: #444;
+        }
+
+        button {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+
+        button:hover {
+            background-color: var(--accent-hover);
+        }
+
+        button.secondary {
+            background-color: #444;
+        }
+        button.secondary:hover {
+            background-color: #555;
+        }
+
+        button.active-lock {
+            background-color: #e6a23c;
+            color: #fff;
+        }
+        button.active-lock:hover {
+            background-color: #cf9236;
+        }
+
+        button.danger {
+            background-color: var(--danger-color);
+        }
+        
+        button:disabled {
+            background-color: #333;
+            color: #666;
+            cursor: not-allowed;
+            border: 1px solid #444;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .file-input-wrapper input[type=file] {
+            font-size: 100px;
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            background-color: var(--panel-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-left: 10px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-right: 1px solid var(--border-color);
+            background-color: var(--panel-color);
+            color: #888;
+            font-size: 0.9em;
+        }
+
+        .tab:hover {
+            background-color: #2d2d2d;
+            color: #ccc;
+        }
+
+        .tab.active {
+            background-color: var(--bg-color);
+            color: white;
+            border-top: 2px solid var(--accent-color);
+        }
+
+        /* Content Area */
+        .content {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .table-container {
+            flex: 1;
+            overflow: auto;
+            padding-bottom: 50px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            min-width: 1200px;
+        }
+
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 4px 8px;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        th {
+            background-color: var(--header-bg);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            font-weight: 600;
+            color: #ddd;
+        }
+
+        tr:nth-child(even) {
+            background-color: #222;
+        }
+
+        tr:hover {
+            background-color: var(--row-hover);
+        }
+
+        /* Duplicate Styling */
+        tr.duplicate-row {
+            background-color: var(--duplicate-bg);
+        }
+        
+        tr.highlight-group {
+            outline: 2px solid var(--duplicate-border);
+            background-color: rgba(255, 140, 0, 0.4) !important;
+            z-index: 5;
+            position: relative;
+        }
+
+        /* Selected Styling */
+        tr.selected-row {
+            background-color: var(--selected-bg) !important;
+        }
+        
+        tr.duplicate-row.selected-row {
+            background-color: rgba(0, 120, 215, 0.4) !important;
+            box-shadow: inset 3px 0 0 var(--duplicate-border);
+        }
+
+        input, select {
+            background-color: transparent;
+            border: 1px solid transparent;
+            color: inherit;
+            width: 100%;
+            padding: 4px;
+            box-sizing: border-box;
+            font-family: inherit;
+            font-size: inherit;
+        }
+
+        input:focus, select:focus {
+            background-color: var(--input-bg);
+            border-color: var(--accent-color);
+            outline: none;
+        }
+
+        input:focus {
+            background-color: #264f78 !important; 
+        }
+
+        /* Locked Input Style */
+        input.locked {
+            background-color: var(--locked-bg);
+            color: var(--locked-text);
+            cursor: not-allowed;
+            border: 1px solid transparent;
+            font-style: italic;
+        }
+        
+        input.header-offset {
+            width: 40px;
+            font-size: 0.9em;
+            background-color: #444;
+            border: 1px solid #555;
+            color: #fff;
+            margin-left: 5px;
+            border-radius: 3px;
+            text-align: center;
+        }
+        input.header-offset:focus {
+            background-color: #555;
+            border-color: var(--accent-color);
+        }
+
+        .cell-time { width: 90px; text-align: center; }
+        .cell-code { width: 80px; font-family: monospace; }
+        .cell-long { width: 150px; }
+        .cell-action { width: 50px; text-align: center; }
+
+        .btn-delete {
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 0;
+        }
+        .btn-delete:hover {
+            color: var(--danger-color);
+        }
+
+        .add-row-bar {
+            padding: 10px;
+            background-color: var(--panel-color);
+            border-top: 1px solid var(--border-color);
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        .status-bar {
+            padding: 5px 20px;
+            background-color: var(--accent-color);
+            color: white;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* === Modal Styles === */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 1000;
+            display: none; /* Hidden by default */
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(2px);
+        }
+        
+        .modal-box {
+            background: var(--panel-color);
+            border: 1px solid var(--border-color);
+            padding: 20px 25px;
+            border-radius: 6px;
+            min-width: 320px;
+            max-width: 450px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            animation: modalFadeIn 0.2s ease-out;
+        }
+        
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-header {
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            color: #fff;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+        
+        .modal-body {
+            color: #d4d4d4;
+            margin-bottom: 25px;
+            line-height: 1.5;
+            font-size: 0.95em;
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="toolbar">
+        <div class="title">✈️ Ground ATC Editor</div>
+        
+        <button onclick="newFile()" class="secondary">新建 (清空)</button>
+        
+        <div class="file-input-wrapper">
+            <button>📂 导入 CSV</button>
+            <input type="file" id="csvInput" accept=".csv" onchange="loadCSV(this)">
+        </div>
+
+        <div class="file-input-wrapper">
+            <button class="secondary">⚙️ 上传配置 (CFG)</button>
+            <input type="file" id="cfgInput" accept=".cfg,.txt" multiple onchange="loadConfigs(this)">
+        </div>
+
+        <div class="file-input-wrapper">
+            <button class="secondary">📞 导入呼号表</button>
+            <input type="file" id="callsignInput" accept=".csv" onchange="loadCallsigns(this)">
+        </div>
+
+        <!-- Airport Code Lock -->
+        <div class="input-group">
+            <label for="airportCode">当前机场:</label>
+            <input type="text" id="airportCode" placeholder="ICAO" maxlength="4" style="width: 50px; text-transform: uppercase;">
+            <button id="btnLock" class="secondary" onclick="toggleAirportLock()" style="padding: 2px 8px; font-size: 0.8em;">🔓 锁定</button>
+        </div>
+
+        <div style="flex:1"></div>
+
+        <button onclick="downloadCSV()" style="background-color: #4CAF50;">💾 下载 CSV</button>
+    </div>
+
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('arrival')">🛬 到达航班 (Arrivals)</div>
+        <div class="tab" onclick="switchTab('departure')">🛫 出发航班 (Departures)</div>
+        <div class="tab" onclick="switchTab('all')">📋 全部航班 (All)</div>
+    </div>
+
+    <div class="content">
+        <div class="table-container">
+            <table id="dataTable">
+                <thead>
+                    <tr id="headerRow">
+                        <!-- Headers injected by JS -->
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- Rows injected by JS -->
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="add-row-bar">
+            <!-- New Batch Buttons with Logic Fix -->
+            <button id="btnSetArr" class="secondary" onclick="batchSetAsArrival()" disabled title="需锁定当前机场">📥 设置到达</button>
+            <button id="btnSetDep" class="secondary" onclick="batchSetAsDeparture()" disabled title="需锁定当前机场">📤 设置出发</button>
+            <div style="width: 20px; border-right: 1px solid #444; margin-right: 10px;"></div>
+            <button class="secondary" onclick="deduplicateCallsigns()" title="自动修复重复呼号">🔧 呼号去重</button>
+            <button onclick="addRow()">+ 添加航班</button>
+        </div>
+    </div>
+
+    <div class="status-bar" id="statusBar">
+        <span id="statusMsg">就绪</span>
+        <span id="statsInfo">航班数: 0</span>
+    </div>
+
+    <!-- Custom Modal Structure -->
+    <div id="confirmModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">确认操作</div>
+            <div id="modalMessage" class="modal-body"></div>
+            <div class="modal-footer">
+                <button class="secondary" onclick="closeModal()">取消</button>
+                <button class="danger" id="modalConfirmBtn">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script -->
+    <script>
+        const defaultCallsignsCSV = `callSign,airline
+CCA3115,CCA
+CDG2701,CDG
+CDG8001,CDG
+CDG8031,CDG
+CDG8085,CDG
+CDG8416,CDG
+CES1111,CES
+CES5657,CES
+CES9197,CES
+CFE2281,CFE
+CFE3492,CFE
+CFE4462,CFE
+CFE8461,CFE
+CFE8703,CFE
+CFE8704,CFE
+CFE8739,CFE
+CHH7306,CHH
+CJX8923,CJX
+CQH6596,CQH
+CQH7171,CQH
+CSC3612,CSC
+CSC6918,CSC
+CSC8056,CSC
+CSN3712,CSN
+CSN8545,CSN
+CSN8733,CSN
+CSZ2861,CSZ
+CSZ3690,CSZ
+CXA8069,CXA
+UEA1889,UEA
+UEA7323,UEA`;
+
+        let allFlights = [];
+        let currentTab = 'arrival';
+        let currentAirportCode = ""; 
+        let isAirportLocked = false;
+        
+        let selectedIndices = new Set();
+        let lastVisualIndex = null;
+        
+        let timeOffsets = { arrival: 10, departure: 10 };
+        
+        // Modal callback storage
+        let confirmCallback = null;
+        
+        let config = {
+            aircraftTypes: [
+                "AIRBUS A-320ceo", "AIRBUS A-320neo", "AIRBUS A-321neo", "AIRBUS A-330-300", 
+                "AIRBUS A-350-900", "BOEING 737 MAX 8", "BOEING 737-800", "BOEING 747-8I", 
+                "BOEING 777-300ER", "COMAC C-919"
+            ],
+            airlines: [
+                "AAL", "AFR", "ASA", "AVA", "BAW", "CCA", "CDG", "CES", "CHH", "CJX", "CQH", 
+                "CSC", "CSN", "CSZ", "CXA", "DAL", "DKH", "FFT", "GCR", "HXA", "JAL", "JZA", 
+                "KNA", "KPA", "LKE", "OKA", "OTC", "QTR", "RYR", "SIA", "SWR", "THA", "TVB", 
+                "UAL", "UEA", "VIR"
+            ],
+            callsigns: [], 
+            voices: ["CN-Captain-Young", "CN-Captain-Middle-Aged", "CN-Captain-Young-EN"],
+            languages: ["zh", "en"],
+            
+            mapping: {
+                aircraftToAirlines: {},
+                airlineToAircrafts: {},
+                callsignToAirline: {}, 
+                airlineToCallsigns: {}
+            }
+        };
+
+        window.onload = function() {
+            // Default mapping init
+            const defaultAcMap = {
+                "AIRBUS A-320ceo": ["CCA", "CES", "CHH", "CQH", "CSC", "CSN", "CSZ", "UEA"],
+                "AIRBUS A-320neo": ["AVA", "BAW", "CCA", "CES", "CHH", "CQH", "CSC", "CSN", "CSZ", "FFT", "GCR", "HXA", "JZA", "KNA", "LKE", "OKA", "OTC", "QTR", "SWR", "THA", "TVB", "UAL", "UEA"],
+                "AIRBUS A-321neo": ["CCA", "CES", "CHH", "CQH", "CSC", "CSN", "CSZ", "JZA", "QTR", "UAL", "UEA"],
+                "AIRBUS A-330-300": ["CCA", "CES", "CHH", "CSC", "CSN", "VIR"],
+                "AIRBUS A-350-900": ["AFR", "DAL", "JAL"],
+                "BOEING 737 MAX 8": ["CDG", "CSN"],
+                "BOEING 737-800": ["AAL", "ASA", "CDG", "CES", "CHH", "CJX", "CSN", "CXA", "DAL", "DKH", "JAL", "KPA", "OKA", "RYR", "SIA", "UAL"],
+                "BOEING 747-8I": ["CCA", "KPA", "LKE", "UAL"],
+                "BOEING 777-300ER": ["AFR", "AAL", "BAW", "CCA", "CES", "CSN", "DAL", "JAL", "QTR", "THA", "UAL", "VIR"],
+                "COMAC C-919": ["CCA", "CES", "CSN"]
+            };
+            config.mapping.aircraftToAirlines = defaultAcMap;
+
+            buildReverseMapping();
+            parseCallsignConfig(defaultCallsignsCSV);
+            
+            // Modal Events
+            document.getElementById('modalConfirmBtn').addEventListener('click', () => {
+                if (confirmCallback) confirmCallback();
+                closeModal();
+            });
+            
+            renderHeader();
+            renderTable();
+            updateStats();
+            updateBatchButtons();
+        };
+
+        // === Modal Logic ===
+        function showConfirm(message, callback) {
+            document.getElementById('modalMessage').innerText = message;
+            confirmCallback = callback;
+            document.getElementById('confirmModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('confirmModal').style.display = 'none';
+            confirmCallback = null;
+        }
+
+        function buildReverseMapping() {
+            config.mapping.airlineToAircrafts = {};
+            config.airlines.forEach(al => config.mapping.airlineToAircrafts[al] = []);
+            for (const [acType, allowedAirlines] of Object.entries(config.mapping.aircraftToAirlines)) {
+                allowedAirlines.forEach(al => {
+                    if (!config.mapping.airlineToAircrafts[al]) config.mapping.airlineToAircrafts[al] = [];
+                    if (!config.mapping.airlineToAircrafts[al].includes(acType)) config.mapping.airlineToAircrafts[al].push(acType);
+                });
+            }
+        }
+
+        const headers = [
+            { key: 'callSign', label: '呼号', type: 'select', source: 'callsigns', width: '120px', required: true },
+            { key: 'departure', label: '起飞机场', width: '80px', required: true },
+            { key: 'arrival', label: '到达机场', width: '80px', required: true },
+            { key: 'stand', label: '停机位', width: '60px', required: true },
+            { key: 'runway', label: '跑道', width: '60px', required: true },
+            { key: 'offBlockTime', label: '推出时间', type: 'time', tab: 'departure' },
+            { key: 'takeOffTime', label: '起飞时间', type: 'time', tab: 'departure', hasOffset: true },
+            { key: 'landingTime', label: '着陆时间', type: 'time', tab: 'arrival' },
+            { key: 'inBlockTime', label: '入位时间', type: 'time', tab: 'arrival', hasOffset: true },
+            { key: 'airline', label: '航司', type: 'select', source: 'airlines', width: '80px' },
+            { key: 'aircraftType', label: '机型', type: 'select', source: 'aircraftTypes', width: '150px' },
+            { key: 'voice', label: '语音', type: 'select', source: 'voices', width: '120px' },
+            { key: 'language', label: '语言', type: 'select', source: 'languages', width: '60px' },
+        ];
+
+        function switchTab(tab) {
+            currentTab = tab;
+            selectedIndices.clear();
+            lastVisualIndex = null;
+            document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+            event.target.classList.add('active');
+            renderHeader();
+            renderTable();
+        }
+
+        // --- Logic ---
+        function parseTime(timeStr) {
+            if (!timeStr) return null;
+            const parts = timeStr.split(':');
+            if (parts.length !== 3) return null;
+            return { h: parseInt(parts[0]), m: parseInt(parts[1]), s: parseInt(parts[2]) };
+        }
+        function formatTime(h, m, s) {
+            const pad = (n) => n.toString().padStart(2, '0');
+            return `${pad(h)}:${pad(m)}:${pad(s)}`;
+        }
+        function addMinutes(timeStr, minutesToAdd) {
+            const t = parseTime(timeStr);
+            if (!t) return timeStr;
+            let totalMin = t.h * 60 + t.m + minutesToAdd;
+            if (totalMin < 0) totalMin += 24 * 60;
+            totalMin = totalMin % (24 * 60);
+            return formatTime(Math.floor(totalMin / 60), totalMin % 60, t.s);
+        }
+        function isValidTimeFormat(str) {
+            return /^([01]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/.test(str);
+        }
+
+        // === Unified Flight Type Determination Logic ===
+        function getFlightType(f) {
+            const offBlock = f.offBlockTime ? f.offBlockTime.trim() : "";
+            const landing = f.landingTime ? f.landingTime.trim() : "";
+            
+            // 1. Time based (Explicit intent)
+            if (offBlock) return 'departure';
+            if (landing) return 'arrival';
+            
+            // 2. Airport Code based (Fallback for drafts)
+            if (isAirportLocked && currentAirportCode) {
+                if (f.arrival === currentAirportCode) return 'arrival';
+                if (f.departure === currentAirportCode) return 'departure';
+            }
+            
+            // 3. Default fallback
+            return 'arrival';
+        }
+
+        function handleTimeKeyDown(e, input, index, key) {
+            if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'PageUp' || e.key === 'PageDown') {
+                e.preventDefault();
+                let delta = 0;
+                if (e.key === 'ArrowUp') delta = 1;
+                if (e.key === 'ArrowDown') delta = -1;
+                if (e.key === 'PageUp') delta = 10;
+                if (e.key === 'PageDown') delta = -10;
+
+                const currentVal = input.value;
+                if (!isValidTimeFormat(currentVal)) return;
+
+                const newVal = addMinutes(currentVal, delta);
+                input.value = newVal;
+                updateFlight(index, key, newVal);
+                triggerAutoCalc(index, key, newVal);
+            }
+        }
+        function handleTimeBlur(e, originalValue, index, key) {
+            const val = e.target.value.trim();
+            if (val === "") return;
+            if (!isValidTimeFormat(val)) {
+                alert("请输入正确的24小时制时间格式！(HH:mm:ss)");
+                e.target.value = originalValue; 
+            } else {
+                updateFlight(index, key, val);
+                triggerAutoCalc(index, key, val);
+            }
+        }
+        function handleOffsetChange(e) {
+            const val = parseInt(e.target.value);
+            if (isNaN(val)) return;
+            timeOffsets[currentTab] = val;
+            const baseKey = currentTab === 'arrival' ? 'landingTime' : 'offBlockTime';
+            const targetKey = currentTab === 'arrival' ? 'inBlockTime' : 'takeOffTime';
+            allFlights.forEach((f, idx) => {
+                const type = getFlightType(f);
+                const visible = currentTab === 'arrival' ? (type === 'arrival') : (type === 'departure');
+                if (currentTab !== 'all' && visible && f[baseKey]) {
+                    f[targetKey] = addMinutes(f[baseKey], val);
+                }
+            });
+            renderTable();
+        }
+        function triggerAutoCalc(index, changedKey, newVal) {
+            if (currentTab === 'all') return;
+            const offset = timeOffsets[currentTab];
+            if (!offset && offset !== 0) return;
+            let targetKey = null;
+            if (currentTab === 'arrival' && changedKey === 'landingTime') targetKey = 'inBlockTime';
+            if (currentTab === 'departure' && changedKey === 'offBlockTime') targetKey = 'takeOffTime';
+            if (targetKey) {
+                const calcVal = addMinutes(newVal, offset);
+                allFlights[index][targetKey] = calcVal;
+                const inputs = document.querySelectorAll(`input[data-row="${index}"][data-key="${targetKey}"]`);
+                if (inputs.length > 0) inputs[0].value = calcVal;
+            }
+        }
+
+        // --- Selection & Batch Logic ---
+        function getFilteredFlights() {
+            return allFlights.map((f, index) => ({ flight: f, index: index }))
+                .filter(item => {
+                    const f = item.flight;
+                    
+                    // 1. Tab Type Check
+                    if (currentTab === 'all') return true;
+                    const type = getFlightType(f);
+                    if (currentTab !== type) return false;
+
+                    // 2. Strict Location Filter (New)
+                    if (isAirportLocked && currentAirportCode) {
+                        if (currentTab === 'arrival' && f.arrival !== currentAirportCode) return false;
+                        if (currentTab === 'departure' && f.departure !== currentAirportCode) return false;
+                    }
+
+                    return true;
+                });
+        }
+
+        function handleRowSelection(e, dataIndex, visualIndex) {
+            if (e.button === 0) {
+                if (e.shiftKey) {
+                    if (lastVisualIndex !== null) {
+                        const start = Math.min(lastVisualIndex, visualIndex);
+                        const end = Math.max(lastVisualIndex, visualIndex);
+                        const currentFiltered = getFilteredFlights();
+                        for (let i = start; i <= end; i++) {
+                            if (currentFiltered[i]) {
+                                selectedIndices.add(currentFiltered[i].index);
+                            }
+                        }
+                    } else {
+                        selectedIndices.add(dataIndex);
+                    }
+                } else if (e.ctrlKey || e.metaKey) {
+                    if (selectedIndices.has(dataIndex)) selectedIndices.delete(dataIndex);
+                    else selectedIndices.add(dataIndex);
+                    lastVisualIndex = visualIndex;
+                } else {
+                    selectedIndices.clear();
+                    selectedIndices.add(dataIndex);
+                    lastVisualIndex = visualIndex;
+                }
+            } else if (e.button === 2) {
+                if (e.shiftKey) {
+                    selectedIndices.delete(dataIndex);
+                    e.preventDefault(); 
+                }
+            }
+            updateSelectionVisuals();
+        }
+
+        function updateSelectionVisuals() {
+            document.querySelectorAll('#tableBody tr').forEach(tr => {
+                const idx = parseInt(tr.dataset.index);
+                if (selectedIndices.has(idx)) tr.classList.add('selected-row');
+                else tr.classList.remove('selected-row');
+            });
+        }
+
+        function updateBatchButtons() {
+            const btnSetArr = document.getElementById('btnSetArr');
+            const btnSetDep = document.getElementById('btnSetDep');
+            const enabled = isAirportLocked && currentAirportCode !== "";
+            
+            btnSetArr.disabled = !enabled;
+            btnSetDep.disabled = !enabled;
+            
+            if (enabled) {
+                btnSetArr.title = `将选中行转换为到达航班 (${currentAirportCode})`;
+                btnSetDep.title = `将选中行转换为出发航班 (${currentAirportCode})`;
+            } else {
+                btnSetArr.title = "需锁定当前机场";
+                btnSetDep.title = "需锁定当前机场";
+            }
+        }
+
+        // === Fixed Logic: Force Overwrite & Robust Swap ===
+        function batchSetAsArrival() {
+            const freshCode = document.getElementById('airportCode').value.trim().toUpperCase();
+            if (!isAirportLocked || !freshCode) return;
+            if (selectedIndices.size === 0) { 
+                // alert("请先选择至少一行"); 
+                return; 
+            }
+
+            let count = 0;
+            selectedIndices.forEach(idx => {
+                const f = allFlights[idx];
+                if (!f) return;
+
+                const oldArr = f.arrival;
+                f.arrival = freshCode; 
+                
+                if (f.departure === freshCode) {
+                    f.departure = (oldArr && oldArr !== freshCode) ? oldArr : "ZBAA";
+                }
+
+                if (f.offBlockTime && !f.landingTime) {
+                    f.landingTime = f.offBlockTime;
+                    f.offBlockTime = "";
+                    f.takeOffTime = "";
+                    const offset = timeOffsets['arrival'] || 10;
+                    f.inBlockTime = addMinutes(f.landingTime, offset);
+                } 
+                else if (f.landingTime) {
+                    f.offBlockTime = "";
+                    f.takeOffTime = "";
+                }
+                else {
+                    f.offBlockTime = "";
+                    f.takeOffTime = "";
+                }
+                count++;
+            });
+            renderTable();
+            updateStats();
+            showStatus(`已将 ${count} 条记录转换为到达航班`);
+        }
+
+        function batchSetAsDeparture() {
+            const freshCode = document.getElementById('airportCode').value.trim().toUpperCase();
+            if (!isAirportLocked || !freshCode) return;
+            if (selectedIndices.size === 0) { 
+                // alert("请先选择至少一行"); 
+                return; 
+            }
+
+            let count = 0;
+            selectedIndices.forEach(idx => {
+                const f = allFlights[idx];
+                if (!f) return;
+
+                const oldDep = f.departure;
+                f.departure = freshCode; 
+                
+                if (f.arrival === freshCode) {
+                    f.arrival = (oldDep && oldDep !== freshCode) ? oldDep : "ZBAA";
+                }
+
+                if (f.landingTime && !f.offBlockTime) {
+                    f.offBlockTime = f.landingTime; 
+                    f.landingTime = "";
+                    f.inBlockTime = "";
+                    const offset = timeOffsets['departure'] || 10;
+                    f.takeOffTime = addMinutes(f.offBlockTime, offset);
+                }
+                else if (f.offBlockTime) {
+                    f.landingTime = "";
+                    f.inBlockTime = "";
+                }
+                else {
+                    f.landingTime = "";
+                    f.inBlockTime = "";
+                }
+                count++;
+            });
+            renderTable();
+            updateStats();
+            showStatus(`已将 ${count} 条记录转换为出发航班`);
+        }
+
+        function toggleAirportLock() {
+            const input = document.getElementById('airportCode');
+            const btn = document.getElementById('btnLock');
+            if (!isAirportLocked) {
+                const code = input.value.trim().toUpperCase();
+                if (!code) { 
+                    // alert("请输入机场代号"); 
+                    showConfirm("请输入机场代号", () => {});
+                    return; 
+                }
+                currentAirportCode = code;
+                isAirportLocked = true;
+                input.value = code;
+                input.disabled = true;
+                btn.innerHTML = "🔒 解锁";
+                btn.classList.add("active-lock");
+            } else {
+                isAirportLocked = false;
+                input.disabled = false;
+                btn.innerHTML = "🔓 锁定";
+                btn.classList.remove("active-lock");
+            }
+            updateBatchButtons();
+            renderTable();
+        }
+        
+        function deduplicateCallsigns() {
+            const usedCallsigns = new Set(allFlights.map(f => f.callSign).filter(c => c));
+            const seenThisRun = new Set();
+            let changes = 0;
+            allFlights.forEach(f => {
+                if (!f.callSign) return;
+                if (seenThisRun.has(f.callSign)) {
+                    const airline = f.airline;
+                    const available = config.mapping.airlineToCallsigns[airline] || [];
+                    const candidate = available.find(c => !usedCallsigns.has(c));
+                    if (candidate) {
+                        f.callSign = candidate;
+                        usedCallsigns.add(candidate);
+                        changes++;
+                    }
+                } else {
+                    seenThisRun.add(f.callSign);
+                }
+            });
+            if(changes > 0) {
+                renderTable();
+                updateStats();
+                showConfirm(`已自动修复 ${changes} 个重复呼号`, () => {});
+            } else {
+                showConfirm("未发现可修复的重复呼号 (或无可用替代)", () => {});
+            }
+        }
+
+        function highlightDuplicates(callsign) {
+            if(!callsign) return;
+            document.querySelectorAll(`tr[data-callsign="${callsign}"]`).forEach(el => el.classList.add('highlight-group'));
+        }
+        function unhighlightDuplicates(callsign) {
+            if(!callsign) return;
+            document.querySelectorAll(`tr[data-callsign="${callsign}"]`).forEach(el => el.classList.remove('highlight-group'));
+        }
+
+        function updateStats() {
+            let arrCount = 0; let depCount = 0;
+            allFlights.forEach(f => {
+                const type = getFlightType(f);
+                if (type === 'arrival') arrCount++; else depCount++;
+            });
+            document.getElementById('statsInfo').innerText = `总计: ${allFlights.length} | 到达: ${arrCount} | 出发: ${depCount}`;
+        }
+        function showStatus(msg) {
+            document.getElementById('statusMsg').innerText = msg;
+            setTimeout(() => document.getElementById('statusMsg').innerText = '就绪', 3000);
+        }
+
+        // --- Rendering ---
+        function renderHeader() {
+            const tr = document.getElementById('headerRow');
+            tr.innerHTML = '';
+            headers.forEach(h => {
+                if (currentTab === 'all') {
+                    if (h.key === 'takeOffTime' || h.key === 'inBlockTime') return;
+                } else {
+                    if (h.tab && h.tab !== currentTab) return;
+                }
+                const th = document.createElement('th');
+                const container = document.createElement('div');
+                container.style.display = 'flex';
+                container.style.alignItems = 'center';
+                container.innerText = h.label;
+                if (h.hasOffset && currentTab !== 'all') {
+                    const offsetInput = document.createElement('input');
+                    offsetInput.type = 'number';
+                    offsetInput.className = 'header-offset';
+                    offsetInput.placeholder = '+min';
+                    offsetInput.value = timeOffsets[currentTab] || '';
+                    offsetInput.onchange = handleOffsetChange;
+                    offsetInput.title = "输入增加的分钟数，自动计算该列时间";
+                    container.appendChild(offsetInput);
+                }
+                th.appendChild(container);
+                th.style.width = h.width || 'auto';
+                tr.appendChild(th);
+            });
+            const thAction = document.createElement('th');
+            thAction.style.width = '40px';
+            thAction.innerText = '操作';
+            tr.appendChild(thAction);
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            const callsignCounts = {};
+            allFlights.forEach(f => {
+                if(f.callSign) callsignCounts[f.callSign] = (callsignCounts[f.callSign] || 0) + 1;
+            });
+            const filteredFlights = getFilteredFlights();
+
+            filteredFlights.forEach((item, visualIndex) => {
+                const tr = document.createElement('tr');
+                const f = item.flight;
+                const idx = item.index; 
+                tr.dataset.index = idx;
+                tr.onmousedown = (e) => handleRowSelection(e, idx, visualIndex);
+                tr.oncontextmenu = (e) => { if(e.shiftKey) e.preventDefault(); };
+
+                if (selectedIndices.has(idx)) tr.classList.add('selected-row');
+
+                const isDuplicate = f.callSign && callsignCounts[f.callSign] > 1;
+                if (isDuplicate) {
+                    tr.classList.add('duplicate-row');
+                    tr.dataset.callsign = f.callSign;
+                    tr.onmouseenter = () => highlightDuplicates(f.callSign);
+                    tr.onmouseleave = () => unhighlightDuplicates(f.callSign);
+                }
+
+                headers.forEach(h => {
+                    if (currentTab === 'all') {
+                        if (h.key === 'takeOffTime' || h.key === 'inBlockTime') return;
+                    } else {
+                        if (h.tab && h.tab !== currentTab) return;
+                    }
+                    const td = document.createElement('td');
+                    if (h.type === 'select') {
+                        const select = document.createElement('select');
+                        let options = config[h.source];
+                        if (h.key === 'airline') {
+                            const acType = f.aircraftType;
+                            if (acType && config.mapping.aircraftToAirlines[acType]) {
+                                const allowedAirlines = config.mapping.aircraftToAirlines[acType];
+                                options = options.filter(al => allowedAirlines.includes(al));
+                            }
+                        } 
+                        else if (h.key === 'aircraftType') {
+                            const al = f.airline;
+                            if (al && config.mapping.airlineToAircrafts[al]) {
+                                const allowedTypes = config.mapping.airlineToAircrafts[al];
+                                options = options.filter(at => allowedTypes.includes(at));
+                            }
+                        }
+                        else if (h.key === 'callSign') {
+                            const al = f.airline;
+                            if (al && config.mapping.airlineToCallsigns[al]) {
+                                options = config.mapping.airlineToCallsigns[al];
+                            }
+                        }
+                        if (f[h.key] && !options.includes(f[h.key])) {
+                            const opt = document.createElement('option');
+                            opt.value = f[h.key];
+                            opt.text = f[h.key] + " (非配置)";
+                            select.appendChild(opt);
+                        }
+                        options.forEach(optVal => {
+                            const opt = document.createElement('option');
+                            opt.value = optVal;
+                            opt.text = optVal;
+                            if (optVal === f[h.key]) opt.selected = true;
+                            select.appendChild(opt);
+                        });
+                        select.onchange = (e) => {
+                            const newVal = e.target.value;
+                            updateFlight(idx, h.key, newVal);
+                            if (h.key === 'callSign') {
+                                const mappedAirline = config.mapping.callsignToAirline[newVal];
+                                if (mappedAirline) updateFlight(idx, 'airline', mappedAirline);
+                            }
+                            renderTable(); 
+                        };
+                        td.appendChild(select);
+                    } else {
+                        const input = document.createElement('input');
+                        input.type = 'text';
+                        input.value = f[h.key] || '';
+                        input.dataset.row = idx;
+                        input.dataset.key = h.key;
+                        if (isAirportLocked) {
+                            if ((h.key === 'departure' || h.key === 'arrival') && f[h.key] === currentAirportCode) {
+                                input.readOnly = true;
+                                input.className = 'locked';
+                            }
+                        }
+                        if (h.type === 'time') {
+                            input.placeholder = "HH:mm:ss";
+                            input.onfocus = (e) => { e.target.setAttribute('data-original', e.target.value); };
+                            input.onblur = (e) => {
+                                const orig = e.target.getAttribute('data-original');
+                                handleTimeBlur(e, orig, idx, h.key);
+                            };
+                            input.onkeydown = (e) => handleTimeKeyDown(e, input, idx, h.key);
+                        } else {
+                            input.onchange = (e) => updateFlight(idx, h.key, e.target.value);
+                        }
+                        td.appendChild(input);
+                    }
+                    tr.appendChild(td);
+                });
+                const tdAction = document.createElement('td');
+                tdAction.className = 'cell-action';
+                tdAction.innerHTML = `<button class="btn-delete" onclick="deleteFlightRecord(${idx})">🗑️</button>`;
+                tr.appendChild(tdAction);
+                tbody.appendChild(tr);
+            });
+        }
+
+        function updateFlight(index, key, value) {
+            allFlights[index][key] = value;
+        }
+
+        function addRow() {
+            let defDeparture = 'ZBAA';
+            let defArrival = 'ZSJN';
+            let isDepartureIntent = true;
+            if (currentTab === 'arrival') isDepartureIntent = false;
+            else if (currentTab === 'all') isDepartureIntent = true;
+
+            if (isAirportLocked && currentAirportCode) {
+                if (!isDepartureIntent) defArrival = currentAirportCode;
+                else defDeparture = currentAirportCode;
+            } else {
+                 if (!isDepartureIntent) { defArrival = 'ZSJN'; defDeparture = 'ZBAA'; } 
+                 else { defDeparture = 'ZSJN'; defArrival = 'ZBAA'; }
+            }
+
+            const defAirline = config.airlines[0] || 'CSN';
+            let defAircraft = config.aircraftTypes[0] || 'BOEING 737-800';
+            if (config.mapping.airlineToAircrafts[defAirline] && config.mapping.airlineToAircrafts[defAirline].length > 0) {
+                defAircraft = config.mapping.airlineToAircrafts[defAirline][0];
+            }
+            
+            let defCallsign = '';
+            if (config.mapping.airlineToCallsigns[defAirline] && config.mapping.airlineToCallsigns[defAirline].length > 0) {
+                defCallsign = config.mapping.airlineToCallsigns[defAirline][0];
+            } else if (config.callsigns.length > 0) {
+                defCallsign = config.callsigns[0];
+            }
+
+            const newFlight = {
+                callSign: defCallsign || 'NEW001',
+                departure: defDeparture,
+                arrival: defArrival,
+                stand: '1',
+                runway: '01',
+                airline: defAirline,
+                aircraftType: defAircraft,
+                voice: config.voices[0] || 'CN-Captain-Young',
+                language: 'zh'
+            };
+
+            if (isDepartureIntent) {
+                newFlight.offBlockTime = '08:00:00';
+                if (timeOffsets.departure) {
+                    newFlight.takeOffTime = addMinutes('08:00:00', timeOffsets.departure);
+                } else {
+                    newFlight.takeOffTime = '08:10:00';
+                }
+                newFlight.landingTime = '';
+                newFlight.inBlockTime = '';
+            } else {
+                newFlight.offBlockTime = '';
+                newFlight.takeOffTime = '';
+                newFlight.landingTime = '08:00:00';
+                if (timeOffsets.arrival) {
+                    newFlight.inBlockTime = addMinutes('08:00:00', timeOffsets.arrival);
+                } else {
+                    newFlight.inBlockTime = '08:10:00';
+                }
+            }
+
+            allFlights.push(newFlight);
+            renderTable();
+            updateStats();
+            const container = document.querySelector('.table-container');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function deleteFlightRecord(index) {
+            showConfirm("确定删除该航班吗?", function() {
+                allFlights.splice(index, 1);
+                selectedIndices.delete(index);
+                selectedIndices.clear();
+                renderTable();
+                updateStats();
+            });
+        }
+        function newFile() {
+            showConfirm("确定新建吗? 未保存的数据将丢失。", function() {
+                allFlights = [];
+                selectedIndices.clear();
+                const csvInput = document.getElementById('csvInput');
+                if(csvInput) csvInput.value = '';
+                renderTable();
+                updateStats();
+                showStatus("已新建空表");
+            });
+        }
+        function loadCSV(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                parseCSV(text);
+                input.value = ''; 
+            };
+            reader.readAsText(file);
+        }
+        function parseCSV(text) {
+            const lines = text.split(/\r\n|\n/).filter(l => l.trim() !== '' && !l.trim().startsWith('#'));
+            if (lines.length < 2) { alert("CSV 格式错误或为空"); return; }
+            const normalizeKey = (k) => {
+                k = k.trim();
+                if (k === 'offBlockTIme') return 'offBlockTime';
+                if (k === 'inBlockTIme') return 'inBlockTime';
+                if (k === 'takeOffTIme') return 'takeOffTime';
+                return k;
+            };
+            const headerLine = lines[0].split(',').map(normalizeKey);
+            const newFlights = [];
+            for (let i = 1; i < lines.length; i++) {
+                const cols = lines[i].split(',').map(c => c.trim());
+                if (cols.length < headerLine.length) continue;
+                let flight = {};
+                headerLine.forEach((h, idx) => { flight[h] = cols[idx]; });
+                newFlights.push(flight);
+            }
+            
+            // Append Mode
+            const addedCount = newFlights.length;
+            allFlights = allFlights.concat(newFlights);
+            selectedIndices.clear();
+            renderTable();
+            updateStats();
+            showStatus(`已追加 ${addedCount} 条记录 (总计 ${allFlights.length})`);
+        }
+        function loadConfigs(input) {
+            const files = Array.from(input.files);
+            let loadedCount = 0;
+            config.mapping.aircraftToAirlines = {};
+            config.mapping.airlineToAircrafts = {};
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const text = e.target.result;
+                    if (file.name.includes("ModelPath")) parseModelConfig(text);
+                    else if (file.name.includes("LiveryPath")) parseLiveryConfig(text);
+                    loadedCount++;
+                    if (loadedCount === files.length) {
+                        showStatus("配置加载完成");
+                        buildReverseMapping(); 
+                        renderTable();
+                    }
+                };
+                reader.readAsText(file);
+            });
+            input.value = '';
+        }
+        
+        function loadCallsigns(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                parseCallsignConfig(text);
+                showStatus("呼号表已更新");
+                renderTable();
+                input.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        function parseCallsignConfig(text) {
+            const lines = text.split(/\r\n|\n/);
+            const callsigns = [];
+            config.mapping.callsignToAirline = {};
+            config.mapping.airlineToCallsigns = {};
+
+            config.airlines.forEach(al => config.mapping.airlineToCallsigns[al] = []);
+
+            lines.forEach(line => {
+                line = line.trim();
+                if (!line || line.startsWith('callSign')) return; 
+                const parts = line.split(',');
+                if (parts.length >= 2) {
+                    const cs = parts[0].trim();
+                    const al = parts[1].trim();
+                    if (cs && al) {
+                        callsigns.push(cs);
+                        config.mapping.callsignToAirline[cs] = al;
+                        if (!config.mapping.airlineToCallsigns[al]) {
+                            config.mapping.airlineToCallsigns[al] = [];
+                        }
+                        config.mapping.airlineToCallsigns[al].push(cs);
+                    }
+                }
+            });
+            config.callsigns = callsigns.sort();
+            console.log("Loaded Callsigns:", callsigns.length);
+        }
+
+        function parseModelConfig(text) {
+            const types = [];
+            const lines = text.split(/\r\n|\n/);
+            lines.forEach(line => {
+                const parts = line.split('=');
+                if (parts.length >= 2) {
+                    const key = parts[0].trim();
+                    if (key) types.push(key);
+                }
+            });
+            if (types.length > 0) {
+                config.aircraftTypes = types;
+            }
+        }
+        function parseLiveryConfig(text) {
+            const airlines = new Set();
+            const lines = text.split(/\r\n|\n/);
+            let currentAircraft = null;
+            lines.forEach(line => {
+                line = line.trim();
+                if (!line) return;
+                if (line.includes('=')) {
+                    const parts = line.split('=');
+                    const key = parts[0].trim();
+                    if (key && key.length === 3) { 
+                        airlines.add(key);
+                        if (currentAircraft) {
+                            if (!config.mapping.aircraftToAirlines[currentAircraft]) config.mapping.aircraftToAirlines[currentAircraft] = [];
+                            if (!config.mapping.aircraftToAirlines[currentAircraft].includes(key)) config.mapping.aircraftToAirlines[currentAircraft].push(key);
+                        }
+                    }
+                } else {
+                    if (!line.startsWith('[') && !line.startsWith('/')) {
+                        currentAircraft = line;
+                        if (!config.mapping.aircraftToAirlines[currentAircraft]) config.mapping.aircraftToAirlines[currentAircraft] = [];
+                    }
+                }
+            });
+            if (airlines.size > 0) {
+                config.airlines = Array.from(airlines).sort();
+            }
+        }
+        function downloadCSV() {
+            const arrivals = allFlights.filter(f => !f.offBlockTime && f.landingTime);
+            const departures = allFlights.filter(f => !(!f.offBlockTime && f.landingTime));
+            arrivals.sort((a, b) => (a.landingTime || '').localeCompare(b.landingTime || ''));
+            departures.sort((a, b) => (a.offBlockTime || '').localeCompare(b.offBlockTime || ''));
+            const sortedFlights = [...arrivals, ...departures];
+            const headerKeys = headers.filter(h => h.key).map(h => h.key);
+            let csvContent = headerKeys.join(', ') + "\n";
+            sortedFlights.forEach(f => {
+                const row = headerKeys.map(key => f[key] || '').join(', ');
+                csvContent += row + "\n";
+            });
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", "flight_schedule_edited.csv");
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        }
+    </script>
+</body>
+</html>
