@@ -599,10 +599,12 @@
             processingCount: 0,
             queue: [], // IDs waiting
             currentPreset: PRESETS[2], // Default CN-Captain-Young
-            selectedIds: new Set()
+            selectedIds: new Set(),
+            lastRequestTime: 0 // New: Track last API call time for rate limiting
         };
 
-        const MAX_CONCURRENCY = 3;
+        const MAX_CONCURRENCY = 2; // Lowered from 3 to 2
+        const REQUEST_INTERVAL = 300; // New: 300ms minimum interval between requests
 
         // --- DOM Elements ---
         const els = {
@@ -1030,6 +1032,15 @@
             if (appState.processingCount >= MAX_CONCURRENCY) return;
             if (appState.queue.length === 0) return;
 
+            // Rate Limiting Check
+            const now = Date.now();
+            const timeSinceLast = now - appState.lastRequestTime;
+            if (timeSinceLast < REQUEST_INTERVAL) {
+                const delay = REQUEST_INTERVAL - timeSinceLast;
+                setTimeout(processQueue, delay);
+                return;
+            }
+
             const item = appState.queue.shift();
             const { task, presetId } = item;
 
@@ -1043,6 +1054,7 @@
             task.results[presetId].status = 'processing';
 
             appState.processingCount++;
+            appState.lastRequestTime = Date.now(); // Update timestamp
             renderTable();
 
             // Call API
@@ -1142,21 +1154,38 @@
         // --- Export ---
 
         async function exportAll() {
-            // Collect all completed results for CURRENT preset
+            // Collect completed/edited results for CURRENT preset
             const currentPid = appState.currentPreset.id;
+            const currentPresetName = appState.currentPreset.name;
             const validItems = [];
+            const uncalibratedItems = [];
 
             appState.tasks.forEach(t => {
                 const res = t.results[currentPid];
-                if (res && res.status === 'completed' && res.blob) {
-                    // Normalize blob name/item
-                    validItems.push({ callSign: t.callSign, blob: res.blob, task: t });
+                if (res && res.blob) {
+                    if (res.status === 'edited') {
+                        validItems.push({ callSign: t.callSign, blob: res.blob, task: t, status: 'edited' });
+                    } else if (res.status === 'completed') {
+                        validItems.push({ callSign: t.callSign, blob: res.blob, task: t, status: 'completed' });
+                        uncalibratedItems.push(`${t.callSign}-${currentPresetName}`);
+                    }
                 }
             });
 
             if (validItems.length === 0) {
-                showToast('当前预设没有可导出的已完成任务', 'info');
+                showToast('当前预设没有可导出的任务', 'info');
                 return;
+            }
+
+            // Warning for uncalibrated items
+            if (uncalibratedItems.length > 0) {
+                const msg = "还有以下音频未校准 (仅已完成，未人工编辑):\n\n" +
+                    uncalibratedItems.slice(0, 10).join('\n') +
+                    (uncalibratedItems.length > 10 ? `\n...等 ${uncalibratedItems.length} 个` : "") +
+                    "\n\n是否继续导出?";
+                if (!confirm(msg)) {
+                    return; // Abort
+                }
             }
 
             try {
@@ -1375,10 +1404,15 @@
                     // Create Regions plugin
                     editorState.regions = RegionsPlugin.create();
 
+                    // Check status for color
+                    const isEdited = res.status === 'edited';
+                    const waveColor = isEdited ? '#4caf50' : '#0078d4';
+                    const progressColor = isEdited ? '#81c784' : '#55aaff';
+
                     editorState.wavesurfer = WaveSurfer.create({
                         container: '#waveform',
-                        waveColor: '#0078d4',
-                        progressColor: '#55aaff',
+                        waveColor: waveColor,
+                        progressColor: progressColor,
                         cursorColor: '#ffffff',
                         height: 150,
                         barWidth: 2,
@@ -1434,6 +1468,13 @@
                 // Init Web Audio Graph ONCE when ready
                 editorState.wavesurfer.on('ready', initWebAudioGraph);
             }
+
+            // Apply color based on current status (Green if edited, Blue if original)
+            const isEdited = res.status === 'edited';
+            editorState.wavesurfer.setOptions({
+                waveColor: isEdited ? '#4caf50' : '#0078d4',
+                progressColor: isEdited ? '#81c784' : '#55aaff'
+            });
 
             // Load Blob
             const url = URL.createObjectURL(res.blob);
@@ -1917,7 +1958,16 @@
                 renderTable();
 
                 showToast("音频已保存!", "success");
-                closeEditor();
+
+                // Visual Feedback: Change waveform color to Green (Edited)
+                if (editorState.wavesurfer) {
+                    editorState.wavesurfer.setOptions({
+                        waveColor: '#4caf50', // Green
+                        progressColor: '#81c784'
+                    });
+                }
+                // Do NOT close editor
+                // closeEditor();
 
             } catch (e) {
                 console.error(e);
