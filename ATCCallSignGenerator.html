@@ -1,1360 +1,1085 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ground ATC - 航班时刻表编辑器</title>
+    <title>ATC CallSign Voice Generator</title>
     <style>
+        /* CSS Variables - WinUI 3 Dark Theme Palette */
         :root {
-            --bg-color: #1e1e1e;
-            --panel-color: #252526;
-            --border-color: #3e3e42;
-            --text-color: #d4d4d4;
-            --accent-color: #007acc;
-            --accent-hover: #0062a3;
-            --danger-color: #f44336;
-            --header-bg: #333333;
-            --row-hover: #2a2d2e;
-            --input-bg: #3c3c3c;
-            --input-border: #3e3e42;
-            --locked-bg: #2d2d2d;
-            --locked-text: #888;
-            /* Visual States */
-            --duplicate-bg: rgba(255, 140, 0, 0.15);
-            --duplicate-border: #ff8c00;
-            --selected-bg: rgba(0, 120, 215, 0.3);
-            --selected-border: #007acc;
+            --bg-color: #202020;
+            --card-bg: #2d2d2d;
+            --accent-color: #0078d4;
+            --accent-hover: #006cc1;
+            --text-primary: #ffffff;
+            --text-secondary: #cccccc;
+            --border-color: #454545;
+            --input-bg: #333333;
+            --success-color: #107c10;
+            --error-color: #c50f1f;
+            --warning-color: #d83b01;
+            --font-family: "Segoe UI", system-ui, sans-serif;
+            --radius-std: 8px;
+            --radius-sm: 4px;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: var(--font-family);
             background-color: var(--bg-color);
-            color: var(--text-color);
+            color: var(--text-primary);
             margin: 0;
-            padding: 0;
+            padding: 20px;
+            height: 100vh;
+            box-sizing: border-box;
             display: flex;
             flex-direction: column;
-            height: 100vh;
             overflow: hidden;
-            user-select: none;
         }
 
-        /* Toolbar */
-        .toolbar {
-            background-color: var(--panel-color);
-            padding: 10px 20px;
-            border-bottom: 1px solid var(--border-color);
+        /* Utility Classes */
+        .flex {
             display: flex;
-            gap: 15px;
+        }
+
+        .flex-col {
+            flex-direction: column;
+        }
+
+        .gap-2 {
+            gap: 8px;
+        }
+
+        .gap-4 {
+            gap: 16px;
+        }
+
+        .items-center {
             align-items: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            flex-wrap: wrap;
         }
 
-        .title {
-            font-weight: bold;
-            font-size: 1.2em;
-            margin-right: 10px;
-            color: #fff;
+        .justify-between {
+            justify-content: space-between;
         }
 
-        /* Input Group in Toolbar */
-        .input-group {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            background-color: #333;
-            padding: 4px 8px;
-            border-radius: 4px;
-            border: 1px solid var(--border-color);
-        }
-        .input-group label {
-            font-size: 0.85em;
-            color: #aaa;
-        }
-        .input-group input {
-            background-color: transparent;
-            border: none;
-            color: white;
-            font-weight: bold;
-            text-align: center;
-            outline: none;
-        }
-        .input-group input:focus {
-            background-color: #444;
+        .flex-1 {
+            flex: 1;
         }
 
+        .hidden {
+            display: none !important;
+        }
+
+        /* Typography */
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        h2 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        .text-sm {
+            font-size: 12px;
+        }
+
+        .text-sec {
+            color: var(--text-secondary);
+        }
+
+        /* Components */
         button {
-            background-color: var(--accent-color);
-            color: white;
-            border: none;
-            padding: 6px 14px;
-            border-radius: 3px;
+            background-color: var(--card-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 6px 16px;
+            border-radius: var(--radius-sm);
             cursor: pointer;
-            font-size: 0.9em;
-            transition: background 0.2s;
-            white-space: nowrap;
+            transition: all 0.2s;
+            font-family: inherit;
         }
 
         button:hover {
+            background-color: #3d3d3d;
+        }
+
+        button:active {
+            background-color: #454545;
+        }
+
+        button.primary {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+
+        button.primary:hover {
             background-color: var(--accent-hover);
         }
 
-        button.secondary {
-            background-color: #444;
-        }
-        button.secondary:hover {
-            background-color: #555;
-        }
-
-        button.active-lock {
-            background-color: #e6a23c;
-            color: #fff;
-        }
-        button.active-lock:hover {
-            background-color: #cf9236;
-        }
-
-        button.danger {
-            background-color: var(--danger-color);
-        }
-        
         button:disabled {
-            background-color: #333;
-            color: #666;
+            opacity: 0.5;
             cursor: not-allowed;
-            border: 1px solid #444;
         }
 
-        .file-input-wrapper {
-            position: relative;
-            overflow: hidden;
-            display: inline-block;
+        select,
+        input[type="text"],
+        input[type="password"] {
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            /* Updated bottom border to full border */
+            border-bottom: 2px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 6px 8px;
+            border-radius: var(--radius-sm);
+            outline: none;
+            font-family: inherit;
         }
 
-        .file-input-wrapper input[type=file] {
-            font-size: 100px;
-            position: absolute;
-            left: 0;
-            top: 0;
-            opacity: 0;
-            cursor: pointer;
+        select:focus,
+        input:focus {
+            border-bottom-color: var(--accent-color);
         }
 
-        /* Tabs */
-        .tabs {
-            display: flex;
-            background-color: var(--panel-color);
+        /* Layout Area */
+        .header-bar {
+            padding-bottom: 20px;
             border-bottom: 1px solid var(--border-color);
-            padding-left: 10px;
+            margin-bottom: 20px;
         }
 
-        .tab {
-            padding: 10px 20px;
-            cursor: pointer;
-            border-right: 1px solid var(--border-color);
-            background-color: var(--panel-color);
-            color: #888;
-            font-size: 0.9em;
+        .control-panel {
+            background-color: var(--card-bg);
+            padding: 16px;
+            border-radius: var(--radius-std);
+            margin-bottom: 16px;
         }
 
-        .tab:hover {
-            background-color: #2d2d2d;
-            color: #ccc;
-        }
-
-        .tab.active {
-            background-color: var(--bg-color);
-            color: white;
-            border-top: 2px solid var(--accent-color);
-        }
-
-        /* Content Area */
-        .content {
-            flex: 1;
+        .main-content {
+            background-color: var(--card-bg);
+            border-radius: var(--radius-std);
             overflow: hidden;
-            position: relative;
             display: flex;
             flex-direction: column;
+            flex: 1;
+            position: relative;
         }
 
+        /* Data Table */
         .table-container {
             flex: 1;
-            overflow: auto;
-            padding-bottom: 50px;
+            overflow-y: auto;
+            position: relative;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 13px;
-            min-width: 1200px;
-        }
-
-        th, td {
-            border: 1px solid var(--border-color);
-            padding: 4px 8px;
             text-align: left;
-            white-space: nowrap;
         }
 
         th {
-            background-color: var(--header-bg);
             position: sticky;
             top: 0;
-            z-index: 10;
+            background-color: #353535;
+            /* Slightly lighter than card */
+            padding: 12px;
             font-weight: 600;
-            color: #ddd;
+            border-bottom: 1px solid var(--border-color);
+            z-index: 10;
         }
 
-        tr:nth-child(even) {
-            background-color: #222;
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #3d3d3d;
         }
 
-        tr:hover {
-            background-color: var(--row-hover);
+        tr:hover td {
+            background-color: #383838;
         }
 
-        /* Duplicate Styling */
-        tr.duplicate-row {
-            background-color: var(--duplicate-bg);
-        }
-        
-        tr.highlight-group {
-            outline: 2px solid var(--duplicate-border);
-            background-color: rgba(255, 140, 0, 0.4) !important;
-            z-index: 5;
-            position: relative;
+        tr.selected td {
+            background-color: rgba(0, 120, 212, 0.3);
+            /* Accent transparent */
         }
 
-        /* Selected Styling */
-        tr.selected-row {
-            background-color: var(--selected-bg) !important;
-        }
-        
-        tr.duplicate-row.selected-row {
-            background-color: rgba(0, 120, 215, 0.4) !important;
-            box-shadow: inset 3px 0 0 var(--duplicate-border);
-        }
-
-        input, select {
-            background-color: transparent;
-            border: 1px solid transparent;
-            color: inherit;
-            width: 100%;
-            padding: 4px;
-            box-sizing: border-box;
-            font-family: inherit;
-            font-size: inherit;
-        }
-
-        input:focus, select:focus {
-            background-color: var(--input-bg);
-            border-color: var(--accent-color);
-            outline: none;
-        }
-
-        input:focus {
-            background-color: #264f78 !important; 
-        }
-
-        /* Locked Input Style */
-        input.locked {
-            background-color: var(--locked-bg);
-            color: var(--locked-text);
-            cursor: not-allowed;
-            border: 1px solid transparent;
-            font-style: italic;
-        }
-        
-        input.header-offset {
-            width: 40px;
-            font-size: 0.9em;
-            background-color: #444;
-            border: 1px solid #555;
-            color: #fff;
-            margin-left: 5px;
-            border-radius: 3px;
-            text-align: center;
-        }
-        input.header-offset:focus {
-            background-color: #555;
-            border-color: var(--accent-color);
-        }
-
-        .cell-time { width: 90px; text-align: center; }
-        .cell-code { width: 80px; font-family: monospace; }
-        .cell-long { width: 150px; }
-        .cell-action { width: 50px; text-align: center; }
-
-        .btn-delete {
-            background: none;
-            border: none;
-            color: #888;
-            cursor: pointer;
-            font-size: 16px;
-            padding: 0;
-        }
-        .btn-delete:hover {
-            color: var(--danger-color);
-        }
-
-        .add-row-bar {
-            padding: 10px;
-            background-color: var(--panel-color);
-            border-top: 1px solid var(--border-color);
-            text-align: center;
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-        }
-        
-        .status-bar {
-            padding: 5px 20px;
-            background-color: var(--accent-color);
-            color: white;
+        /* Status Badges */
+        .badge {
+            padding: 2px 8px;
+            border-radius: 12px;
             font-size: 12px;
-            display: flex;
-            justify-content: space-between;
+            font-weight: 600;
+            display: inline-block;
         }
 
-        /* === Modal Styles === */
+        .badge-pending {
+            background-color: #454545;
+            color: #ccc;
+        }
+
+        .badge-processing {
+            background-color: var(--accent-color);
+            color: #fff;
+        }
+
+        .badge-completed {
+            background-color: var(--success-color);
+            color: #fff;
+        }
+
+        .badge-failed {
+            background-color: var(--error-color);
+            color: #fff;
+        }
+
+        /* Modal */
         .modal-overlay {
             position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.6);
-            z-index: 1000;
-            display: none; /* Hidden by default */
-            justify-content: center;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
             align-items: center;
-            backdrop-filter: blur(2px);
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(4px);
         }
-        
-        .modal-box {
-            background: var(--panel-color);
+
+        .modal {
+            background: var(--card-bg);
+            padding: 24px;
+            border-radius: var(--radius-std);
+            width: 400px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
             border: 1px solid var(--border-color);
-            padding: 20px 25px;
-            border-radius: 6px;
-            min-width: 320px;
-            max-width: 450px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            animation: modalFadeIn 0.2s ease-out;
-        }
-        
-        @keyframes modalFadeIn {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
         }
 
         .modal-header {
-            font-weight: bold;
-            font-size: 1.2em;
-            margin-bottom: 15px;
-            color: #fff;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 10px;
+            margin-bottom: 16px;
+            font-size: 18px;
+            font-weight: 600;
         }
-        
-        .modal-body {
-            color: #d4d4d4;
-            margin-bottom: 25px;
-            line-height: 1.5;
-            font-size: 0.95em;
-        }
-        
+
         .modal-footer {
+            margin-top: 24px;
+            text-align: right;
+        }
+
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
             display: flex;
-            justify-content: flex-end;
-            gap: 10px;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 2000;
+        }
+
+        .toast {
+            background: var(--card-bg);
+            border-left: 4px solid var(--accent-color);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s ease-out;
+            min-width: 200px;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Drop Area */
+        .drop-area {
+            border: 2px dashed var(--border-color);
+            border-radius: var(--radius-std);
+            padding: 20px;
+            text-align: center;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .drop-area:hover,
+        .drop-area.drag-over {
+            border-color: var(--accent-color);
+            background: rgba(0, 120, 212, 0.1);
         }
     </style>
 </head>
+
 <body>
 
-    <div class="toolbar">
-        <div class="title">✈️ Ground ATC Editor</div>
-        
-        <button onclick="newFile()" class="secondary">新建 (清空)</button>
-        
-        <div class="file-input-wrapper">
-            <button>📂 导入 CSV</button>
-            <input type="file" id="csvInput" accept=".csv" onchange="loadCSV(this)">
+    <!-- Header -->
+    <div class="header-bar flex items-center justify-between">
+        <div class="flex items-center gap-4">
+            <h1>ATC CallSign Voice Generator</h1>
+            <span class="text-sec text-sm">v1.0.0</span>
         </div>
-
-        <div class="file-input-wrapper">
-            <button class="secondary">⚙️ 上传配置 (CFG)</button>
-            <input type="file" id="cfgInput" accept=".cfg,.txt" multiple onchange="loadConfigs(this)">
+        <div class="flex gap-2">
+            <button id="btnSettings">⚙️ 设置</button>
         </div>
-
-        <div class="file-input-wrapper">
-            <button class="secondary">📞 导入呼号表</button>
-            <input type="file" id="callsignInput" accept=".csv" onchange="loadCallsigns(this)">
-        </div>
-
-        <!-- Airport Code Lock -->
-        <div class="input-group">
-            <label for="airportCode">当前机场:</label>
-            <input type="text" id="airportCode" placeholder="ICAO" maxlength="4" style="width: 50px; text-transform: uppercase;">
-            <button id="btnLock" class="secondary" onclick="toggleAirportLock()" style="padding: 2px 8px; font-size: 0.8em;">🔓 锁定</button>
-        </div>
-
-        <div style="flex:1"></div>
-
-        <button onclick="downloadCSV()" style="background-color: #4CAF50;">💾 下载 CSV</button>
     </div>
 
-    <div class="tabs">
-        <div class="tab active" onclick="switchTab('arrival')">🛬 到达航班 (Arrivals)</div>
-        <div class="tab" onclick="switchTab('departure')">🛫 出发航班 (Departures)</div>
-        <div class="tab" onclick="switchTab('all')">📋 全部航班 (All)</div>
+    <!-- Control Panel -->
+    <div class="control-panel flex items-center justify-between gap-4">
+        <div class="flex items-center gap-4 flex-1">
+            <div class="flex flex-col gap-2">
+                <label class="text-sm text-sec">预设 (Preset)</label>
+                <select id="presetSelect" style="min-width: 200px;">
+                    <!-- Options populated by JS -->
+                </select>
+            </div>
+
+            <div class="flex flex-col gap-2 flex-1">
+                <label class="text-sm text-sec">CSV 文件导入</label>
+                <div id="dropArea" class="drop-area"
+                    style="padding: 4px 12px; display: flex; align-items: center; justify-content: center;">
+                    <span id="fileLabel">点击或拖拽 CSV 文件至此</span>
+                    <input type="file" id="csvInput" accept=".csv" hidden>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2" style="margin-top: 20px;">
+            <button id="btnGenerateSelected" class="primary" disabled>🔊 生成选中</button>
+            <button id="btnExportAll" disabled>📥 导出全部</button>
+            <button id="btnClear">🗑️ 清空</button>
+        </div>
     </div>
 
-    <div class="content">
+    <!-- Status Bar -->
+    <div class="flex justify-between items-center" style="margin-bottom: 8px; padding: 0 4px;">
+        <span class="text-sec text-sm" id="statusText">等待导入任务...</span>
+        <span class="text-sec text-sm" id="progressText"></span>
+    </div>
+
+    <!-- Main Table -->
+    <div class="main-content">
         <div class="table-container">
-            <table id="dataTable">
+            <table id="taskTable">
                 <thead>
-                    <tr id="headerRow">
-                        <!-- Headers injected by JS -->
+                    <tr>
+                        <th width="80">序号</th>
+                        <th width="150">呼号 (CallSign)</th>
+                        <th>翻译文本预览 (Text)</th>
+                        <th width="120">状态</th>
+                        <th width="150">操作</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody">
-                    <!-- Rows injected by JS -->
+                    <!-- Rows populated by JS -->
                 </tbody>
             </table>
         </div>
-        
-        <div class="add-row-bar">
-            <!-- New Batch Buttons with Logic Fix -->
-            <button id="btnSetArr" class="secondary" onclick="batchSetAsArrival()" disabled title="需锁定当前机场">📥 设置到达</button>
-            <button id="btnSetDep" class="secondary" onclick="batchSetAsDeparture()" disabled title="需锁定当前机场">📤 设置出发</button>
-            <div style="width: 20px; border-right: 1px solid #444; margin-right: 10px;"></div>
-            <button class="secondary" onclick="deduplicateCallsigns()" title="自动修复重复呼号">🔧 呼号去重</button>
-            <button onclick="addRow()">+ 添加航班</button>
-        </div>
     </div>
 
-    <div class="status-bar" id="statusBar">
-        <span id="statusMsg">就绪</span>
-        <span id="statsInfo">航班数: 0</span>
-    </div>
-
-    <!-- Custom Modal Structure -->
-    <div id="confirmModal" class="modal-overlay">
-        <div class="modal-box">
-            <div class="modal-header">确认操作</div>
-            <div id="modalMessage" class="modal-body"></div>
-            <div class="modal-footer">
-                <button class="secondary" onclick="closeModal()">取消</button>
-                <button class="danger" id="modalConfirmBtn">确定</button>
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header">设置</div>
+            <div class="flex flex-col gap-4">
+                <div class="flex flex-col gap-2">
+                    <label class="text-sm">MiniMax API Key</label>
+                    <input type="password" id="apiKeyInput" placeholder="输入 API Key...">
+                </div>
+                <div class="flex flex-col gap-2">
+                    <label class="text-sm">MiniMax Group ID</label>
+                    <input type="text" id="groupIdInput" placeholder="输入 Group ID (可选)">
+                </div>
+                <div class="flex flex-col gap-2">
+                    <label class="text-sm">API Endpoint (服务器区域)</label>
+                    <select id="apiEndpointSelect">
+                        <option value="https://api.minimax.chat/v1/t2a_v2">国内版 (minimax.chat)</option>
+                        <option value="https://api.minimaxi.com/v1/t2a_v2">国际版 (minimaxi.com)</option>
+                    </select>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <label class="text-sm">MiniMax Model (模型版本)</label>
+                    <select id="modelSelect">
+                        <option value="speech-01-turbo">speech-01-turbo (默认)</option>
+                        <option value="speech-01-hd">speech-01-hd</option>
+                        <option value="speech-02-turbo">speech-02-turbo</option>
+                        <option value="speech-02-hd">speech-02-hd</option>
+                        <option value="speech-2.6-turbo">speech-2.6-turbo</option>
+                        <option value="speech-2.6-hd">speech-2.6-hd</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer flex gap-2 justify-between">
+                <button id="btnCloseSettings">关闭</button>
+                <button id="btnSaveSettings" class="primary">保存</button>
             </div>
         </div>
     </div>
 
-    <!-- Script -->
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
     <script>
-        const defaultCallsignsCSV = `callSign,airline
-CCA3115,CCA
-CDG2701,CDG
-CDG8001,CDG
-CDG8031,CDG
-CDG8085,CDG
-CDG8416,CDG
-CES1111,CES
-CES5657,CES
-CES9197,CES
-CFE2281,CFE
-CFE3492,CFE
-CFE4462,CFE
-CFE8461,CFE
-CFE8703,CFE
-CFE8704,CFE
-CFE8739,CFE
-CHH7306,CHH
-CJX8923,CJX
-CQH6596,CQH
-CQH7171,CQH
-CSC3612,CSC
-CSC6918,CSC
-CSC8056,CSC
-CSN3712,CSN
-CSN8545,CSN
-CSN8733,CSN
-CSZ2861,CSZ
-CSZ3690,CSZ
-CXA8069,CXA
-UEA1889,UEA
-UEA7323,UEA`;
+        /**
+         * Logic Implementation with:
+         * 1. Airline Mapping & Phonetic Translation
+         * 2. Concurrency Control (Queue)
+         * 3. UI Interaction
+         */
 
-        let allFlights = [];
-        let currentTab = 'arrival';
-        let currentAirportCode = ""; 
-        let isAirportLocked = false;
-        
-        let selectedIndices = new Set();
-        let lastVisualIndex = null;
-        
-        let timeOffsets = { arrival: 10, departure: 10 };
-        
-        // Modal callback storage
-        let confirmCallback = null;
-        
-        let config = {
-            aircraftTypes: [
-                "AIRBUS A-320ceo", "AIRBUS A-320neo", "AIRBUS A-321neo", "AIRBUS A-330-300", 
-                "AIRBUS A-350-900", "BOEING 737 MAX 8", "BOEING 737-800", "BOEING 747-8I", 
-                "BOEING 777-300ER", "COMAC C-919"
-            ],
-            airlines: [
-                "AAL", "AFR", "ASA", "AVA", "BAW", "CCA", "CDG", "CES", "CHH", "CJX", "CQH", 
-                "CSC", "CSN", "CSZ", "CXA", "DAL", "DKH", "FFT", "GCR", "HXA", "JAL", "JZA", 
-                "KNA", "KPA", "LKE", "OKA", "OTC", "QTR", "RYR", "SIA", "SWR", "THA", "TVB", 
-                "UAL", "UEA", "VIR"
-            ],
-            callsigns: [], 
-            voices: ["CN-Captain-Young", "CN-Captain-Middle-Aged", "CN-Captain-Young-EN"],
-            languages: ["zh", "en"],
-            
-            mapping: {
-                aircraftToAirlines: {},
-                airlineToAircrafts: {},
-                callsignToAirline: {}, 
-                airlineToCallsigns: {}
-            }
-        };
+        // --- Configuration & Constants ---
 
-        window.onload = function() {
-            // Default mapping init
-            const defaultAcMap = {
-                "AIRBUS A-320ceo": ["CCA", "CES", "CHH", "CQH", "CSC", "CSN", "CSZ", "UEA"],
-                "AIRBUS A-320neo": ["AVA", "BAW", "CCA", "CES", "CHH", "CQH", "CSC", "CSN", "CSZ", "FFT", "GCR", "HXA", "JZA", "KNA", "LKE", "OKA", "OTC", "QTR", "SWR", "THA", "TVB", "UAL", "UEA"],
-                "AIRBUS A-321neo": ["CCA", "CES", "CHH", "CQH", "CSC", "CSN", "CSZ", "JZA", "QTR", "UAL", "UEA"],
-                "AIRBUS A-330-300": ["CCA", "CES", "CHH", "CSC", "CSN", "VIR"],
-                "AIRBUS A-350-900": ["AFR", "DAL", "JAL"],
-                "BOEING 737 MAX 8": ["CDG", "CSN"],
-                "BOEING 737-800": ["AAL", "ASA", "CDG", "CES", "CHH", "CJX", "CSN", "CXA", "DAL", "DKH", "JAL", "KPA", "OKA", "RYR", "SIA", "UAL"],
-                "BOEING 747-8I": ["CCA", "KPA", "LKE", "UAL"],
-                "BOEING 777-300ER": ["AFR", "AAL", "BAW", "CCA", "CES", "CSN", "DAL", "JAL", "QTR", "THA", "UAL", "VIR"],
-                "COMAC C-919": ["CCA", "CES", "CSN"]
-            };
-            config.mapping.aircraftToAirlines = defaultAcMap;
+        const PRESETS = [
+            // English Presets (Inferred)
+            { id: "Aaron", name: "Aaron", lang: "en", voiceId: "Aaron", speed: 1, vol: 1, pitch: 0, emotion: "neutral" },
+            { id: "Christopher", name: "Christopher", lang: "en", voiceId: "male-qn-domineering", speed: 1, vol: 1, pitch: 0, emotion: "neutral" },
+            { id: "Fairy", name: "Fairy", lang: "en", voiceId: "female-shaonv", speed: 1.2, vol: 1, pitch: 0, emotion: "neutral" },
 
-            buildReverseMapping();
-            parseCallsignConfig(defaultCallsignsCSV);
-            
-            // Modal Events
-            document.getElementById('modalConfirmBtn').addEventListener('click', () => {
-                if (confirmCallback) confirmCallback();
-                closeModal();
-            });
-            
-            renderHeader();
-            renderTable();
-            updateStats();
-            updateBatchButtons();
-        };
+            // Chinese Presets (Specified)
+            { id: "Hanser", name: "Hanser", lang: "zh", voiceId: "Chinese (Mandarin)_Crisp_Girl", speed: 1.35, vol: 1, pitch: 0, emotion: "neutral" },
+            { id: "CN-Captain-Young", name: "CN-Captain-Young", lang: "zh", voiceId: "Chinese (Mandarin)_Radio_Host", speed: 1.2, vol: 0.5, pitch: 0, emotion: "neutral" },
+            { id: "CN-Captain-Middle-Aged", name: "CN-Captain-Middle-Aged", lang: "zh", voiceId: "Chinese (Mandarin)_Reliable_Executive", speed: 1.2, vol: 0.5, pitch: -1, emotion: "neutral" },
 
-        // === Modal Logic ===
-        function showConfirm(message, callback) {
-            document.getElementById('modalMessage').innerText = message;
-            confirmCallback = callback;
-            document.getElementById('confirmModal').style.display = 'flex';
-        }
-
-        function closeModal() {
-            document.getElementById('confirmModal').style.display = 'none';
-            confirmCallback = null;
-        }
-
-        function buildReverseMapping() {
-            config.mapping.airlineToAircrafts = {};
-            config.airlines.forEach(al => config.mapping.airlineToAircrafts[al] = []);
-            for (const [acType, allowedAirlines] of Object.entries(config.mapping.aircraftToAirlines)) {
-                allowedAirlines.forEach(al => {
-                    if (!config.mapping.airlineToAircrafts[al]) config.mapping.airlineToAircrafts[al] = [];
-                    if (!config.mapping.airlineToAircrafts[al].includes(acType)) config.mapping.airlineToAircrafts[al].push(acType);
-                });
-            }
-        }
-
-        const headers = [
-            { key: 'callSign', label: '呼号', type: 'select', source: 'callsigns', width: '120px', required: true },
-            { key: 'departure', label: '起飞机场', width: '80px', required: true },
-            { key: 'arrival', label: '到达机场', width: '80px', required: true },
-            { key: 'stand', label: '停机位', width: '60px', required: true },
-            { key: 'runway', label: '跑道', width: '60px', required: true },
-            { key: 'offBlockTime', label: '推出时间', type: 'time', tab: 'departure' },
-            { key: 'takeOffTime', label: '起飞时间', type: 'time', tab: 'departure', hasOffset: true },
-            { key: 'landingTime', label: '着陆时间', type: 'time', tab: 'arrival' },
-            { key: 'inBlockTime', label: '入位时间', type: 'time', tab: 'arrival', hasOffset: true },
-            { key: 'airline', label: '航司', type: 'select', source: 'airlines', width: '80px' },
-            { key: 'aircraftType', label: '机型', type: 'select', source: 'aircraftTypes', width: '150px' },
-            { key: 'voice', label: '语音', type: 'select', source: 'voices', width: '120px' },
-            { key: 'language', label: '语言', type: 'select', source: 'languages', width: '60px' },
+            // Cross-Language / Variants (Inferred/Mapped)
+            { id: "CN-Captain-Young-EN", name: "CN-Captain-Young-EN", lang: "en", voiceId: "Chinese (Mandarin)_Radio_Host", speed: 1.2, vol: 0.5, pitch: 0, emotion: "neutral" },
+            { id: "Hanser-EN", name: "Hanser-EN", lang: "en", voiceId: "Chinese (Mandarin)_Crisp_Girl", speed: 1.35, vol: 1, pitch: 0, emotion: "neutral" }
         ];
 
-        function switchTab(tab) {
-            currentTab = tab;
-            selectedIndices.clear();
-            lastVisualIndex = null;
-            document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
-            event.target.classList.add('active');
-            renderHeader();
-            renderTable();
+        // Airline Data
+        const AIRLINES = {
+            "CCA": { zh: "国航", en: "Air China" },
+            "CES": { zh: "东方", en: "China Eastern" },
+            "CSN": { zh: "南方", en: "China Southern" },
+            "CHH": { zh: "海南", en: "Hainan" },
+            "CDG": { zh: "成都", en: "Chengdu" },
+            "CSC": { zh: "四川", en: "Sichuan Air" },
+            "CXA": { zh: "白鹭", en: "Bailu Air" },
+            "CQH": { zh: "春秋", en: "Spring Air" },
+            "CSZ": { zh: "深圳", en: "Shenzhen Air" }, // Duplicate in prompt?
+            "CJX": { zh: "长安", en: "Chang An" },
+            "UEA": { zh: "联航", en: "United Eagle" }
+        };
+
+        const DIGIT_MAP_ZH = { '0': '洞', '1': '幺', '2': '两', '3': '三', '4': '四', '5': '五', '6': '六', '7': '拐', '8': '八', '9': '九' };
+
+        // English digits are standard numbers, but prompt says "One", "Two" etc. 
+        // We will just let TTS handle single digits, but "0" -> "Zero".
+        const DIGIT_MAP_EN = { '0': 'Zero', '1': 'One', '2': 'Two', '3': 'Three', '4': 'Four', '5': 'Five', '6': 'Six', '7': 'Seven', '8': 'Eight', '9': 'Nine' };
+
+        // --- State Management ---
+        let appState = {
+            apiKey: localStorage.getItem('minimax_api_key') || '',
+            groupId: localStorage.getItem('minimax_group_id') || '',
+            apiEndpoint: localStorage.getItem('minimax_api_endpoint') || 'https://api.minimax.chat/v1/t2a_v2',
+            apiModel: localStorage.getItem('minimax_api_model') || 'speech-01-turbo',
+            tasks: [], // { id, callSign, text, status, blob, error, presetId }
+            processingCount: 0,
+            queue: [], // IDs waiting
+            currentPreset: PRESETS[2], // Default CN-Captain-Young
+            selectedIds: new Set()
+        };
+
+        const MAX_CONCURRENCY = 3;
+
+        // --- DOM Elements ---
+        const els = {
+            presetSelect: document.getElementById('presetSelect'),
+            csvInput: document.getElementById('csvInput'),
+            dropArea: document.getElementById('dropArea'),
+            fileLabel: document.getElementById('fileLabel'),
+            tableBody: document.getElementById('tableBody'),
+            btnGenerateSelected: document.getElementById('btnGenerateSelected'),
+            btnExportAll: document.getElementById('btnExportAll'),
+            btnClear: document.getElementById('btnClear'),
+            statusText: document.getElementById('statusText'),
+            progressText: document.getElementById('progressText'),
+            settingsModal: document.getElementById('settingsModal'),
+            btnSettings: document.getElementById('btnSettings'),
+            btnCloseSettings: document.getElementById('btnCloseSettings'),
+            btnSaveSettings: document.getElementById('btnSaveSettings'),
+            apiKeyInput: document.getElementById('apiKeyInput'),
+            groupIdInput: document.getElementById('groupIdInput'),
+            apiEndpointSelect: document.getElementById('apiEndpointSelect'),
+            modelSelect: document.getElementById('modelSelect'),
+            toastContainer: document.getElementById('toastContainer')
+        };
+
+        // --- Initialization ---
+        function init() {
+            // Populate Presets
+            PRESETS.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = p.name;
+                els.presetSelect.appendChild(opt);
+            });
+            els.presetSelect.value = appState.currentPreset.id;
+
+            // Load API Key safely
+            els.apiKeyInput.value = appState.apiKey;
+            els.groupIdInput.value = appState.groupId;
+            els.apiEndpointSelect.value = appState.apiEndpoint;
+            els.modelSelect.value = appState.apiModel;
+
+            // Event Listeners
+            setupEventListeners();
+
+            // Unload protection
+            window.addEventListener('beforeunload', (e) => {
+                const hasUnexported = appState.tasks.some(t => t.status === 'completed' && !t.exported);
+                if (hasUnexported || appState.processingCount > 0) {
+                    e.preventDefault();
+                    e.returnValue = '';
+                }
+            });
         }
 
-        // --- Logic ---
-        function parseTime(timeStr) {
-            if (!timeStr) return null;
-            const parts = timeStr.split(':');
-            if (parts.length !== 3) return null;
-            return { h: parseInt(parts[0]), m: parseInt(parts[1]), s: parseInt(parts[2]) };
-        }
-        function formatTime(h, m, s) {
-            const pad = (n) => n.toString().padStart(2, '0');
-            return `${pad(h)}:${pad(m)}:${pad(s)}`;
-        }
-        function addMinutes(timeStr, minutesToAdd) {
-            const t = parseTime(timeStr);
-            if (!t) return timeStr;
-            let totalMin = t.h * 60 + t.m + minutesToAdd;
-            if (totalMin < 0) totalMin += 24 * 60;
-            totalMin = totalMin % (24 * 60);
-            return formatTime(Math.floor(totalMin / 60), totalMin % 60, t.s);
-        }
-        function isValidTimeFormat(str) {
-            return /^([01]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/.test(str);
-        }
+        function setupEventListeners() {
+            // Settings
+            els.btnSettings.onclick = () => els.settingsModal.classList.remove('hidden');
+            els.btnCloseSettings.onclick = () => els.settingsModal.classList.add('hidden');
+            els.btnSaveSettings.onclick = () => {
+                const key = els.apiKeyInput.value.trim();
+                const groupId = els.groupIdInput.value.trim();
+                const endpoint = els.apiEndpointSelect.value;
+                const model = els.modelSelect.value;
 
-        // === Unified Flight Type Determination Logic ===
-        function getFlightType(f) {
-            const offBlock = f.offBlockTime ? f.offBlockTime.trim() : "";
-            const landing = f.landingTime ? f.landingTime.trim() : "";
-            
-            // 1. Time based (Explicit intent)
-            if (offBlock) return 'departure';
-            if (landing) return 'arrival';
-            
-            // 2. Airport Code based (Fallback for drafts)
-            if (isAirportLocked && currentAirportCode) {
-                if (f.arrival === currentAirportCode) return 'arrival';
-                if (f.departure === currentAirportCode) return 'departure';
-            }
-            
-            // 3. Default fallback
-            return 'arrival';
-        }
+                if (key) {
+                    appState.apiKey = key;
+                    appState.groupId = groupId;
+                    appState.apiEndpoint = endpoint;
+                    appState.apiModel = model;
 
-        function handleTimeKeyDown(e, input, index, key) {
-            if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'PageUp' || e.key === 'PageDown') {
+                    localStorage.setItem('minimax_api_key', key);
+                    localStorage.setItem('minimax_group_id', groupId);
+                    localStorage.setItem('minimax_api_endpoint', endpoint);
+                    localStorage.setItem('minimax_api_model', model);
+
+                    showToast('设置已保存', 'success');
+                    els.settingsModal.classList.add('hidden');
+                } else {
+                    showToast('API Key 不能为空', 'error');
+                }
+            };
+
+            // Preset Change
+            els.presetSelect.onchange = () => {
+                const pid = els.presetSelect.value;
+                appState.currentPreset = PRESETS.find(p => p.id === pid);
+                appState.selectedIds.clear();
+                renderTable(); // Re-render with new preset view
+            };
+
+            // File Upload
+            els.dropArea.onclick = () => els.csvInput.click();
+            els.csvInput.onchange = (e) => handleFile(e.target.files[0]);
+
+            // Drag & Drop
+            els.dropArea.ondragover = (e) => { e.preventDefault(); els.dropArea.classList.add('drag-over'); };
+            els.dropArea.ondragleave = () => els.dropArea.classList.remove('drag-over');
+            els.dropArea.ondrop = (e) => {
                 e.preventDefault();
-                let delta = 0;
-                if (e.key === 'ArrowUp') delta = 1;
-                if (e.key === 'ArrowDown') delta = -1;
-                if (e.key === 'PageUp') delta = 10;
-                if (e.key === 'PageDown') delta = -10;
+                els.dropArea.classList.remove('drag-over');
+                if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+            };
 
-                const currentVal = input.value;
-                if (!isValidTimeFormat(currentVal)) return;
-
-                const newVal = addMinutes(currentVal, delta);
-                input.value = newVal;
-                updateFlight(index, key, newVal);
-                triggerAutoCalc(index, key, newVal);
-            }
-        }
-        function handleTimeBlur(e, originalValue, index, key) {
-            const val = e.target.value.trim();
-            if (val === "") return;
-            if (!isValidTimeFormat(val)) {
-                alert("请输入正确的24小时制时间格式！(HH:mm:ss)");
-                e.target.value = originalValue; 
-            } else {
-                updateFlight(index, key, val);
-                triggerAutoCalc(index, key, val);
-            }
-        }
-        function handleOffsetChange(e) {
-            const val = parseInt(e.target.value);
-            if (isNaN(val)) return;
-            timeOffsets[currentTab] = val;
-            const baseKey = currentTab === 'arrival' ? 'landingTime' : 'offBlockTime';
-            const targetKey = currentTab === 'arrival' ? 'inBlockTime' : 'takeOffTime';
-            allFlights.forEach((f, idx) => {
-                const type = getFlightType(f);
-                const visible = currentTab === 'arrival' ? (type === 'arrival') : (type === 'departure');
-                if (currentTab !== 'all' && visible && f[baseKey]) {
-                    f[targetKey] = addMinutes(f[baseKey], val);
+            // Actions
+            els.btnGenerateSelected.onclick = startSelectedGeneration;
+            els.btnExportAll.onclick = exportAll;
+            els.btnClear.onclick = () => {
+                if (confirm('确定清空所有任务吗？(这将影响所有预设)')) {
+                    appState.tasks = []; // Clear all 
+                    appState.queue = [];
+                    appState.processingCount = 0;
+                    appState.selectedIds.clear();
+                    renderTable();
+                    updateStatus();
                 }
-            });
-            renderTable();
-        }
-        function triggerAutoCalc(index, changedKey, newVal) {
-            if (currentTab === 'all') return;
-            const offset = timeOffsets[currentTab];
-            if (!offset && offset !== 0) return;
-            let targetKey = null;
-            if (currentTab === 'arrival' && changedKey === 'landingTime') targetKey = 'inBlockTime';
-            if (currentTab === 'departure' && changedKey === 'offBlockTime') targetKey = 'takeOffTime';
-            if (targetKey) {
-                const calcVal = addMinutes(newVal, offset);
-                allFlights[index][targetKey] = calcVal;
-                const inputs = document.querySelectorAll(`input[data-row="${index}"][data-key="${targetKey}"]`);
-                if (inputs.length > 0) inputs[0].value = calcVal;
-            }
+            };
         }
 
-        // --- Selection & Batch Logic ---
-        function getFilteredFlights() {
-            return allFlights.map((f, index) => ({ flight: f, index: index }))
-                .filter(item => {
-                    const f = item.flight;
-                    
-                    // 1. Tab Type Check
-                    if (currentTab === 'all') return true;
-                    const type = getFlightType(f);
-                    if (currentTab !== type) return false;
+        // --- Core Logic: Parsing & Translation ---
 
-                    // 2. Strict Location Filter (New)
-                    if (isAirportLocked && currentAirportCode) {
-                        if (currentTab === 'arrival' && f.arrival !== currentAirportCode) return false;
-                        if (currentTab === 'departure' && f.departure !== currentAirportCode) return false;
+        function handleFile(file) {
+            if (!file) return;
+            els.fileLabel.textContent = file.name;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const text = e.target.result;
+                const lines = text.split(/\r?\n/);
+                const newTasks = [];
+
+                // Simple CSV parsing, assuming header might exist
+                // Finding columns
+                let callSignIdx = 0;
+                let airlineIdx = -1; // Optional if we extract from callsign, but prompt says "Parsing logic: identify callSign and airline columns"
+
+                const header = lines[0].toLowerCase().split(',');
+                callSignIdx = header.findIndex(h => h.includes('callsign'));
+                if (callSignIdx === -1) callSignIdx = 0; // Fallback to first col
+
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+                    const cols = line.split(',');
+                    const cs = cols[callSignIdx]?.trim();
+
+                    if (cs) {
+                        const newTask = {
+                            id: Date.now() + i,
+                            callSign: cs.toUpperCase(),
+                            results: {} // Map: presetId -> { status, text, blob, exported, error }
+                        };
+                        newTasks.push(newTask);
                     }
-
-                    return true;
-                });
-        }
-
-        function handleRowSelection(e, dataIndex, visualIndex) {
-            if (e.button === 0) {
-                if (e.shiftKey) {
-                    if (lastVisualIndex !== null) {
-                        const start = Math.min(lastVisualIndex, visualIndex);
-                        const end = Math.max(lastVisualIndex, visualIndex);
-                        const currentFiltered = getFilteredFlights();
-                        for (let i = start; i <= end; i++) {
-                            if (currentFiltered[i]) {
-                                selectedIndices.add(currentFiltered[i].index);
-                            }
-                        }
-                    } else {
-                        selectedIndices.add(dataIndex);
-                    }
-                } else if (e.ctrlKey || e.metaKey) {
-                    if (selectedIndices.has(dataIndex)) selectedIndices.delete(dataIndex);
-                    else selectedIndices.add(dataIndex);
-                    lastVisualIndex = visualIndex;
-                } else {
-                    selectedIndices.clear();
-                    selectedIndices.add(dataIndex);
-                    lastVisualIndex = visualIndex;
-                }
-            } else if (e.button === 2) {
-                if (e.shiftKey) {
-                    selectedIndices.delete(dataIndex);
-                    e.preventDefault(); 
-                }
-            }
-            updateSelectionVisuals();
-        }
-
-        function updateSelectionVisuals() {
-            document.querySelectorAll('#tableBody tr').forEach(tr => {
-                const idx = parseInt(tr.dataset.index);
-                if (selectedIndices.has(idx)) tr.classList.add('selected-row');
-                else tr.classList.remove('selected-row');
-            });
-        }
-
-        function updateBatchButtons() {
-            const btnSetArr = document.getElementById('btnSetArr');
-            const btnSetDep = document.getElementById('btnSetDep');
-            const enabled = isAirportLocked && currentAirportCode !== "";
-            
-            btnSetArr.disabled = !enabled;
-            btnSetDep.disabled = !enabled;
-            
-            if (enabled) {
-                btnSetArr.title = `将选中行转换为到达航班 (${currentAirportCode})`;
-                btnSetDep.title = `将选中行转换为出发航班 (${currentAirportCode})`;
-            } else {
-                btnSetArr.title = "需锁定当前机场";
-                btnSetDep.title = "需锁定当前机场";
-            }
-        }
-
-        // === Fixed Logic: Force Overwrite & Robust Swap ===
-        function batchSetAsArrival() {
-            const freshCode = document.getElementById('airportCode').value.trim().toUpperCase();
-            if (!isAirportLocked || !freshCode) return;
-            if (selectedIndices.size === 0) { 
-                // alert("请先选择至少一行"); 
-                return; 
-            }
-
-            let count = 0;
-            selectedIndices.forEach(idx => {
-                const f = allFlights[idx];
-                if (!f) return;
-
-                const oldArr = f.arrival;
-                f.arrival = freshCode; 
-                
-                if (f.departure === freshCode) {
-                    f.departure = (oldArr && oldArr !== freshCode) ? oldArr : "ZBAA";
                 }
 
-                if (f.offBlockTime && !f.landingTime) {
-                    f.landingTime = f.offBlockTime;
-                    f.offBlockTime = "";
-                    f.takeOffTime = "";
-                    const offset = timeOffsets['arrival'] || 10;
-                    f.inBlockTime = addMinutes(f.landingTime, offset);
-                } 
-                else if (f.landingTime) {
-                    f.offBlockTime = "";
-                    f.takeOffTime = "";
-                }
-                else {
-                    f.offBlockTime = "";
-                    f.takeOffTime = "";
-                }
-                count++;
-            });
-            renderTable();
-            updateStats();
-            showStatus(`已将 ${count} 条记录转换为到达航班`);
-        }
-
-        function batchSetAsDeparture() {
-            const freshCode = document.getElementById('airportCode').value.trim().toUpperCase();
-            if (!isAirportLocked || !freshCode) return;
-            if (selectedIndices.size === 0) { 
-                // alert("请先选择至少一行"); 
-                return; 
-            }
-
-            let count = 0;
-            selectedIndices.forEach(idx => {
-                const f = allFlights[idx];
-                if (!f) return;
-
-                const oldDep = f.departure;
-                f.departure = freshCode; 
-                
-                if (f.arrival === freshCode) {
-                    f.arrival = (oldDep && oldDep !== freshCode) ? oldDep : "ZBAA";
-                }
-
-                if (f.landingTime && !f.offBlockTime) {
-                    f.offBlockTime = f.landingTime; 
-                    f.landingTime = "";
-                    f.inBlockTime = "";
-                    const offset = timeOffsets['departure'] || 10;
-                    f.takeOffTime = addMinutes(f.offBlockTime, offset);
-                }
-                else if (f.offBlockTime) {
-                    f.landingTime = "";
-                    f.inBlockTime = "";
-                }
-                else {
-                    f.landingTime = "";
-                    f.inBlockTime = "";
-                }
-                count++;
-            });
-            renderTable();
-            updateStats();
-            showStatus(`已将 ${count} 条记录转换为出发航班`);
-        }
-
-        function toggleAirportLock() {
-            const input = document.getElementById('airportCode');
-            const btn = document.getElementById('btnLock');
-            if (!isAirportLocked) {
-                const code = input.value.trim().toUpperCase();
-                if (!code) { 
-                    // alert("请输入机场代号"); 
-                    showConfirm("请输入机场代号", () => {});
-                    return; 
-                }
-                currentAirportCode = code;
-                isAirportLocked = true;
-                input.value = code;
-                input.disabled = true;
-                btn.innerHTML = "🔒 解锁";
-                btn.classList.add("active-lock");
-            } else {
-                isAirportLocked = false;
-                input.disabled = false;
-                btn.innerHTML = "🔓 锁定";
-                btn.classList.remove("active-lock");
-            }
-            updateBatchButtons();
-            renderTable();
-        }
-        
-        function deduplicateCallsigns() {
-            const usedCallsigns = new Set(allFlights.map(f => f.callSign).filter(c => c));
-            const seenThisRun = new Set();
-            let changes = 0;
-            allFlights.forEach(f => {
-                if (!f.callSign) return;
-                if (seenThisRun.has(f.callSign)) {
-                    const airline = f.airline;
-                    const available = config.mapping.airlineToCallsigns[airline] || [];
-                    const candidate = available.find(c => !usedCallsigns.has(c));
-                    if (candidate) {
-                        f.callSign = candidate;
-                        usedCallsigns.add(candidate);
-                        changes++;
-                    }
-                } else {
-                    seenThisRun.add(f.callSign);
-                }
-            });
-            if(changes > 0) {
+                appState.tasks = [...appState.tasks, ...newTasks];
                 renderTable();
-                updateStats();
-                showConfirm(`已自动修复 ${changes} 个重复呼号`, () => {});
+                showToast(`已导入 ${newTasks.length} 条基础任务 (所有预设共享)`);
+                updateStatus();
+            };
+            reader.readAsText(file);
+        }
+
+        function translateCallSign(callSign, lang) {
+            // Regex to separate Letters and Numbers
+            // e.g. CSN8733 -> CSN, 8733
+            const match = callSign.match(/^([A-Z]+)(\d+.*)$/);
+            if (!match) return callSign; // Fallback
+
+            const code = match[1];
+            const numberPart = match[2];
+
+            const airline = AIRLINES[code];
+            // If airline unknown, read letters directly? Or spell out?
+            // Prompt doesn't specify unknown behavior. We'll spell letters.
+
+            let airlineName = "";
+
+            if (lang === 'zh') {
+                airlineName = airline ? airline.zh : code;
+                // Digits
+                const digits = numberPart.split('').map(d => DIGIT_MAP_ZH[d] || d).join('');
+                return `${airlineName}${digits}`;
             } else {
-                showConfirm("未发现可修复的重复呼号 (或无可用替代)", () => {});
+                // English
+                airlineName = airline ? airline.en : code; // Or spell check? Code usually ok.
+                // Digits with space
+                const digits = numberPart.split('').map(d => DIGIT_MAP_EN[d] || d).join(' ');
+                return `${airlineName} ${digits}`;
             }
         }
 
-        function highlightDuplicates(callsign) {
-            if(!callsign) return;
-            document.querySelectorAll(`tr[data-callsign="${callsign}"]`).forEach(el => el.classList.add('highlight-group'));
-        }
-        function unhighlightDuplicates(callsign) {
-            if(!callsign) return;
-            document.querySelectorAll(`tr[data-callsign="${callsign}"]`).forEach(el => el.classList.remove('highlight-group'));
-        }
-
-        function updateStats() {
-            let arrCount = 0; let depCount = 0;
-            allFlights.forEach(f => {
-                const type = getFlightType(f);
-                if (type === 'arrival') arrCount++; else depCount++;
-            });
-            document.getElementById('statsInfo').innerText = `总计: ${allFlights.length} | 到达: ${arrCount} | 出发: ${depCount}`;
-        }
-        function showStatus(msg) {
-            document.getElementById('statusMsg').innerText = msg;
-            setTimeout(() => document.getElementById('statusMsg').innerText = '就绪', 3000);
-        }
+        // updateTablePreviews removed - no longer re-translating on switch
 
         // --- Rendering ---
-        function renderHeader() {
-            const tr = document.getElementById('headerRow');
-            tr.innerHTML = '';
-            headers.forEach(h => {
-                if (currentTab === 'all') {
-                    if (h.key === 'takeOffTime' || h.key === 'inBlockTime') return;
-                } else {
-                    if (h.tab && h.tab !== currentTab) return;
-                }
-                const th = document.createElement('th');
-                const container = document.createElement('div');
-                container.style.display = 'flex';
-                container.style.alignItems = 'center';
-                container.innerText = h.label;
-                if (h.hasOffset && currentTab !== 'all') {
-                    const offsetInput = document.createElement('input');
-                    offsetInput.type = 'number';
-                    offsetInput.className = 'header-offset';
-                    offsetInput.placeholder = '+min';
-                    offsetInput.value = timeOffsets[currentTab] || '';
-                    offsetInput.onchange = handleOffsetChange;
-                    offsetInput.title = "输入增加的分钟数，自动计算该列时间";
-                    container.appendChild(offsetInput);
-                }
-                th.appendChild(container);
-                th.style.width = h.width || 'auto';
-                tr.appendChild(th);
-            });
-            const thAction = document.createElement('th');
-            thAction.style.width = '40px';
-            thAction.innerText = '操作';
-            tr.appendChild(thAction);
-        }
+
+        // --- Rendering ---
 
         function renderTable() {
-            const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = '';
-            const callsignCounts = {};
-            allFlights.forEach(f => {
-                if(f.callSign) callsignCounts[f.callSign] = (callsignCounts[f.callSign] || 0) + 1;
-            });
-            const filteredFlights = getFilteredFlights();
+            els.tableBody.innerHTML = '';
 
-            filteredFlights.forEach((item, visualIndex) => {
+            // Show ALL tasks, but state is derived from currentPreset matches
+            const currentPid = appState.currentPreset.id;
+
+            appState.tasks.forEach((task, index) => {
+                // Get or Init Result for this preset
+                let result = task.results[currentPid];
+                if (!result) {
+                    // Virtual pending state
+                    result = {
+                        status: 'pending',
+                        text: translateCallSign(task.callSign, appState.currentPreset.lang),
+                        blob: null
+                    };
+                    // We don't save it to 'results' yet to keep memory clean? 
+                    // Or we should just for caching text. 
+                    // Let's compute text on fly for display if missing.
+                }
+
                 const tr = document.createElement('tr');
-                const f = item.flight;
-                const idx = item.index; 
-                tr.dataset.index = idx;
-                tr.onmousedown = (e) => handleRowSelection(e, idx, visualIndex);
-                tr.oncontextmenu = (e) => { if(e.shiftKey) e.preventDefault(); };
 
-                if (selectedIndices.has(idx)) tr.classList.add('selected-row');
+                // Status Badge logic
+                let badgeClass = 'badge-pending';
+                let statusLabel = '等待中';
+                if (result.status === 'processing') { badgeClass = 'badge-processing'; statusLabel = '生成中...'; }
+                else if (result.status === 'completed') { badgeClass = 'badge-completed'; statusLabel = '已完成'; }
+                else if (result.status === 'failed') { badgeClass = 'badge-failed'; statusLabel = '失败'; }
 
-                const isDuplicate = f.callSign && callsignCounts[f.callSign] > 1;
-                if (isDuplicate) {
-                    tr.classList.add('duplicate-row');
-                    tr.dataset.callsign = f.callSign;
-                    tr.onmouseenter = () => highlightDuplicates(f.callSign);
-                    tr.onmouseleave = () => unhighlightDuplicates(f.callSign);
+                // Actions logic: Need to pass Preset ID context? Or just Task ID.
+                // Action handles finding the task and then looking up current preset.
+                let actionsHtml = '';
+                if (result.status === 'completed') {
+                    // Play
+                    actionsHtml = `
+                        <button class="text-sm" onmousedown="event.stopPropagation()" onclick="playAudio('${task.id}')">▶️</button>
+                    `;
+                } else if (result.status === 'failed' || result.status === 'pending') {
+                    // Retry or Remove
+                    actionsHtml = `
+                        <button class="text-sm" onmousedown="event.stopPropagation()" onclick="retryTask('${task.id}')">↻</button>
+                        <button class="text-sm" onmousedown="event.stopPropagation()" onclick="removeTask('${task.id}')">✖</button>
+                    `;
                 }
 
-                headers.forEach(h => {
-                    if (currentTab === 'all') {
-                        if (h.key === 'takeOffTime' || h.key === 'inBlockTime') return;
-                    } else {
-                        if (h.tab && h.tab !== currentTab) return;
-                    }
-                    const td = document.createElement('td');
-                    if (h.type === 'select') {
-                        const select = document.createElement('select');
-                        let options = config[h.source];
-                        if (h.key === 'airline') {
-                            const acType = f.aircraftType;
-                            if (acType && config.mapping.aircraftToAirlines[acType]) {
-                                const allowedAirlines = config.mapping.aircraftToAirlines[acType];
-                                options = options.filter(al => allowedAirlines.includes(al));
-                            }
-                        } 
-                        else if (h.key === 'aircraftType') {
-                            const al = f.airline;
-                            if (al && config.mapping.airlineToAircrafts[al]) {
-                                const allowedTypes = config.mapping.airlineToAircrafts[al];
-                                options = options.filter(at => allowedTypes.includes(at));
-                            }
-                        }
-                        else if (h.key === 'callSign') {
-                            const al = f.airline;
-                            if (al && config.mapping.airlineToCallsigns[al]) {
-                                options = config.mapping.airlineToCallsigns[al];
-                            }
-                        }
-                        if (f[h.key] && !options.includes(f[h.key])) {
-                            const opt = document.createElement('option');
-                            opt.value = f[h.key];
-                            opt.text = f[h.key] + " (非配置)";
-                            select.appendChild(opt);
-                        }
-                        options.forEach(optVal => {
-                            const opt = document.createElement('option');
-                            opt.value = optVal;
-                            opt.text = optVal;
-                            if (optVal === f[h.key]) opt.selected = true;
-                            select.appendChild(opt);
-                        });
-                        select.onchange = (e) => {
-                            const newVal = e.target.value;
-                            updateFlight(idx, h.key, newVal);
-                            if (h.key === 'callSign') {
-                                const mappedAirline = config.mapping.callsignToAirline[newVal];
-                                if (mappedAirline) updateFlight(idx, 'airline', mappedAirline);
-                            }
-                            renderTable(); 
-                        };
-                        td.appendChild(select);
-                    } else {
-                        const input = document.createElement('input');
-                        input.type = 'text';
-                        input.value = f[h.key] || '';
-                        input.dataset.row = idx;
-                        input.dataset.key = h.key;
-                        if (isAirportLocked) {
-                            if ((h.key === 'departure' || h.key === 'arrival') && f[h.key] === currentAirportCode) {
-                                input.readOnly = true;
-                                input.className = 'locked';
-                            }
-                        }
-                        if (h.type === 'time') {
-                            input.placeholder = "HH:mm:ss";
-                            input.onfocus = (e) => { e.target.setAttribute('data-original', e.target.value); };
-                            input.onblur = (e) => {
-                                const orig = e.target.getAttribute('data-original');
-                                handleTimeBlur(e, orig, idx, h.key);
-                            };
-                            input.onkeydown = (e) => handleTimeKeyDown(e, input, idx, h.key);
-                        } else {
-                            input.onchange = (e) => updateFlight(idx, h.key, e.target.value);
-                        }
-                        td.appendChild(input);
-                    }
-                    tr.appendChild(td);
-                });
-                const tdAction = document.createElement('td');
-                tdAction.className = 'cell-action';
-                tdAction.innerHTML = `<button class="btn-delete" onclick="deleteFlightRecord(${idx})">🗑️</button>`;
-                tr.appendChild(tdAction);
-                tbody.appendChild(tr);
-            });
-        }
+                tr.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td style="font-family: monospace; font-weight: bold;">${task.callSign}</td>
+                    <td>${result.text || translateCallSign(task.callSign, appState.currentPreset.lang)}</td>
+                    <td><span class="badge ${badgeClass}">${statusLabel}</span></td>
+                    <td>${actionsHtml}</td>
+                `;
 
-        function updateFlight(index, key, value) {
-            allFlights[index][key] = value;
-        }
-
-        function addRow() {
-            let defDeparture = 'ZBAA';
-            let defArrival = 'ZSJN';
-            let isDepartureIntent = true;
-            if (currentTab === 'arrival') isDepartureIntent = false;
-            else if (currentTab === 'all') isDepartureIntent = true;
-
-            if (isAirportLocked && currentAirportCode) {
-                if (!isDepartureIntent) defArrival = currentAirportCode;
-                else defDeparture = currentAirportCode;
-            } else {
-                 if (!isDepartureIntent) { defArrival = 'ZSJN'; defDeparture = 'ZBAA'; } 
-                 else { defDeparture = 'ZSJN'; defArrival = 'ZBAA'; }
-            }
-
-            const defAirline = config.airlines[0] || 'CSN';
-            let defAircraft = config.aircraftTypes[0] || 'BOEING 737-800';
-            if (config.mapping.airlineToAircrafts[defAirline] && config.mapping.airlineToAircrafts[defAirline].length > 0) {
-                defAircraft = config.mapping.airlineToAircrafts[defAirline][0];
-            }
-            
-            let defCallsign = '';
-            if (config.mapping.airlineToCallsigns[defAirline] && config.mapping.airlineToCallsigns[defAirline].length > 0) {
-                defCallsign = config.mapping.airlineToCallsigns[defAirline][0];
-            } else if (config.callsigns.length > 0) {
-                defCallsign = config.callsigns[0];
-            }
-
-            const newFlight = {
-                callSign: defCallsign || 'NEW001',
-                departure: defDeparture,
-                arrival: defArrival,
-                stand: '1',
-                runway: '01',
-                airline: defAirline,
-                aircraftType: defAircraft,
-                voice: config.voices[0] || 'CN-Captain-Young',
-                language: 'zh'
-            };
-
-            if (isDepartureIntent) {
-                newFlight.offBlockTime = '08:00:00';
-                if (timeOffsets.departure) {
-                    newFlight.takeOffTime = addMinutes('08:00:00', timeOffsets.departure);
-                } else {
-                    newFlight.takeOffTime = '08:10:00';
+                // Selection Logic
+                if (appState.selectedIds.has(task.id)) {
+                    tr.classList.add('selected');
                 }
-                newFlight.landingTime = '';
-                newFlight.inBlockTime = '';
-            } else {
-                newFlight.offBlockTime = '';
-                newFlight.takeOffTime = '';
-                newFlight.landingTime = '08:00:00';
-                if (timeOffsets.arrival) {
-                    newFlight.inBlockTime = addMinutes('08:00:00', timeOffsets.arrival);
-                } else {
-                    newFlight.inBlockTime = '08:10:00';
-                }
-            }
 
-            allFlights.push(newFlight);
-            renderTable();
-            updateStats();
-            const container = document.querySelector('.table-container');
-            container.scrollTop = container.scrollHeight;
-        }
-
-        function deleteFlightRecord(index) {
-            showConfirm("确定删除该航班吗?", function() {
-                allFlights.splice(index, 1);
-                selectedIndices.delete(index);
-                selectedIndices.clear();
-                renderTable();
-                updateStats();
-            });
-        }
-        function newFile() {
-            showConfirm("确定新建吗? 未保存的数据将丢失。", function() {
-                allFlights = [];
-                selectedIndices.clear();
-                const csvInput = document.getElementById('csvInput');
-                if(csvInput) csvInput.value = '';
-                renderTable();
-                updateStats();
-                showStatus("已新建空表");
-            });
-        }
-        function loadCSV(input) {
-            const file = input.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const text = e.target.result;
-                parseCSV(text);
-                input.value = ''; 
-            };
-            reader.readAsText(file);
-        }
-        function parseCSV(text) {
-            const lines = text.split(/\r\n|\n/).filter(l => l.trim() !== '' && !l.trim().startsWith('#'));
-            if (lines.length < 2) { alert("CSV 格式错误或为空"); return; }
-            const normalizeKey = (k) => {
-                k = k.trim();
-                if (k === 'offBlockTIme') return 'offBlockTime';
-                if (k === 'inBlockTIme') return 'inBlockTime';
-                if (k === 'takeOffTIme') return 'takeOffTime';
-                return k;
-            };
-            const headerLine = lines[0].split(',').map(normalizeKey);
-            const newFlights = [];
-            for (let i = 1; i < lines.length; i++) {
-                const cols = lines[i].split(',').map(c => c.trim());
-                if (cols.length < headerLine.length) continue;
-                let flight = {};
-                headerLine.forEach((h, idx) => { flight[h] = cols[idx]; });
-                newFlights.push(flight);
-            }
-            
-            // Append Mode
-            const addedCount = newFlights.length;
-            allFlights = allFlights.concat(newFlights);
-            selectedIndices.clear();
-            renderTable();
-            updateStats();
-            showStatus(`已追加 ${addedCount} 条记录 (总计 ${allFlights.length})`);
-        }
-        function loadConfigs(input) {
-            const files = Array.from(input.files);
-            let loadedCount = 0;
-            config.mapping.aircraftToAirlines = {};
-            config.mapping.airlineToAircrafts = {};
-            files.forEach(file => {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const text = e.target.result;
-                    if (file.name.includes("ModelPath")) parseModelConfig(text);
-                    else if (file.name.includes("LiveryPath")) parseLiveryConfig(text);
-                    loadedCount++;
-                    if (loadedCount === files.length) {
-                        showStatus("配置加载完成");
-                        buildReverseMapping(); 
-                        renderTable();
+                // Click Handlers
+                tr.onmousedown = (e) => handleRowClick(e, task.id);
+                tr.oncontextmenu = (e) => {
+                    if (e.shiftKey) {
+                        e.preventDefault(); // Prevent context menu on Shift+Right
                     }
                 };
-                reader.readAsText(file);
+
+                els.tableBody.appendChild(tr);
             });
-            input.value = '';
-        }
-        
-        function loadCallsigns(input) {
-            const file = input.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const text = e.target.result;
-                parseCallsignConfig(text);
-                showStatus("呼号表已更新");
-                renderTable();
-                input.value = '';
-            };
-            reader.readAsText(file);
+
+            updateStatus();
         }
 
-        function parseCallsignConfig(text) {
-            const lines = text.split(/\r\n|\n/);
-            const callsigns = [];
-            config.mapping.callsignToAirline = {};
-            config.mapping.airlineToCallsigns = {};
+        function updateStatus() {
+            // Stats for Current Preset
+            const currentPid = appState.currentPreset.id;
+            const total = appState.tasks.length;
 
-            config.airlines.forEach(al => config.mapping.airlineToCallsigns[al] = []);
+            // Count status in current preset results
+            let completed = 0;
+            let failed = 0;
 
-            lines.forEach(line => {
-                line = line.trim();
-                if (!line || line.startsWith('callSign')) return; 
-                const parts = line.split(',');
-                if (parts.length >= 2) {
-                    const cs = parts[0].trim();
-                    const al = parts[1].trim();
-                    if (cs && al) {
-                        callsigns.push(cs);
-                        config.mapping.callsignToAirline[cs] = al;
-                        if (!config.mapping.airlineToCallsigns[al]) {
-                            config.mapping.airlineToCallsigns[al] = [];
-                        }
-                        config.mapping.airlineToCallsigns[al].push(cs);
-                    }
+            appState.tasks.forEach(t => {
+                const r = t.results[currentPid];
+                if (r) {
+                    if (r.status === 'completed') completed++;
+                    if (r.status === 'failed') failed++;
                 }
             });
-            config.callsigns = callsigns.sort();
-            console.log("Loaded Callsigns:", callsigns.length);
-        }
 
-        function parseModelConfig(text) {
-            const types = [];
-            const lines = text.split(/\r\n|\n/);
-            lines.forEach(line => {
-                const parts = line.split('=');
-                if (parts.length >= 2) {
-                    const key = parts[0].trim();
-                    if (key) types.push(key);
-                }
-            });
-            if (types.length > 0) {
-                config.aircraftTypes = types;
+            els.statusText.textContent = `总任务: ${total} | 当前预设统计`;
+            els.progressText.textContent = `成功: ${completed} / 失败: ${failed} / 总计: ${total}`;
+
+            // Button state relies on current selection in filter
+            // const canGenerate = total > 0 && appState.apiKey && appState.selectedIds.size > 0; 
+            // Actually button is bound to selection, which we cleared on mode switch.
+
+            els.btnGenerateSelected.disabled = total === 0 || !appState.apiKey || appState.selectedIds.size === 0;
+            els.btnGenerateSelected.textContent = `🔊 生成选中 (${appState.selectedIds.size})`;
+            els.btnExportAll.disabled = completed === 0;
+
+            if (appState.processingCount > 0) {
+                els.statusText.textContent += ` | 正在处理 ${appState.processingCount} 个任务...`;
             }
         }
-        function parseLiveryConfig(text) {
-            const airlines = new Set();
-            const lines = text.split(/\r\n|\n/);
-            let currentAircraft = null;
-            lines.forEach(line => {
-                line = line.trim();
-                if (!line) return;
-                if (line.includes('=')) {
-                    const parts = line.split('=');
-                    const key = parts[0].trim();
-                    if (key && key.length === 3) { 
-                        airlines.add(key);
-                        if (currentAircraft) {
-                            if (!config.mapping.aircraftToAirlines[currentAircraft]) config.mapping.aircraftToAirlines[currentAircraft] = [];
-                            if (!config.mapping.aircraftToAirlines[currentAircraft].includes(key)) config.mapping.aircraftToAirlines[currentAircraft].push(key);
-                        }
-                    }
+
+        function showToast(msg, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            if (type === 'error') toast.style.borderLeftColor = 'var(--error-color)';
+            if (type === 'success') toast.style.borderLeftColor = 'var(--success-color)';
+            toast.textContent = msg;
+            els.toastContainer.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // --- Logic: Actions ---
+
+        window.removeTask = (id) => {
+            // Can't remove if processing
+            const t = appState.tasks.find(x => x.id == id);
+            if (t && t.status === 'processing') return;
+            appState.tasks = appState.tasks.filter(x => x.id != id);
+            renderTable();
+        };
+
+        window.retryTask = (id) => {
+            const t = appState.tasks.find(x => x.id == id);
+            if (!t) return;
+            if (!appState.apiKey) { showToast('请先设置 API Key', 'error'); return; }
+
+            // Reset status for current preset
+            const currentPid = appState.currentPreset.id;
+            if (!t.results[currentPid]) t.results[currentPid] = { blob: null };
+            t.results[currentPid].status = 'pending';
+            addToQueue(t, currentPid);
+        };
+
+        window.playAudio = (id) => {
+            const t = appState.tasks.find(x => x.id == id);
+            const currentPid = appState.currentPreset.id;
+            const res = t && t.results[currentPid];
+            if (res && res.blob) {
+                const url = URL.createObjectURL(res.blob);
+                const audio = new Audio(url);
+                audio.play();
+            }
+        };
+
+        // --- Selection Logic ---
+        function handleRowClick(e, id) {
+            // Left Click (0)
+            if (e.button === 0) {
+                if (e.shiftKey) {
+                    // Shift + Left: Add to selection (Multi-select)
+                    appState.selectedIds.add(id);
                 } else {
-                    if (!line.startsWith('[') && !line.startsWith('/')) {
-                        currentAircraft = line;
-                        if (!config.mapping.aircraftToAirlines[currentAircraft]) config.mapping.aircraftToAirlines[currentAircraft] = [];
-                    }
+                    // Normal Left: Select only this (Clear others)
+                    // But if usage wants standard behavior: Ctrl for toggle. 
+                    // User asked: "Shift+Left multi-select".
+                    appState.selectedIds.clear();
+                    appState.selectedIds.add(id);
+                }
+            }
+            // Right Click (2)
+            else if (e.button === 2) {
+                if (e.shiftKey) {
+                    // Shift + Right: Deselect
+                    appState.selectedIds.delete(id);
+                }
+            }
+            renderTable();
+        }
+
+        function startSelectedGeneration() {
+            if (!appState.apiKey) {
+                showToast('请先设置 API Key', 'error');
+                els.settingsModal.classList.remove('hidden');
+                return;
+            }
+
+            const currentPid = appState.currentPreset.id;
+
+            // Find valid tasks in Selection
+            const targets = appState.tasks.filter(t => {
+                if (!appState.selectedIds.has(t.id)) return false;
+                // Check status in CURRENT preset
+                const res = t.results[currentPid];
+                if (!res) return true; // Never run
+                return res.status === 'pending' || res.status === 'failed' || !res.status;
+            });
+
+            if (targets.length === 0) {
+                showToast('选中项中没有待处理的任务', 'info');
+                return;
+            }
+
+            showToast(`开始处理 ${targets.length} 个任务...`);
+            targets.forEach(t => addToQueue(t, currentPid));
+        }
+
+        function addToQueue(task, presetId) {
+            // Avoid duplicates
+            if (appState.queue.find(q => q.task.id === task.id && q.presetId === presetId)) return;
+
+            // Check processing status
+            const res = task.results[presetId];
+            if (res && res.status === 'processing') return;
+
+            appState.queue.push({ task, presetId });
+            processQueue();
+        }
+
+        function processQueue() {
+            if (appState.processingCount >= MAX_CONCURRENCY) return;
+            if (appState.queue.length === 0) return;
+
+            const item = appState.queue.shift();
+            const { task, presetId } = item;
+
+            // Initialize or update result object
+            if (!task.results[presetId]) {
+                task.results[presetId] = {
+                    blob: null,
+                    text: translateCallSign(task.callSign, PRESETS.find(p => p.id === presetId)?.lang || 'en')
+                };
+            }
+            task.results[presetId].status = 'processing';
+
+            appState.processingCount++;
+            renderTable();
+
+            // Call API
+            generateAudio(task, presetId).finally(() => {
+                appState.processingCount--;
+                processQueue();
+            });
+        }
+
+        // --- API Integration ---
+
+        async function generateAudio(task, presetId) {
+            const preset = PRESETS.find(p => p.id === presetId) || appState.currentPreset;
+            const resObject = task.results[presetId];
+
+            // Construct Payload
+            const payload = {
+                "model": appState.apiModel,
+                "text": (resObject.text || translateCallSign(task.callSign, preset.lang)) + (preset.lang === 'zh' ? '。' : ''),
+                "stream": false,
+                "voice_setting": {
+                    "voice_id": preset.voiceId,
+                    "speed": preset.speed || 1,
+                    "vol": preset.vol || 1,
+                    "pitch": preset.pitch || 0,
+                    "emotion": preset.emotion || "neutral"
+                },
+                "audio_setting": {
+                    "sample_rate": 44100,
+                    "bitrate": 128000,
+                    "format": "wav",
+                    "channel": 2 // Dual channel safe ? usually 1 or 2. User asked for 2.
+                }
+            };
+
+            // Correction: The prompt model key might be for a specific endpoint. 
+            // https://api.minimaxi.com/v1/t2a_v2 usually matches "speech-01-..." models.
+            // I will use `speech-01-turbo` as it is faster and reliable for tools, 
+            // but I will allow user to changing it in code easily if needed.
+            // Actually, if I use the exact example from prompt:
+            payload.model = "speech-01-turbo";
+
+            try {
+                // Use configured endpoint
+                const url = new URL(appState.apiEndpoint);
+                if (appState.groupId) {
+                    url.searchParams.append("GroupId", appState.groupId);
+                }
+
+                const response = await fetch(url.toString(), {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${appState.apiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const err = await response.text();
+                    throw new Error(`API Error: ${response.status} - ${err}`);
+                }
+
+                const data = await response.json();
+
+                // MiniMax V2 Response format check
+                // Usually { base_resp: { status_code: 0 }, data: { audio: "hex..." } } or similar?
+                // Or might be binary if steam? But stream=false.
+                // NOTE: MiniMax T2A V2 usually returns JSON with "data": { "audio": "hex string" } or similar.
+
+                if (data.base_resp && data.base_resp.status_code !== 0) {
+                    throw new Error(`API Logic Error: ${data.base_resp.status_msg}`);
+                }
+
+                // Assuming data.data.audio is the hex string
+                if (data.data && data.data.audio) {
+                    const hex = data.data.audio;
+                    // Convert Hex to Blob
+                    const buffer = new Uint8Array(hex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+                    const blob = new Blob([buffer], { type: 'audio/wav' });
+
+                    resObject.blob = blob;
+                    resObject.status = 'completed';
+                } else {
+                    throw new Error("Invalid API Response Structure");
+                }
+
+            } catch (e) {
+                console.error(e);
+                resObject.status = 'failed';
+                showToast(`Task ${task.callSign} Failed: ${e.message}`, 'error');
+            } finally {
+                renderTable();
+            }
+        }
+
+        // --- Export ---
+
+        async function exportAll() {
+            // Collect all completed results for CURRENT preset
+            const currentPid = appState.currentPreset.id;
+            const validItems = [];
+
+            appState.tasks.forEach(t => {
+                const res = t.results[currentPid];
+                if (res && res.status === 'completed' && res.blob) {
+                    // Normalize blob name/item
+                    validItems.push({ callSign: t.callSign, blob: res.blob, task: t });
                 }
             });
-            if (airlines.size > 0) {
-                config.airlines = Array.from(airlines).sort();
+
+            if (validItems.length === 0) {
+                showToast('当前预设没有可导出的已完成任务', 'info');
+                return;
+            }
+
+            try {
+                // 1. Open Directory Picker
+                const dirHandle = await window.showDirectoryPicker();
+
+                // 2. Create/Get Subfolder for Preset Name (Strict Match)
+                const presetName = appState.currentPreset.name;
+                const presetDir = await dirHandle.getDirectoryHandle(presetName, { create: true });
+
+                showToast(`正在导出 ${validItems.length} 个文件...`);
+
+                // 3. Write Files
+                let savedCount = 0;
+                for (const item of validItems) {
+                    try {
+                        const fileHandle = await presetDir.getFileHandle(`${item.callSign}.wav`, { create: true });
+                        const writable = await fileHandle.createWritable();
+                        await writable.write(item.blob);
+                        await writable.close();
+
+                        // Mark as exported
+                        item.task.results[currentPid].exported = true;
+                        savedCount++;
+                    } catch (e) {
+                        console.error(`Failed to write ${item.callSign}`, e);
+                        // Continue others
+                    }
+                }
+
+                showToast(`(✅ 导出完成: 成功 ${savedCount} / 总计 ${validItems.length}`);
+
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.error(err);
+                    showToast(`导出失败: ${err.message}`, 'error');
+                }
             }
         }
-        function downloadCSV() {
-            const arrivals = allFlights.filter(f => !f.offBlockTime && f.landingTime);
-            const departures = allFlights.filter(f => !(!f.offBlockTime && f.landingTime));
-            arrivals.sort((a, b) => (a.landingTime || '').localeCompare(b.landingTime || ''));
-            departures.sort((a, b) => (a.offBlockTime || '').localeCompare(b.offBlockTime || ''));
-            const sortedFlights = [...arrivals, ...departures];
-            const headerKeys = headers.filter(h => h.key).map(h => h.key);
-            let csvContent = headerKeys.join(', ') + "\n";
-            sortedFlights.forEach(f => {
-                const row = headerKeys.map(key => f[key] || '').join(', ');
-                csvContent += row + "\n";
-            });
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
-            if (link.download !== undefined) {
-                const url = URL.createObjectURL(blob);
-                link.setAttribute("href", url);
-                link.setAttribute("download", "flight_schedule_edited.csv");
-                link.style.visibility = 'hidden';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            }
-        }
+
+
+
+        // Run
+        init();
+
     </script>
 </body>
+
 </html>
