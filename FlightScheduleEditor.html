@@ -269,6 +269,35 @@
             background: linear-gradient(90deg, var(--duplicate-bg) 50%, var(--conflict-bg) 50%);
         }
 
+        /* Turnaround Stand Highlighting (Blue) */
+        tr.turnaround-row {
+            background-color: rgba(0, 120, 215, 0.2) !important;
+        }
+
+        tr.highlight-turnaround {
+            outline: 2px solid var(--accent-color);
+            background-color: rgba(0, 120, 215, 0.4) !important;
+            z-index: 5;
+            position: relative;
+        }
+
+        /* Clickable turnaround badge in modal */
+        .turnaround-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            margin: 2px;
+            background-color: #333;
+            border: 1px solid var(--accent-color);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .turnaround-badge:hover {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
         input,
         select {
             background-color: transparent;
@@ -817,7 +846,7 @@ UEA7323,UEA`;
 
         // --- Selection & Batch Logic ---
         function getFilteredFlights() {
-            return allFlights.map((f, index) => ({ flight: f, index: index }))
+            let result = allFlights.map((f, index) => ({ flight: f, index: index }))
                 .filter(item => {
                     const f = item.flight;
 
@@ -834,6 +863,19 @@ UEA7323,UEA`;
 
                     return true;
                 });
+
+            // 全部航班视图：按时间升序排序
+            if (currentTab === 'all') {
+                result.sort((a, b) => {
+                    // 获取各航班的关键时间（着陆时间或推出时间，取较早的）
+                    const getTime = (f) => f.landingTime || f.offBlockTime || '';
+                    const timeA = getTime(a.flight);
+                    const timeB = getTime(b.flight);
+                    return timeA.localeCompare(timeB);
+                });
+            }
+
+            return result;
         }
 
         function handleRowSelection(e, dataIndex, visualIndex) {
@@ -1168,6 +1210,10 @@ UEA7323,UEA`;
                 indices.forEach(idx => conflictIndices.add(idx));
             });
 
+            // 检测先出后进停机位
+            const turnaroundStats = getStandUsageStats();
+            const turnaroundStands = turnaroundStats.turnarounds;
+
             const filteredFlights = getFilteredFlights();
 
             filteredFlights.forEach((item, visualIndex) => {
@@ -1201,6 +1247,14 @@ UEA7323,UEA`;
                     });
                     tr.addEventListener('mouseenter', () => highlightConflicts(tr.dataset.conflictStand));
                     tr.addEventListener('mouseleave', () => unhighlightConflicts(tr.dataset.conflictStand));
+                }
+
+                // 先出后进停机位永久高亮
+                if (f.stand && turnaroundStands.has(f.stand)) {
+                    tr.classList.add('turnaround-row');
+                    tr.dataset.turnaroundStand = f.stand;
+                    tr.addEventListener('mouseenter', () => highlightTurnaround(f.stand));
+                    tr.addEventListener('mouseleave', () => unhighlightTurnaround(f.stand));
                 }
 
                 headers.forEach(h => {
@@ -1670,26 +1724,84 @@ UEA7323,UEA`;
             document.getElementById('airportInfoModal').style.display = 'none';
         }
 
+        // 停机位使用状况统计
+        function getStandUsageStats() {
+            const arrivals = new Set();   // 有到达航班的停机位
+            const departures = new Set(); // 有出发航班的停机位
+
+            allFlights.forEach(f => {
+                if (!f.stand) return;
+                const type = getFlightType(f);
+                if (type === 'arrival') arrivals.add(f.stand);
+                if (type === 'departure') departures.add(f.stand);
+            });
+
+            // 交集：先出后进 (turnaround)
+            const turnarounds = new Set([...arrivals].filter(s => departures.has(s)));
+
+            return { arrivals, departures, turnarounds };
+        }
+
         function updateAirportInfoPreview() {
             const countInput = document.getElementById('standCount').value;
             const count = parseInt(countInput) || 0;
             const previewEl = document.getElementById('airportInfoPreview');
 
+            let html = '';
             if (count > 0 && count <= 99) {
                 const first = '1';
                 const last = count.toString();
-                previewEl.innerHTML = `
+                html = `
                     <div><strong>停机位数量:</strong> ${count} 个</div>
                     <div><strong>代号范围:</strong> ${first} ~ ${last}</div>
                 `;
             } else if (config.stands.length > 0) {
-                previewEl.innerHTML = `
+                html = `
                     <div><strong>当前已配置:</strong> ${config.stands.length} 个停机位</div>
                     <div><strong>代号范围:</strong> ${config.stands[0]} ~ ${config.stands[config.stands.length - 1]}</div>
                 `;
             } else {
-                previewEl.innerHTML = `<div><strong>当前状态:</strong> 未配置停机位</div>`;
+                html = `<div><strong>当前状态:</strong> 未配置停机位</div>`;
             }
+
+            // 添加使用状况统计
+            const stats = getStandUsageStats();
+            const sortNum = (a, b) => parseInt(a) - parseInt(b);
+
+            if (stats.arrivals.size > 0 || stats.departures.size > 0) {
+                // 生成先出后进的可点击标签
+                const turnaroundBadges = [...stats.turnarounds].sort(sortNum)
+                    .map(s => `<span class="turnaround-badge" onmouseenter="highlightTurnaround('${s}')" onmouseleave="unhighlightTurnaround('${s}')">${s}</span>`)
+                    .join('') || '<span style="color: #888;">无</span>';
+
+                html += `
+                    <hr style="border-color: #444; margin: 12px 0;">
+                    <div style="margin-bottom: 6px;"><strong>📊 使用状况:</strong></div>
+                    <div>有到达: ${stats.arrivals.size} 个 <span style="color: #888;">(${[...stats.arrivals].sort(sortNum).join(', ') || '无'})</span></div>
+                    <div>有出发: ${stats.departures.size} 个 <span style="color: #888;">(${[...stats.departures].sort(sortNum).join(', ') || '无'})</span></div>
+                    <div>先出后进: ${stats.turnarounds.size} 个 ${turnaroundBadges}</div>
+                `;
+            }
+
+            previewEl.innerHTML = html;
+        }
+
+        // 先出后进停机位高亮
+        function highlightTurnaround(stand) {
+            if (!stand) return;
+            document.querySelectorAll('#tableBody tr').forEach(tr => {
+                const idx = parseInt(tr.dataset.index);
+                const flight = allFlights[idx];
+                if (flight && flight.stand === stand) {
+                    tr.classList.add('highlight-turnaround');
+                }
+            });
+        }
+
+        function unhighlightTurnaround(stand) {
+            document.querySelectorAll('tr.highlight-turnaround').forEach(el => {
+                el.classList.remove('highlight-turnaround');
+            });
         }
 
         function applyAirportInfo() {
