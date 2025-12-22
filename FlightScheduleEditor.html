@@ -512,7 +512,13 @@
 
         <div style="flex:1"></div>
 
-        <button onclick="downloadCSV()" style="background-color: #4CAF50;">💾 下载 CSV</button>
+        <div class="input-group">
+            <label for="exportFilename">文件名:</label>
+            <input type="text" id="exportFilename" placeholder="flight_schedule" style="width: 150px;"
+                value="flight_schedule">
+            <span style="color: #888;">.csv</span>
+        </div>
+        <button onclick="downloadCSV()" style="background-color: #4CAF50;">💾 导出 CSV</button>
     </div>
 
     <div class="tabs">
@@ -676,17 +682,17 @@ UEA7323,UEA`;
         };
 
         window.onload = function () {
-            // Default mapping init
+            // Default mapping init (from AircraftLiveryPath.cfg)
             const defaultAcMap = {
                 "AIRBUS A-320ceo": ["CCA", "CES", "CHH", "CQH", "CSC", "CSN", "CSZ", "UEA"],
-                "AIRBUS A-320neo": ["AVA", "BAW", "CCA", "CES", "CHH", "CQH", "CSC", "CSN", "CSZ", "FFT", "GCR", "HXA", "JZA", "KNA", "LKE", "OKA", "OTC", "QTR", "SWR", "THA", "TVB", "UAL", "UEA"],
-                "AIRBUS A-321neo": ["CCA", "CES", "CHH", "CQH", "CSC", "CSN", "CSZ", "JZA", "QTR", "UAL", "UEA"],
-                "AIRBUS A-330-300": ["CCA", "CES", "CHH", "CSC", "CSN", "VIR"],
+                "AIRBUS A-320neo": ["AVA", "BAW", "CCA", "CES", "CHH", "CQH", "CSC", "CSN", "CSZ", "FFT", "UEA"],
+                "AIRBUS A-321neo": ["AAL", "DAL", "FFT", "JBU"],
+                "AIRBUS A-330-300": ["CCA", "CSN", "VIR"],
                 "AIRBUS A-350-900": ["AFR", "DAL", "JAL"],
                 "BOEING 737 MAX 8": ["CDG", "CSN"],
-                "BOEING 737-800": ["AAL", "ASA", "CDG", "CES", "CHH", "CJX", "CSN", "CXA", "DAL", "DKH", "JAL", "KPA", "OKA", "RYR", "SIA", "UAL"],
-                "BOEING 747-8I": ["CCA", "KPA", "LKE", "UAL"],
-                "BOEING 777-300ER": ["AFR", "AAL", "BAW", "CCA", "CES", "CSN", "DAL", "JAL", "QTR", "THA", "UAL", "VIR"],
+                "BOEING 737-800": ["AAL", "ASA", "CDG", "CES", "CHH", "CJX", "CSN", "CXA", "DAL", "SWA", "UAL"],
+                "BOEING 747-8I": ["CCA", "DLH", "KAL"],
+                "BOEING 777-300ER": ["ACA", "AFR", "BAW", "CCA", "UAL"],
                 "COMAC C-919": ["CCA", "CES", "CSN"]
             };
             config.mapping.aircraftToAirlines = defaultAcMap;
@@ -1593,8 +1599,12 @@ UEA7323,UEA`;
                     if (key && key.length === 3) {
                         airlines.add(key);
                         if (currentAircraft) {
+                            // 正向映射：机型 -> 航空公司列表
                             if (!config.mapping.aircraftToAirlines[currentAircraft]) config.mapping.aircraftToAirlines[currentAircraft] = [];
                             if (!config.mapping.aircraftToAirlines[currentAircraft].includes(key)) config.mapping.aircraftToAirlines[currentAircraft].push(key);
+                            // 反向映射：航空公司 -> 机型列表
+                            if (!config.mapping.airlineToAircrafts[key]) config.mapping.airlineToAircrafts[key] = [];
+                            if (!config.mapping.airlineToAircrafts[key].includes(currentAircraft)) config.mapping.airlineToAircrafts[key].push(currentAircraft);
                         }
                     }
                 } else {
@@ -1608,7 +1618,7 @@ UEA7323,UEA`;
                 config.airlines = Array.from(airlines).sort();
             }
         }
-        function downloadCSV() {
+        async function downloadCSV() {
             const arrivals = allFlights.filter(f => !f.offBlockTime && f.landingTime);
             const departures = allFlights.filter(f => !(!f.offBlockTime && f.landingTime));
             arrivals.sort((a, b) => (a.landingTime || '').localeCompare(b.landingTime || ''));
@@ -1620,16 +1630,46 @@ UEA7323,UEA`;
                 const row = headerKeys.map(key => f[key] || '').join(',');
                 csvContent += row + "\n";
             });
+
+            // 获取用户输入的文件名
+            let filename = document.getElementById('exportFilename').value.trim();
+            if (!filename) filename = 'flight_schedule';
+            filename = filename.replace(/\.csv$/i, '') + '.csv';
+
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+
+            // 尝试使用 File System Access API（支持选择保存位置）
+            if ('showSaveFilePicker' in window) {
+                try {
+                    const handle = await window.showSaveFilePicker({
+                        suggestedName: filename,
+                        types: [{
+                            description: 'CSV 文件',
+                            accept: { 'text/csv': ['.csv'] }
+                        }]
+                    });
+                    const writable = await handle.createWritable();
+                    await writable.write(blob);
+                    await writable.close();
+                    showStatus(`已保存: ${handle.name}`);
+                    return;
+                } catch (err) {
+                    if (err.name === 'AbortError') return; // 用户取消
+                    console.warn('File System Access API failed, falling back to download:', err);
+                }
+            }
+
+            // 回退：传统下载方式
             const link = document.createElement("a");
             if (link.download !== undefined) {
                 const url = URL.createObjectURL(blob);
                 link.setAttribute("href", url);
-                link.setAttribute("download", "flight_schedule_edited.csv");
+                link.setAttribute("download", filename);
                 link.style.visibility = 'hidden';
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
+                URL.revokeObjectURL(url);
             }
         }
 
