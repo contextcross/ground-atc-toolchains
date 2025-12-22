@@ -1615,9 +1615,9 @@ UEA7323,UEA`;
             departures.sort((a, b) => (a.offBlockTime || '').localeCompare(b.offBlockTime || ''));
             const sortedFlights = [...arrivals, ...departures];
             const headerKeys = headers.filter(h => h.key).map(h => h.key);
-            let csvContent = headerKeys.join(', ') + "\n";
+            let csvContent = headerKeys.join(',') + "\n";
             sortedFlights.forEach(f => {
-                const row = headerKeys.map(key => f[key] || '').join(', ');
+                const row = headerKeys.map(key => f[key] || '').join(',');
                 csvContent += row + "\n";
             });
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
