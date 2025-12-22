@@ -1436,7 +1436,7 @@ UEA7323,UEA`;
                 headerLine.forEach((h, idx) => { flight[h] = cols[idx]; });
                 newFlights.push(flight);
             }
-            allFlights = newFlights;
+            allFlights = [...allFlights, ...newFlights]; // 增量导入（追加模式）
             selectedIndices.clear();
             renderTable();
             updateStats();
