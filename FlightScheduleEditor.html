@@ -25,6 +25,9 @@
             --duplicate-border: #ff8c00;
             --selected-bg: rgba(0, 120, 215, 0.3);
             --selected-border: #007acc;
+            /* Stand Conflict States */
+            --conflict-bg: rgba(244, 67, 54, 0.15);
+            --conflict-border: #f44336;
         }
 
         body {
@@ -224,7 +227,7 @@
 
         /* Duplicate Styling */
         tr.duplicate-row {
-            background-color: var(--duplicate-bg);
+            background-color: var(--duplicate-bg) !important;
         }
 
         tr.highlight-group {
@@ -242,6 +245,28 @@
         tr.duplicate-row.selected-row {
             background-color: rgba(0, 120, 215, 0.4) !important;
             box-shadow: inset 3px 0 0 var(--duplicate-border);
+        }
+
+        /* Stand Conflict Styling */
+        tr.conflict-row {
+            background-color: var(--conflict-bg) !important;
+        }
+
+        tr.highlight-conflict {
+            outline: 2px solid var(--conflict-border);
+            background-color: rgba(244, 67, 54, 0.4) !important;
+            z-index: 5;
+            position: relative;
+        }
+
+        tr.conflict-row.selected-row {
+            background-color: rgba(244, 67, 54, 0.3) !important;
+            box-shadow: inset 3px 0 0 var(--conflict-border);
+        }
+
+        /* 同时有重复呼号和停机位冲突 */
+        tr.duplicate-row.conflict-row {
+            background: linear-gradient(90deg, var(--duplicate-bg) 50%, var(--conflict-bg) 50%);
         }
 
         input,
@@ -491,6 +516,8 @@
             <button class="secondary" onclick="deduplicateCallsigns()" title="自动修复重复呼号">🔧 呼号去重</button>
             <button id="btnAutoSchedule" class="secondary" onclick="openAutoScheduleModal()" title="自动分配时间">⏱️
                 自动配表</button>
+            <button id="btnAirportInfo" class="secondary" onclick="openAirportInfoModal()" title="配置机场停机位">🏢
+                机场信息</button>
             <button onclick="addRow()">+ 添加航班</button>
         </div>
     </div>
@@ -523,6 +550,28 @@
             <div class="modal-actions">
                 <button class="secondary" onclick="closeAutoScheduleModal()">取消</button>
                 <button onclick="applyAutoSchedule()">✓ 应用</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 机场信息对话框 -->
+    <div id="airportInfoModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h3>🏢 机场信息</h3>
+            <p class="modal-desc">配置当前机场的停机位信息</p>
+
+            <div class="modal-field">
+                <label for="standCount">停机位数量:</label>
+                <input type="number" id="standCount" placeholder="例如: 12" value="" min="1" max="99">
+            </div>
+
+            <div class="modal-info" id="airportInfoPreview">
+                <div><strong>当前状态:</strong> 未配置停机位</div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="secondary" onclick="closeAirportInfoModal()">取消</button>
+                <button onclick="applyAirportInfo()">✓ 生成停机位</button>
             </div>
         </div>
     </div>
@@ -585,6 +634,7 @@ UEA7323,UEA`;
                 "UAL", "UEA", "VIR"
             ],
             callsigns: [],
+            stands: [],
             voices: ["CN-Captain-Young", "CN-Captain-Middle-Aged", "CN-Captain-Young-EN"],
             languages: ["zh", "en"],
 
@@ -622,6 +672,9 @@ UEA7323,UEA`;
             // 绑定自动配表输入事件
             document.getElementById('autoStartTime').addEventListener('input', updateAutoSchedulePreview);
             document.getElementById('autoInterval').addEventListener('input', updateAutoSchedulePreview);
+
+            // 绑定机场信息输入事件
+            document.getElementById('standCount').addEventListener('input', updateAirportInfoPreview);
         };
 
         function buildReverseMapping() {
@@ -639,7 +692,7 @@ UEA7323,UEA`;
             { key: 'callSign', label: '呼号', type: 'select', source: 'callsigns', width: '120px', required: true },
             { key: 'departure', label: '起飞机场', width: '80px', required: true },
             { key: 'arrival', label: '到达机场', width: '80px', required: true },
-            { key: 'stand', label: '停机位', width: '60px', required: true },
+            { key: 'stand', label: '停机位', type: 'select', source: 'stands', width: '70px', required: true },
             { key: 'runway', label: '跑道', width: '60px', required: true },
             { key: 'offBlockTime', label: '推出时间', type: 'time', tab: 'departure' },
             { key: 'takeOffTime', label: '起飞时间', type: 'time', tab: 'departure', hasOffset: true },
@@ -979,6 +1032,79 @@ UEA7323,UEA`;
             document.querySelectorAll(`tr[data-callsign="${callsign}"]`).forEach(el => el.classList.remove('highlight-group'));
         }
 
+        // === 停机位冲突检测 ===
+        function compareTime(time1, time2) {
+            // 返回负数表示 time1 < time2，0 表示相等，正数表示 time1 > time2
+            const t1 = parseTime(time1);
+            const t2 = parseTime(time2);
+            if (!t1 || !t2) return 0;
+            const mins1 = t1.h * 60 + t1.m;
+            const mins2 = t2.h * 60 + t2.m;
+            return mins1 - mins2;
+        }
+
+        function detectStandConflicts() {
+            const conflicts = new Map(); // stand -> Set of conflicting flight indices
+            const standFlights = new Map(); // stand -> { arrivals: [], departures: [] }
+
+            // 1. 按停机位分组航班
+            allFlights.forEach((f, idx) => {
+                if (!f.stand) return;
+                if (!standFlights.has(f.stand)) {
+                    standFlights.set(f.stand, { arrivals: [], departures: [] });
+                }
+                const type = getFlightType(f);
+                if (type === 'arrival') {
+                    standFlights.get(f.stand).arrivals.push({ flight: f, index: idx });
+                } else {
+                    standFlights.get(f.stand).departures.push({ flight: f, index: idx });
+                }
+            });
+
+            // 2. 检测冲突
+            standFlights.forEach((data, stand) => {
+                const conflictIndices = new Set();
+
+                // 规则2: 多到达冲突 (≥2 个到达航班)
+                if (data.arrivals.length >= 2) {
+                    data.arrivals.forEach(a => conflictIndices.add(a.index));
+                }
+
+                // 规则1: 到达-出发冲突
+                data.arrivals.forEach(arr => {
+                    data.departures.forEach(dep => {
+                        const arrInBlock = arr.flight.inBlockTime;
+                        const depTakeOff = dep.flight.takeOffTime;
+                        if (arrInBlock && depTakeOff && compareTime(arrInBlock, depTakeOff) < 0) {
+                            // 到达入位时间 < 出发起飞时间 = 冲突
+                            conflictIndices.add(arr.index);
+                            conflictIndices.add(dep.index);
+                        }
+                    });
+                });
+
+                if (conflictIndices.size > 0) {
+                    conflicts.set(stand, conflictIndices);
+                }
+            });
+
+            return conflicts;
+        }
+
+        function highlightConflicts(stand) {
+            if (!stand) return;
+            document.querySelectorAll(`tr[data-conflict-stand="${stand}"]`).forEach(el => {
+                el.classList.add('highlight-conflict');
+            });
+        }
+
+        function unhighlightConflicts(stand) {
+            if (!stand) return;
+            document.querySelectorAll(`tr[data-conflict-stand="${stand}"]`).forEach(el => {
+                el.classList.remove('highlight-conflict');
+            });
+        }
+
         function updateStats() {
             let arrCount = 0; let depCount = 0;
             allFlights.forEach(f => {
@@ -1034,6 +1160,14 @@ UEA7323,UEA`;
             allFlights.forEach(f => {
                 if (f.callSign) callsignCounts[f.callSign] = (callsignCounts[f.callSign] || 0) + 1;
             });
+
+            // 检测停机位冲突
+            const standConflicts = detectStandConflicts();
+            const conflictIndices = new Set();
+            standConflicts.forEach((indices, stand) => {
+                indices.forEach(idx => conflictIndices.add(idx));
+            });
+
             const filteredFlights = getFilteredFlights();
 
             filteredFlights.forEach((item, visualIndex) => {
@@ -1046,12 +1180,27 @@ UEA7323,UEA`;
 
                 if (selectedIndices.has(idx)) tr.classList.add('selected-row');
 
+                // 重复呼号高亮
                 const isDuplicate = f.callSign && callsignCounts[f.callSign] > 1;
                 if (isDuplicate) {
                     tr.classList.add('duplicate-row');
                     tr.dataset.callsign = f.callSign;
-                    tr.onmouseenter = () => highlightDuplicates(f.callSign);
-                    tr.onmouseleave = () => unhighlightDuplicates(f.callSign);
+                    tr.addEventListener('mouseenter', () => highlightDuplicates(f.callSign));
+                    tr.addEventListener('mouseleave', () => unhighlightDuplicates(f.callSign));
+                }
+
+                // 停机位冲突高亮
+                const hasConflict = conflictIndices.has(idx);
+                if (hasConflict) {
+                    tr.classList.add('conflict-row');
+                    // 找到冲突的停机位
+                    standConflicts.forEach((indices, stand) => {
+                        if (indices.has(idx)) {
+                            tr.dataset.conflictStand = stand;
+                        }
+                    });
+                    tr.addEventListener('mouseenter', () => highlightConflicts(tr.dataset.conflictStand));
+                    tr.addEventListener('mouseleave', () => unhighlightConflicts(tr.dataset.conflictStand));
                 }
 
                 headers.forEach(h => {
@@ -1084,6 +1233,20 @@ UEA7323,UEA`;
                                 options = config.mapping.airlineToCallsigns[al];
                             }
                         }
+                        else if (h.key === 'stand') {
+                            // 停机位特殊处理：如果未配置且有现有值，保留现有值作为选项
+                            if (options.length === 0 && f[h.key]) {
+                                options = [f[h.key]];
+                            }
+                            // 添加空选项作为占位符
+                            if (options.length > 0 && !f[h.key]) {
+                                const emptyOpt = document.createElement('option');
+                                emptyOpt.value = '';
+                                emptyOpt.text = '-- 选择停机位 --';
+                                emptyOpt.selected = true;
+                                select.appendChild(emptyOpt);
+                            }
+                        }
                         if (f[h.key] && !options.includes(f[h.key])) {
                             const opt = document.createElement('option');
                             opt.value = f[h.key];
@@ -1106,6 +1269,16 @@ UEA7323,UEA`;
                             }
                             renderTable();
                         };
+
+                        // 自动同步：如果航班没有该字段值，但下拉框有选项，则保存当前显示的值
+                        // 排除停机位字段（需要用户主动选择）
+                        if (h.key !== 'stand' && !f[h.key] && select.options.length > 0) {
+                            const currentValue = select.value;
+                            if (currentValue) {
+                                allFlights[idx][h.key] = currentValue;
+                            }
+                        }
+
                         td.appendChild(select);
                     } else {
                         const input = document.createElement('input');
@@ -1480,6 +1653,62 @@ UEA7323,UEA`;
             renderTable();
             updateStats();
             showStatus(`已为 ${filtered.length} 条航班自动配置时间`);
+        }
+
+        // === 机场信息功能 ===
+        function openAirportInfoModal() {
+            // 如果已有停机位配置，显示当前数量
+            const currentCount = config.stands.length;
+            if (currentCount > 0) {
+                document.getElementById('standCount').value = currentCount;
+            }
+            updateAirportInfoPreview();
+            document.getElementById('airportInfoModal').style.display = 'flex';
+        }
+
+        function closeAirportInfoModal() {
+            document.getElementById('airportInfoModal').style.display = 'none';
+        }
+
+        function updateAirportInfoPreview() {
+            const countInput = document.getElementById('standCount').value;
+            const count = parseInt(countInput) || 0;
+            const previewEl = document.getElementById('airportInfoPreview');
+
+            if (count > 0 && count <= 99) {
+                const first = '1';
+                const last = count.toString();
+                previewEl.innerHTML = `
+                    <div><strong>停机位数量:</strong> ${count} 个</div>
+                    <div><strong>代号范围:</strong> ${first} ~ ${last}</div>
+                `;
+            } else if (config.stands.length > 0) {
+                previewEl.innerHTML = `
+                    <div><strong>当前已配置:</strong> ${config.stands.length} 个停机位</div>
+                    <div><strong>代号范围:</strong> ${config.stands[0]} ~ ${config.stands[config.stands.length - 1]}</div>
+                `;
+            } else {
+                previewEl.innerHTML = `<div><strong>当前状态:</strong> 未配置停机位</div>`;
+            }
+        }
+
+        function applyAirportInfo() {
+            const count = parseInt(document.getElementById('standCount').value);
+
+            if (isNaN(count) || count < 1 || count > 99) {
+                alert('请输入有效的停机位数量 (1-99)');
+                return;
+            }
+
+            // 生成停机位代号
+            config.stands = [];
+            for (let i = 1; i <= count; i++) {
+                config.stands.push(i.toString());
+            }
+
+            closeAirportInfoModal();
+            renderTable();
+            showStatus(`已生成 ${count} 个停机位 (01 ~ ${count.toString().padStart(2, '0')})`);
         }
     </script>
 </body>
