@@ -801,6 +801,7 @@ UEA7323,UEA`;
                 input.value = newVal;
                 updateFlight(index, key, newVal);
                 triggerAutoCalc(index, key, newVal);
+                renderTable(); // 重新渲染以更新冲突检测
             }
         }
         function handleTimeBlur(e, originalValue, index, key) {
@@ -812,6 +813,7 @@ UEA7323,UEA`;
             } else {
                 updateFlight(index, key, val);
                 triggerAutoCalc(index, key, val);
+                renderTable(); // 重新渲染以更新冲突检测
             }
         }
         function handleOffsetChange(e) {
@@ -1115,10 +1117,12 @@ UEA7323,UEA`;
                 // 规则1: 到达-出发冲突
                 data.arrivals.forEach(arr => {
                     data.departures.forEach(dep => {
-                        const arrInBlock = arr.flight.inBlockTime;
-                        const depTakeOff = dep.flight.takeOffTime;
-                        if (arrInBlock && depTakeOff && compareTime(arrInBlock, depTakeOff) < 0) {
-                            // 到达入位时间 < 出发起飞时间 = 冲突
+                        // 使用 inBlockTime，如果没有则用 landingTime 作为近似
+                        const arrInBlock = arr.flight.inBlockTime || arr.flight.landingTime;
+                        // 使用 takeOffTime，如果没有则用 offBlockTime 作为近似
+                        const depTakeOff = dep.flight.takeOffTime || dep.flight.offBlockTime;
+                        // 冲突条件：到达入位时间 <= 出发起飞时间（先进后出：到达先入位，出发还没起飞）
+                        if (arrInBlock && depTakeOff && compareTime(arrInBlock, depTakeOff) <= 0) {
                             conflictIndices.add(arr.index);
                             conflictIndices.add(dep.index);
                         }
@@ -1249,8 +1253,8 @@ UEA7323,UEA`;
                     tr.addEventListener('mouseleave', () => unhighlightConflicts(tr.dataset.conflictStand));
                 }
 
-                // 先出后进停机位永久高亮
-                if (f.stand && turnaroundStands.has(f.stand)) {
+                // 先出后进停机位永久高亮（仅当不存在冲突时）
+                if (f.stand && turnaroundStands.has(f.stand) && !hasConflict) {
                     tr.classList.add('turnaround-row');
                     tr.dataset.turnaroundStand = f.stand;
                     tr.addEventListener('mouseenter', () => highlightTurnaround(f.stand));
