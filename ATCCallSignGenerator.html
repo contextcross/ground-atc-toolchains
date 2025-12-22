@@ -1911,7 +1911,7 @@
 
                 const offlineCtx = new OfflineAudioContext(
                     audioBuffer.numberOfChannels,
-                    newDuration * audioBuffer.sampleRate * 1.5, // Margin
+                    Math.ceil(newDuration * audioBuffer.sampleRate) + 50,
                     audioBuffer.sampleRate
                 );
 
