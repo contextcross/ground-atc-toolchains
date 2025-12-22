@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -47,7 +48,7 @@
             display: flex;
             gap: 15px;
             align-items: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
             flex-wrap: wrap;
         }
 
@@ -68,10 +69,12 @@
             border-radius: 4px;
             border: 1px solid var(--border-color);
         }
+
         .input-group label {
             font-size: 0.85em;
             color: #aaa;
         }
+
         .input-group input {
             background-color: transparent;
             border: none;
@@ -80,6 +83,7 @@
             text-align: center;
             outline: none;
         }
+
         .input-group input:focus {
             background-color: #444;
         }
@@ -103,6 +107,7 @@
         button.secondary {
             background-color: #444;
         }
+
         button.secondary:hover {
             background-color: #555;
         }
@@ -111,6 +116,7 @@
             background-color: #e6a23c;
             color: #fff;
         }
+
         button.active-lock:hover {
             background-color: #cf9236;
         }
@@ -118,7 +124,7 @@
         button.danger {
             background-color: var(--danger-color);
         }
-        
+
         button:disabled {
             background-color: #333;
             color: #666;
@@ -191,7 +197,8 @@
             min-width: 1200px;
         }
 
-        th, td {
+        th,
+        td {
             border: 1px solid var(--border-color);
             padding: 4px 8px;
             text-align: left;
@@ -219,7 +226,7 @@
         tr.duplicate-row {
             background-color: var(--duplicate-bg);
         }
-        
+
         tr.highlight-group {
             outline: 2px solid var(--duplicate-border);
             background-color: rgba(255, 140, 0, 0.4) !important;
@@ -231,13 +238,14 @@
         tr.selected-row {
             background-color: var(--selected-bg) !important;
         }
-        
+
         tr.duplicate-row.selected-row {
             background-color: rgba(0, 120, 215, 0.4) !important;
             box-shadow: inset 3px 0 0 var(--duplicate-border);
         }
 
-        input, select {
+        input,
+        select {
             background-color: transparent;
             border: 1px solid transparent;
             color: inherit;
@@ -248,14 +256,15 @@
             font-size: inherit;
         }
 
-        input:focus, select:focus {
+        input:focus,
+        select:focus {
             background-color: var(--input-bg);
             border-color: var(--accent-color);
             outline: none;
         }
 
         input:focus {
-            background-color: #264f78 !important; 
+            background-color: #264f78 !important;
         }
 
         /* Locked Input Style */
@@ -266,7 +275,7 @@
             border: 1px solid transparent;
             font-style: italic;
         }
-        
+
         input.header-offset {
             width: 40px;
             font-size: 0.9em;
@@ -277,15 +286,30 @@
             border-radius: 3px;
             text-align: center;
         }
+
         input.header-offset:focus {
             background-color: #555;
             border-color: var(--accent-color);
         }
 
-        .cell-time { width: 90px; text-align: center; }
-        .cell-code { width: 80px; font-family: monospace; }
-        .cell-long { width: 150px; }
-        .cell-action { width: 50px; text-align: center; }
+        .cell-time {
+            width: 90px;
+            text-align: center;
+        }
+
+        .cell-code {
+            width: 80px;
+            font-family: monospace;
+        }
+
+        .cell-long {
+            width: 150px;
+        }
+
+        .cell-action {
+            width: 50px;
+            text-align: center;
+        }
 
         .btn-delete {
             background: none;
@@ -295,6 +319,7 @@
             font-size: 16px;
             padding: 0;
         }
+
         .btn-delete:hover {
             color: var(--danger-color);
         }
@@ -308,7 +333,7 @@
             justify-content: center;
             gap: 15px;
         }
-        
+
         .status-bar {
             padding: 5px 20px;
             background-color: var(--accent-color);
@@ -317,15 +342,96 @@
             display: flex;
             justify-content: space-between;
         }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background-color: var(--panel-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 24px;
+            min-width: 320px;
+            max-width: 400px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content h3 {
+            margin: 0 0 8px 0;
+            color: #fff;
+            font-size: 1.2em;
+        }
+
+        .modal-desc {
+            color: #888;
+            font-size: 0.9em;
+            margin-bottom: 20px;
+        }
+
+        .modal-field {
+            margin-bottom: 16px;
+        }
+
+        .modal-field label {
+            display: block;
+            margin-bottom: 6px;
+            color: #aaa;
+            font-size: 0.9em;
+        }
+
+        .modal-field input {
+            width: 100%;
+            padding: 8px 12px;
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: #fff;
+            font-size: 1em;
+            box-sizing: border-box;
+        }
+
+        .modal-field input:focus {
+            border-color: var(--accent-color);
+            outline: none;
+        }
+
+        .modal-info {
+            background-color: rgba(0, 122, 204, 0.15);
+            border: 1px solid var(--accent-color);
+            border-radius: 4px;
+            padding: 12px;
+            margin-bottom: 20px;
+            font-size: 0.85em;
+            color: #ccc;
+            line-height: 1.6;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
     </style>
 </head>
+
 <body>
 
     <div class="toolbar">
         <div class="title">✈️ Ground ATC Editor</div>
-        
+
         <button onclick="newFile()" class="secondary">新建 (清空)</button>
-        
+
         <div class="file-input-wrapper">
             <button>📂 打开 CSV</button>
             <input type="file" id="csvInput" accept=".csv" onchange="loadCSV(this)">
@@ -344,8 +450,10 @@
         <!-- Airport Code Lock -->
         <div class="input-group">
             <label for="airportCode">当前机场:</label>
-            <input type="text" id="airportCode" placeholder="ICAO" maxlength="4" style="width: 50px; text-transform: uppercase;">
-            <button id="btnLock" class="secondary" onclick="toggleAirportLock()" style="padding: 2px 8px; font-size: 0.8em;">🔓 锁定</button>
+            <input type="text" id="airportCode" placeholder="ICAO" maxlength="4"
+                style="width: 50px; text-transform: uppercase;">
+            <button id="btnLock" class="secondary" onclick="toggleAirportLock()"
+                style="padding: 2px 8px; font-size: 0.8em;">🔓 锁定</button>
         </div>
 
         <div style="flex:1"></div>
@@ -372,13 +480,17 @@
                 </tbody>
             </table>
         </div>
-        
+
         <div class="add-row-bar">
             <!-- New Batch Buttons with Logic Fix -->
-            <button id="btnSetArr" class="secondary" onclick="batchSetAsArrival()" disabled title="需锁定当前机场">📥 设置到达</button>
-            <button id="btnSetDep" class="secondary" onclick="batchSetAsDeparture()" disabled title="需锁定当前机场">📤 设置出发</button>
+            <button id="btnSetArr" class="secondary" onclick="batchSetAsArrival()" disabled title="需锁定当前机场">📥
+                设置到达</button>
+            <button id="btnSetDep" class="secondary" onclick="batchSetAsDeparture()" disabled title="需锁定当前机场">📤
+                设置出发</button>
             <div style="width: 20px; border-right: 1px solid #444; margin-right: 10px;"></div>
             <button class="secondary" onclick="deduplicateCallsigns()" title="自动修复重复呼号">🔧 呼号去重</button>
+            <button id="btnAutoSchedule" class="secondary" onclick="openAutoScheduleModal()" title="自动分配时间">⏱️
+                自动配表</button>
             <button onclick="addRow()">+ 添加航班</button>
         </div>
     </div>
@@ -386,6 +498,33 @@
     <div class="status-bar" id="statusBar">
         <span id="statusMsg">就绪</span>
         <span id="statsInfo">航班数: 0</span>
+    </div>
+
+    <!-- 自动配表对话框 -->
+    <div id="autoScheduleModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h3>⏱️ 自动配表</h3>
+            <p class="modal-desc">为当前视图中的航班自动分配时间</p>
+
+            <div class="modal-field">
+                <label for="autoStartTime">开始时间:</label>
+                <input type="text" id="autoStartTime" placeholder="HH:mm:ss" value="08:00:00">
+            </div>
+
+            <div class="modal-field">
+                <label for="autoInterval">间隔时间 (分钟):</label>
+                <input type="number" id="autoInterval" value="5" min="1" max="120">
+            </div>
+
+            <div class="modal-info" id="autoSchedulePreview">
+                <!-- 预览信息动态生成 -->
+            </div>
+
+            <div class="modal-actions">
+                <button class="secondary" onclick="closeAutoScheduleModal()">取消</button>
+                <button onclick="applyAutoSchedule()">✓ 应用</button>
+            </div>
+        </div>
     </div>
 
     <!-- Script -->
@@ -425,39 +564,39 @@ UEA7323,UEA`;
 
         let allFlights = [];
         let currentTab = 'arrival';
-        let currentAirportCode = ""; 
+        let currentAirportCode = "";
         let isAirportLocked = false;
-        
+
         let selectedIndices = new Set();
         let lastVisualIndex = null;
-        
+
         let timeOffsets = { arrival: 10, departure: 10 };
-        
+
         let config = {
             aircraftTypes: [
-                "AIRBUS A-320ceo", "AIRBUS A-320neo", "AIRBUS A-321neo", "AIRBUS A-330-300", 
-                "AIRBUS A-350-900", "BOEING 737 MAX 8", "BOEING 737-800", "BOEING 747-8I", 
+                "AIRBUS A-320ceo", "AIRBUS A-320neo", "AIRBUS A-321neo", "AIRBUS A-330-300",
+                "AIRBUS A-350-900", "BOEING 737 MAX 8", "BOEING 737-800", "BOEING 747-8I",
                 "BOEING 777-300ER", "COMAC C-919"
             ],
             airlines: [
-                "AAL", "AFR", "ASA", "AVA", "BAW", "CCA", "CDG", "CES", "CHH", "CJX", "CQH", 
-                "CSC", "CSN", "CSZ", "CXA", "DAL", "DKH", "FFT", "GCR", "HXA", "JAL", "JZA", 
-                "KNA", "KPA", "LKE", "OKA", "OTC", "QTR", "RYR", "SIA", "SWR", "THA", "TVB", 
+                "AAL", "AFR", "ASA", "AVA", "BAW", "CCA", "CDG", "CES", "CHH", "CJX", "CQH",
+                "CSC", "CSN", "CSZ", "CXA", "DAL", "DKH", "FFT", "GCR", "HXA", "JAL", "JZA",
+                "KNA", "KPA", "LKE", "OKA", "OTC", "QTR", "RYR", "SIA", "SWR", "THA", "TVB",
                 "UAL", "UEA", "VIR"
             ],
-            callsigns: [], 
+            callsigns: [],
             voices: ["CN-Captain-Young", "CN-Captain-Middle-Aged", "CN-Captain-Young-EN"],
             languages: ["zh", "en"],
-            
+
             mapping: {
                 aircraftToAirlines: {},
                 airlineToAircrafts: {},
-                callsignToAirline: {}, 
+                callsignToAirline: {},
                 airlineToCallsigns: {}
             }
         };
 
-        window.onload = function() {
+        window.onload = function () {
             // Default mapping init
             const defaultAcMap = {
                 "AIRBUS A-320ceo": ["CCA", "CES", "CHH", "CQH", "CSC", "CSN", "CSZ", "UEA"],
@@ -479,6 +618,10 @@ UEA7323,UEA`;
             renderTable();
             updateStats();
             updateBatchButtons();
+
+            // 绑定自动配表输入事件
+            document.getElementById('autoStartTime').addEventListener('input', updateAutoSchedulePreview);
+            document.getElementById('autoInterval').addEventListener('input', updateAutoSchedulePreview);
         };
 
         function buildReverseMapping() {
@@ -545,17 +688,17 @@ UEA7323,UEA`;
         function getFlightType(f) {
             const offBlock = f.offBlockTime ? f.offBlockTime.trim() : "";
             const landing = f.landingTime ? f.landingTime.trim() : "";
-            
+
             // 1. Time based (Explicit intent)
             if (offBlock) return 'departure';
             if (landing) return 'arrival';
-            
+
             // 2. Airport Code based (Fallback for drafts)
             if (isAirportLocked && currentAirportCode) {
                 if (f.arrival === currentAirportCode) return 'arrival';
                 if (f.departure === currentAirportCode) return 'departure';
             }
-            
+
             // 3. Default fallback
             return 'arrival';
         }
@@ -583,7 +726,7 @@ UEA7323,UEA`;
             if (val === "") return;
             if (!isValidTimeFormat(val)) {
                 alert("请输入正确的24小时制时间格式！(HH:mm:ss)");
-                e.target.value = originalValue; 
+                e.target.value = originalValue;
             } else {
                 updateFlight(index, key, val);
                 triggerAutoCalc(index, key, val);
@@ -624,7 +767,7 @@ UEA7323,UEA`;
             return allFlights.map((f, index) => ({ flight: f, index: index }))
                 .filter(item => {
                     const f = item.flight;
-                    
+
                     // 1. Tab Type Check
                     if (currentTab === 'all') return true;
                     const type = getFlightType(f);
@@ -667,7 +810,7 @@ UEA7323,UEA`;
             } else if (e.button === 2) {
                 if (e.shiftKey) {
                     selectedIndices.delete(dataIndex);
-                    e.preventDefault(); 
+                    e.preventDefault();
                 }
             }
             updateSelectionVisuals();
@@ -685,10 +828,10 @@ UEA7323,UEA`;
             const btnSetArr = document.getElementById('btnSetArr');
             const btnSetDep = document.getElementById('btnSetDep');
             const enabled = isAirportLocked && currentAirportCode !== "";
-            
+
             btnSetArr.disabled = !enabled;
             btnSetDep.disabled = !enabled;
-            
+
             if (enabled) {
                 btnSetArr.title = `将选中行转换为到达航班 (${currentAirportCode})`;
                 btnSetDep.title = `将选中行转换为出发航班 (${currentAirportCode})`;
@@ -710,8 +853,8 @@ UEA7323,UEA`;
                 if (!f) return;
 
                 const oldArr = f.arrival;
-                f.arrival = freshCode; 
-                
+                f.arrival = freshCode;
+
                 if (f.departure === freshCode) {
                     f.departure = (oldArr && oldArr !== freshCode) ? oldArr : "ZBAA";
                 }
@@ -722,7 +865,7 @@ UEA7323,UEA`;
                     f.takeOffTime = "";
                     const offset = timeOffsets['arrival'] || 10;
                     f.inBlockTime = addMinutes(f.landingTime, offset);
-                } 
+                }
                 else if (f.landingTime) {
                     f.offBlockTime = "";
                     f.takeOffTime = "";
@@ -749,14 +892,14 @@ UEA7323,UEA`;
                 if (!f) return;
 
                 const oldDep = f.departure;
-                f.departure = freshCode; 
-                
+                f.departure = freshCode;
+
                 if (f.arrival === freshCode) {
                     f.arrival = (oldDep && oldDep !== freshCode) ? oldDep : "ZBAA";
                 }
 
                 if (f.landingTime && !f.offBlockTime) {
-                    f.offBlockTime = f.landingTime; 
+                    f.offBlockTime = f.landingTime;
                     f.landingTime = "";
                     f.inBlockTime = "";
                     const offset = timeOffsets['departure'] || 10;
@@ -798,7 +941,7 @@ UEA7323,UEA`;
             updateBatchButtons();
             renderTable();
         }
-        
+
         function deduplicateCallsigns() {
             const usedCallsigns = new Set(allFlights.map(f => f.callSign).filter(c => c));
             const seenThisRun = new Set();
@@ -818,7 +961,7 @@ UEA7323,UEA`;
                     seenThisRun.add(f.callSign);
                 }
             });
-            if(changes > 0) {
+            if (changes > 0) {
                 renderTable();
                 updateStats();
                 alert(`已自动修复 ${changes} 个重复呼号`);
@@ -828,11 +971,11 @@ UEA7323,UEA`;
         }
 
         function highlightDuplicates(callsign) {
-            if(!callsign) return;
+            if (!callsign) return;
             document.querySelectorAll(`tr[data-callsign="${callsign}"]`).forEach(el => el.classList.add('highlight-group'));
         }
         function unhighlightDuplicates(callsign) {
-            if(!callsign) return;
+            if (!callsign) return;
             document.querySelectorAll(`tr[data-callsign="${callsign}"]`).forEach(el => el.classList.remove('highlight-group'));
         }
 
@@ -889,17 +1032,17 @@ UEA7323,UEA`;
             tbody.innerHTML = '';
             const callsignCounts = {};
             allFlights.forEach(f => {
-                if(f.callSign) callsignCounts[f.callSign] = (callsignCounts[f.callSign] || 0) + 1;
+                if (f.callSign) callsignCounts[f.callSign] = (callsignCounts[f.callSign] || 0) + 1;
             });
             const filteredFlights = getFilteredFlights();
 
             filteredFlights.forEach((item, visualIndex) => {
                 const tr = document.createElement('tr');
                 const f = item.flight;
-                const idx = item.index; 
+                const idx = item.index;
                 tr.dataset.index = idx;
                 tr.onmousedown = (e) => handleRowSelection(e, idx, visualIndex);
-                tr.oncontextmenu = (e) => { if(e.shiftKey) e.preventDefault(); };
+                tr.oncontextmenu = (e) => { if (e.shiftKey) e.preventDefault(); };
 
                 if (selectedIndices.has(idx)) tr.classList.add('selected-row');
 
@@ -927,7 +1070,7 @@ UEA7323,UEA`;
                                 const allowedAirlines = config.mapping.aircraftToAirlines[acType];
                                 options = options.filter(al => allowedAirlines.includes(al));
                             }
-                        } 
+                        }
                         else if (h.key === 'aircraftType') {
                             const al = f.airline;
                             if (al && config.mapping.airlineToAircrafts[al]) {
@@ -961,7 +1104,7 @@ UEA7323,UEA`;
                                 const mappedAirline = config.mapping.callsignToAirline[newVal];
                                 if (mappedAirline) updateFlight(idx, 'airline', mappedAirline);
                             }
-                            renderTable(); 
+                            renderTable();
                         };
                         td.appendChild(select);
                     } else {
@@ -1014,8 +1157,8 @@ UEA7323,UEA`;
                 if (!isDepartureIntent) defArrival = currentAirportCode;
                 else defDeparture = currentAirportCode;
             } else {
-                 if (!isDepartureIntent) { defArrival = 'ZSJN'; defDeparture = 'ZBAA'; } 
-                 else { defDeparture = 'ZSJN'; defArrival = 'ZBAA'; }
+                if (!isDepartureIntent) { defArrival = 'ZSJN'; defDeparture = 'ZBAA'; }
+                else { defDeparture = 'ZSJN'; defArrival = 'ZBAA'; }
             }
 
             const defAirline = config.airlines[0] || 'CSN';
@@ -1023,7 +1166,7 @@ UEA7323,UEA`;
             if (config.mapping.airlineToAircrafts[defAirline] && config.mapping.airlineToAircrafts[defAirline].length > 0) {
                 defAircraft = config.mapping.airlineToAircrafts[defAirline][0];
             }
-            
+
             let defCallsign = '';
             if (config.mapping.airlineToCallsigns[defAirline] && config.mapping.airlineToCallsigns[defAirline].length > 0) {
                 defCallsign = config.mapping.airlineToCallsigns[defAirline][0];
@@ -1084,7 +1227,7 @@ UEA7323,UEA`;
                 allFlights = [];
                 selectedIndices.clear();
                 const csvInput = document.getElementById('csvInput');
-                if(csvInput) csvInput.value = '';
+                if (csvInput) csvInput.value = '';
                 renderTable();
                 updateStats();
                 showStatus("已新建空表");
@@ -1094,10 +1237,10 @@ UEA7323,UEA`;
             const file = input.files[0];
             if (!file) return;
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = function (e) {
                 const text = e.target.result;
                 parseCSV(text);
-                input.value = ''; 
+                input.value = '';
             };
             reader.readAsText(file);
         }
@@ -1133,14 +1276,14 @@ UEA7323,UEA`;
             config.mapping.airlineToAircrafts = {};
             files.forEach(file => {
                 const reader = new FileReader();
-                reader.onload = function(e) {
+                reader.onload = function (e) {
                     const text = e.target.result;
                     if (file.name.includes("ModelPath")) parseModelConfig(text);
                     else if (file.name.includes("LiveryPath")) parseLiveryConfig(text);
                     loadedCount++;
                     if (loadedCount === files.length) {
                         showStatus("配置加载完成");
-                        buildReverseMapping(); 
+                        buildReverseMapping();
                         renderTable();
                     }
                 };
@@ -1148,12 +1291,12 @@ UEA7323,UEA`;
             });
             input.value = '';
         }
-        
+
         function loadCallsigns(input) {
             const file = input.files[0];
             if (!file) return;
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = function (e) {
                 const text = e.target.result;
                 parseCallsignConfig(text);
                 showStatus("呼号表已更新");
@@ -1173,7 +1316,7 @@ UEA7323,UEA`;
 
             lines.forEach(line => {
                 line = line.trim();
-                if (!line || line.startsWith('callSign')) return; 
+                if (!line || line.startsWith('callSign')) return;
                 const parts = line.split(',');
                 if (parts.length >= 2) {
                     const cs = parts[0].trim();
@@ -1216,7 +1359,7 @@ UEA7323,UEA`;
                 if (line.includes('=')) {
                     const parts = line.split('=');
                     const key = parts[0].trim();
-                    if (key && key.length === 3) { 
+                    if (key && key.length === 3) {
                         airlines.add(key);
                         if (currentAircraft) {
                             if (!config.mapping.aircraftToAirlines[currentAircraft]) config.mapping.aircraftToAirlines[currentAircraft] = [];
@@ -1258,6 +1401,87 @@ UEA7323,UEA`;
                 document.body.removeChild(link);
             }
         }
+
+        // === 自动配表功能 ===
+        function openAutoScheduleModal() {
+            // 禁止在"全部"标签页使用
+            if (currentTab === 'all') {
+                alert('请先切换到「到达航班」或「出发航班」标签页');
+                return;
+            }
+
+            const filtered = getFilteredFlights();
+            if (filtered.length === 0) {
+                alert('当前视图没有航班数据');
+                return;
+            }
+
+            // 更新预览信息
+            updateAutoSchedulePreview();
+
+            // 显示模态框
+            document.getElementById('autoScheduleModal').style.display = 'flex';
+        }
+
+        function closeAutoScheduleModal() {
+            document.getElementById('autoScheduleModal').style.display = 'none';
+        }
+
+        function updateAutoSchedulePreview() {
+            const filtered = getFilteredFlights();
+            const startTime = document.getElementById('autoStartTime').value;
+            const interval = parseInt(document.getElementById('autoInterval').value) || 5;
+
+            const tabLabel = currentTab === 'arrival' ? '到达航班' : '出发航班';
+            const timeField = currentTab === 'arrival' ? '着陆时间' : '推出时间';
+            const lastTime = filtered.length > 0 ? addMinutes(startTime, interval * (filtered.length - 1)) : startTime;
+
+            const previewEl = document.getElementById('autoSchedulePreview');
+            previewEl.innerHTML = `
+                <div><strong>当前视图:</strong> ${tabLabel}</div>
+                <div><strong>航班数量:</strong> ${filtered.length} 条</div>
+                <div><strong>设置字段:</strong> ${timeField}</div>
+                <div><strong>时间范围:</strong> ${startTime} → ${lastTime}</div>
+            `;
+        }
+
+        function applyAutoSchedule() {
+            const startTimeStr = document.getElementById('autoStartTime').value.trim();
+            const interval = parseInt(document.getElementById('autoInterval').value);
+
+            // 验证输入
+            if (!isValidTimeFormat(startTimeStr)) {
+                alert('请输入正确的时间格式 (HH:mm:ss)');
+                return;
+            }
+            if (isNaN(interval) || interval < 1) {
+                alert('间隔时间必须为正整数');
+                return;
+            }
+
+            const filtered = getFilteredFlights();
+            const offset = timeOffsets[currentTab] || 10;
+
+            // 确定要设置的字段
+            const primaryKey = currentTab === 'arrival' ? 'landingTime' : 'offBlockTime';
+            const secondaryKey = currentTab === 'arrival' ? 'inBlockTime' : 'takeOffTime';
+
+            // 按顺序设置时间
+            filtered.forEach((item, i) => {
+                const flight = allFlights[item.index];
+                const calculatedTime = addMinutes(startTimeStr, interval * i);
+
+                flight[primaryKey] = calculatedTime;
+                flight[secondaryKey] = addMinutes(calculatedTime, offset);
+            });
+
+            // 关闭对话框并刷新
+            closeAutoScheduleModal();
+            renderTable();
+            updateStats();
+            showStatus(`已为 ${filtered.length} 条航班自动配置时间`);
+        }
     </script>
 </body>
+
 </html>
