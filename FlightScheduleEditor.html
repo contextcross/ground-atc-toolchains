@@ -151,31 +151,62 @@
         }
 
         /* Tabs */
+        /* Tabs - Skeuomorphic Refactor */
         .tabs {
             display: flex;
-            background-color: var(--panel-color);
-            border-bottom: 1px solid var(--border-color);
-            padding-left: 10px;
+            background-color: transparent;
+            /* Remove border-bottom and use gap */
+            gap: 12px;
+            padding: 10px 10px 0 10px;
+            position: relative;
+            z-index: 5;
         }
 
         .tab {
-            padding: 10px 20px;
+            padding: 12px 24px;
             cursor: pointer;
-            border-right: 1px solid var(--border-color);
+            border-radius: 12px 12px 0 0;
             background-color: var(--panel-color);
             color: #888;
             font-size: 0.9em;
+            font-weight: 500;
+            border: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            /* Subtle shadow for depth */
+            box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .tab:after {
+            /* Connecting curve hack (optional, kept simple for now) */
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background-color: var(--border-color);
+            z-index: -1;
         }
 
         .tab:hover {
-            background-color: #2d2d2d;
+            background-color: #333;
             color: #ccc;
         }
 
         .tab.active {
             background-color: var(--bg-color);
-            color: white;
-            border-top: 2px solid var(--accent-color);
+            color: var(--accent-color);
+            text-shadow: 0 0 8px rgba(0, 238, 255, 0.5);
+            /* Remove bottom border visual by covering it */
+            box-shadow: 0 -4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 10;
+        }
+
+        .tab.active:after {
+            background-color: var(--bg-color);
+            height: 2px;
+            bottom: -1px;
         }
 
         /* Content Area */
@@ -517,6 +548,16 @@
             border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
+        /* Conflict state for stand card */
+        .stand-card.conflict {
+            background-color: rgba(139, 0, 0, 0.3);
+            border: 2px solid #f44336;
+            box-shadow:
+                0 0 15px rgba(244, 67, 54, 0.4),
+                8px 8px 16px var(--skeuo-dark-shadow),
+                -8px -8px 16px var(--skeuo-light-shadow);
+        }
+
         /* Card Header */
         .stand-header {
             display: flex;
@@ -610,6 +651,17 @@
             border: 1px solid rgba(33, 150, 243, 0.3);
         }
 
+        /* Flight indicator dots */
+        .flight-dot {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin: 0 1px;
+            box-shadow: 0 0 4px currentColor;
+            cursor: help;
+        }
+
         /* Expandable Content (Inset Screen) */
         .stand-body {
             max-height: 0;
@@ -657,20 +709,36 @@
         }
 
         .flight-tag {
-            font-size: 0.75em;
-            padding: 2px 6px;
-            border-radius: 4px;
-            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
         }
 
         .tag-arr {
-            color: #4CAF50;
-            border: 1px solid rgba(76, 175, 80, 0.3);
+            border: 2px solid rgba(76, 175, 80, 0.5);
         }
 
         .tag-dep {
-            color: #2196F3;
-            border: 1px solid rgba(33, 150, 243, 0.3);
+            border: 2px solid rgba(33, 150, 243, 0.5);
+        }
+
+        /* Arrow icons for flight type */
+        .arrow-icon {
+            width: 20px;
+            height: 20px;
+            fill: none;
+            stroke-width: 3.5;
+        }
+
+        .arrow-icon.arr {
+            stroke: #4CAF50;
+        }
+
+        .arrow-icon.dep {
+            stroke: #2196F3;
         }
 
         .empty-stand-msg {
@@ -1023,33 +1091,78 @@ UEA7323,UEA`;
             sortedStands.forEach(stand => {
                 const data = standData[stand];
                 const card = document.createElement('div');
-                card.className = `stand-card ${expandedStands.has(stand) ? 'expanded' : ''}`;
                 card.id = `stand-card-${stand}`;
 
                 // Content HTML
                 const arrCount = data.arrivals.length;
                 const depCount = data.departures.length;
 
+                // 冲突检测：多到达 或 先进后出
+                let hasConflict = false;
+
+                // 规则1: 多到达冲突 (≥2 个到达航班)
+                if (arrCount >= 2) {
+                    hasConflict = true;
+                }
+
+                // 规则2: 到达-出发时间冲突 (先进后出)
+                if (!hasConflict && arrCount >= 1 && depCount >= 1) {
+                    data.arrivals.forEach(arr => {
+                        data.departures.forEach(dep => {
+                            const arrInBlock = arr.inBlockTime || arr.landingTime;
+                            const depTakeOff = dep.takeOffTime || dep.offBlockTime;
+                            // 冲突条件：到达入位时间 <= 出发起飞时间
+                            if (arrInBlock && depTakeOff && compareTime(arrInBlock, depTakeOff) <= 0) {
+                                hasConflict = true;
+                            }
+                        });
+                    });
+                }
+
+                // Apply conflict class
+                card.className = `stand-card ${expandedStands.has(stand) ? 'expanded' : ''} ${hasConflict ? 'conflict' : ''}`;
+
                 // Flight List HTML
                 let flightListHtml = '';
+
+                // 创建按时间排序的航班序列（用于图标显示）
+                const sortedFlightsForIcons = [
+                    ...data.arrivals.map(f => ({ _type: 'arr', _time: f.landingTime || f.inBlockTime })),
+                    ...data.departures.map(f => ({ _type: 'dep', _time: f.offBlockTime || f.takeOffTime }))
+                ].sort((a, b) => (a._time || '').localeCompare(b._time || ''));
+
+                // 生成图标HTML
+                let iconsHtml = '';
+                sortedFlightsForIcons.forEach(f => {
+                    const color = f._type === 'arr' ? '#4CAF50' : '#2196F3';
+                    const title = f._type === 'arr' ? '进港' : '出港';
+                    iconsHtml += `<span class="flight-dot" style="background-color:${color};" title="${title} ${f._time || ''}"></span>`;
+                });
+                if (sortedFlightsForIcons.length === 0) {
+                    iconsHtml = '<span style="color:#555;font-size:0.8em;">(空闲)</span>';
+                }
+
                 if (arrCount + depCount === 0) {
                     flightListHtml = '<div style="text-align:center; padding:10px; color:#555;">(空闲)</div>';
                 } else {
                     // Combine and sort by time
                     const allStandFlights = [
-                        ...data.arrivals.map(f => ({ ...f, _type: 'arr', _time: f.inBlockTime || f.landingTime })),
-                        ...data.departures.map(f => ({ ...f, _type: 'dep', _time: f.takeOffTime || f.offBlockTime }))
+                        ...data.arrivals.map(f => ({ ...f, _type: 'arr', _time: f.landingTime || f.inBlockTime })),
+                        ...data.departures.map(f => ({ ...f, _type: 'dep', _time: f.offBlockTime || f.takeOffTime }))
                     ].sort((a, b) => (a._time || '').localeCompare(b._time || ''));
 
                     allStandFlights.forEach(f => {
                         const isArr = f._type === 'arr';
                         const time = f._time || '--:--';
                         const tagClass = isArr ? 'tag-arr' : 'tag-dep';
-                        const tagName = isArr ? '进' : '出';
+                        // 箭头图标：进港绿色向下，出港蓝色向上
+                        const arrowIcon = isArr
+                            ? '<svg viewBox="0 0 24 24" class="arrow-icon arr"><path d="M12 4v12m0 0l-5-5m5 5l5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+                            : '<svg viewBox="0 0 24 24" class="arrow-icon dep"><path d="M12 20V8m0 0l5 5m-5-5l-5 5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
                         flightListHtml += `
                             <div class="flight-item">
-                                <div class="flight-tag ${tagClass}">${tagName}</div>
+                                <div class="flight-tag ${tagClass}">${arrowIcon}</div>
                                 <div class="flight-callsign">${f.callSign || '???'}</div>
                                 <div class="flight-time">${time}</div>
                             </div>
@@ -1066,12 +1179,7 @@ UEA7323,UEA`;
                             <div class="stand-number">停机位 ${stand}</div>
                         </div>
                         <div class="stand-stats">
-                            <div class="stat-item stat-dep" title="出港数量">
-                                <span class="stat-label">出</span><span class="stat-count">${depCount}</span>
-                            </div>
-                            <div class="stat-item stat-arr" title="进港数量">
-                                <span class="stat-label">进</span><span class="stat-count">${arrCount}</span>
-                            </div>
+                            ${iconsHtml}
                         </div>
                     </div>
                     <div class="stand-body">
@@ -1914,7 +2022,40 @@ UEA7323,UEA`;
             selectedIndices.clear();
             renderTable();
             updateStats();
-            showStatus(`已加载 ${allFlights.length} 条航班数据`);
+
+            // 自动检测并锁定当前机场
+            const detectedAirport = detectCurrentAirport();
+            if (detectedAirport && !isAirportLocked) {
+                const input = document.getElementById('airportCode');
+                const btn = document.getElementById('btnLock');
+                currentAirportCode = detectedAirport;
+                isAirportLocked = true;
+                input.value = detectedAirport;
+                input.disabled = true;
+                btn.innerHTML = "🔒 解锁";
+                btn.classList.add("active-lock");
+                updateBatchButtons();
+                showStatus(`已加载 ${allFlights.length} 条航班数据，自动检测并锁定机场: ${detectedAirport}`);
+            } else {
+                showStatus(`已加载 ${allFlights.length} 条航班数据`);
+            }
+        }
+
+        // 自动检测当前机场：统计出现次数等于航班总数的机场代码
+        function detectCurrentAirport() {
+            if (allFlights.length === 0) return null;
+
+            const count = {};
+            allFlights.forEach(f => {
+                if (f.departure) count[f.departure] = (count[f.departure] || 0) + 1;
+                if (f.arrival) count[f.arrival] = (count[f.arrival] || 0) + 1;
+            });
+
+            const total = allFlights.length;
+            for (const code in count) {
+                if (count[code] === total) return code;
+            }
+            return null;
         }
         function loadConfigs(input) {
             const files = Array.from(input.files);
