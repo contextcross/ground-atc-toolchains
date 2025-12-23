@@ -15,8 +15,8 @@
 > 
 > **[点击启动呼号生成器 ->](https://contextcross.github.io/ground-atc-toolchains/ATCCallSignGenerator.html)**
 >
-> TODO
-> 
+> **TODO**
+>
 > 支持游戏内所有无线电语音文本的批量生成，生成列表通过无线电语音文本模板变量定义获取。
 
 ### 2. 🗓️ [Flight Schedule Editor (航班时刻表编辑器)](https://contextcross.github.io/ground-atc-toolchains/FlightScheduleEditor.html)
@@ -26,11 +26,13 @@
 > 支持导入/导出CSV、已实现自动呼号去重、停机位信息输入和检测、一键重新排布、自动等差配置时间、自动检测多进近/先进近后起飞等不合法航班。
 > **[点击启动时刻表编辑器 ->](https://contextcross.github.io/ground-atc-toolchains/FlightScheduleEditor.html)**
 >
-> TODO
+> **TODO**
+>
+> 支持中转航班。
 > 
-> 支持中转航班
-> 支持导入OSM信息解析文件，自动同步地图数据
-> 通过算法量化关卡设计，支持多维度难度精细调整，指定条件自动生成对应难度的排班表
+> 支持导入OSM信息解析文件，自动同步地图数据。
+> 
+> 通过算法量化关卡设计，支持多维度难度精细调整，指定条件自动生成对应难度的排班表。
 
 ---
 
