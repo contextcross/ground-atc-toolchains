@@ -1,0 +1,2791 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ground ATC - 航班时刻表编辑器</title>
+    <style>
+        :root {
+            --bg-color: #1e1e1e;
+            --panel-color: #252526;
+            --border-color: #3e3e42;
+            --text-color: #d4d4d4;
+            --accent-color: #007acc;
+            --accent-hover: #0062a3;
+            --danger-color: #f44336;
+            --header-bg: #333333;
+            --row-hover: #2a2d2e;
+            --input-bg: #3c3c3c;
+            --input-border: #3e3e42;
+            --locked-bg: #2d2d2d;
+            --locked-text: #888;
+            /* Visual States */
+            --duplicate-bg: rgba(255, 140, 0, 0.15);
+            --duplicate-border: #ff8c00;
+            --selected-bg: rgba(0, 120, 215, 0.3);
+            --selected-border: #007acc;
+            /* Stand Conflict States */
+            --conflict-bg: rgba(244, 67, 54, 0.15);
+            --conflict-border: #f44336;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* Toolbar */
+        .toolbar {
+            background-color: var(--panel-color);
+            padding: 10px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            flex-wrap: wrap;
+        }
+
+        .title {
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-right: 10px;
+            color: #fff;
+        }
+
+        /* Input Group in Toolbar */
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background-color: #333;
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+
+        .input-group label {
+            font-size: 0.85em;
+            color: #aaa;
+        }
+
+        .input-group input {
+            background-color: transparent;
+            border: none;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            outline: none;
+        }
+
+        .input-group input:focus {
+            background-color: #444;
+        }
+
+        button {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+
+        button:hover {
+            background-color: var(--accent-hover);
+        }
+
+        button.secondary {
+            background-color: #444;
+        }
+
+        button.secondary:hover {
+            background-color: #555;
+        }
+
+        button.active-lock {
+            background-color: #e6a23c;
+            color: #fff;
+        }
+
+        button.active-lock:hover {
+            background-color: #cf9236;
+        }
+
+        button.danger {
+            background-color: var(--danger-color);
+        }
+
+        button:disabled {
+            background-color: #333;
+            color: #666;
+            cursor: not-allowed;
+            border: 1px solid #444;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .file-input-wrapper input[type=file] {
+            font-size: 100px;
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        /* Tabs */
+        /* Tabs - Skeuomorphic Refactor */
+        .tabs {
+            display: flex;
+            background-color: transparent;
+            /* Remove border-bottom and use gap */
+            gap: 12px;
+            padding: 10px 10px 0 10px;
+            position: relative;
+            z-index: 5;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            border-radius: 12px 12px 0 0;
+            background-color: var(--panel-color);
+            color: #888;
+            font-size: 0.9em;
+            font-weight: 500;
+            border: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            /* Subtle shadow for depth */
+            box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .tab:after {
+            /* Connecting curve hack (optional, kept simple for now) */
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background-color: var(--border-color);
+            z-index: -1;
+        }
+
+        .tab:hover {
+            background-color: #333;
+            color: #ccc;
+        }
+
+        .tab.active {
+            background-color: var(--bg-color);
+            color: var(--accent-color);
+            text-shadow: 0 0 8px rgba(0, 238, 255, 0.5);
+            /* Remove bottom border visual by covering it */
+            box-shadow: 0 -4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 10;
+        }
+
+        .tab.active:after {
+            background-color: var(--bg-color);
+            height: 2px;
+            bottom: -1px;
+        }
+
+        /* Content Area */
+        .content {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .table-container {
+            flex: 1;
+            overflow: auto;
+            padding-bottom: 50px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            min-width: 1200px;
+        }
+
+        th,
+        td {
+            border: 1px solid var(--border-color);
+            padding: 4px 8px;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        th {
+            background-color: var(--header-bg);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            font-weight: 600;
+            color: #ddd;
+        }
+
+        tr:nth-child(even) {
+            background-color: #222;
+        }
+
+        tr:hover {
+            background-color: var(--row-hover);
+        }
+
+        /* Duplicate Styling */
+        tr.duplicate-row {
+            background-color: var(--duplicate-bg) !important;
+        }
+
+        tr.highlight-group {
+            outline: 2px solid var(--duplicate-border);
+            background-color: rgba(255, 140, 0, 0.4) !important;
+            z-index: 5;
+            position: relative;
+        }
+
+        /* Selected Styling */
+        tr.selected-row {
+            background-color: var(--selected-bg) !important;
+        }
+
+        tr.duplicate-row.selected-row {
+            background-color: rgba(0, 120, 215, 0.4) !important;
+            box-shadow: inset 3px 0 0 var(--duplicate-border);
+        }
+
+        /* Stand Conflict Styling */
+        tr.conflict-row {
+            background-color: var(--conflict-bg) !important;
+        }
+
+        tr.highlight-conflict {
+            outline: 2px solid var(--conflict-border);
+            background-color: rgba(244, 67, 54, 0.4) !important;
+            z-index: 5;
+            position: relative;
+        }
+
+        tr.conflict-row.selected-row {
+            background-color: rgba(244, 67, 54, 0.3) !important;
+            box-shadow: inset 3px 0 0 var(--conflict-border);
+        }
+
+        /* 同时有重复呼号和停机位冲突 */
+        tr.duplicate-row.conflict-row {
+            background: linear-gradient(90deg, var(--duplicate-bg) 50%, var(--conflict-bg) 50%);
+        }
+
+        /* Turnaround Stand Highlighting (Yellow) */
+        tr.turnaround-row {
+            background-color: rgba(255, 193, 7, 0.2) !important;
+        }
+
+        tr.highlight-turnaround {
+            outline: 2px solid #ffc107;
+            background-color: rgba(255, 193, 7, 0.4) !important;
+            z-index: 5;
+            position: relative;
+        }
+
+        /* Clickable turnaround badge in modal */
+        .turnaround-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            margin: 2px;
+            background-color: #333;
+            border: 1px solid #ffc107;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .turnaround-badge:hover {
+            background-color: #ffc107;
+            color: #000;
+        }
+
+        input,
+        select {
+            background-color: transparent;
+            border: 1px solid transparent;
+            color: inherit;
+            width: 100%;
+            padding: 4px;
+            box-sizing: border-box;
+            font-family: inherit;
+            font-size: inherit;
+        }
+
+        input:focus,
+        select:focus {
+            background-color: var(--input-bg);
+            border-color: var(--accent-color);
+            outline: none;
+        }
+
+        input:focus {
+            background-color: #264f78 !important;
+        }
+
+        /* Locked Input Style */
+        input.locked {
+            background-color: var(--locked-bg);
+            color: var(--locked-text);
+            cursor: not-allowed;
+            border: 1px solid transparent;
+            font-style: italic;
+        }
+
+        input.header-offset {
+            width: 40px;
+            font-size: 0.9em;
+            background-color: #444;
+            border: 1px solid #555;
+            color: #fff;
+            margin-left: 5px;
+            border-radius: 3px;
+            text-align: center;
+        }
+
+        input.header-offset:focus {
+            background-color: #555;
+            border-color: var(--accent-color);
+        }
+
+        .cell-time {
+            width: 90px;
+            text-align: center;
+        }
+
+        .cell-code {
+            width: 80px;
+            font-family: monospace;
+        }
+
+        .cell-long {
+            width: 150px;
+        }
+
+        .cell-action {
+            width: 50px;
+            text-align: center;
+        }
+
+        .btn-delete {
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 0;
+        }
+
+        .btn-delete:hover {
+            color: var(--danger-color);
+        }
+
+        .add-row-bar {
+            padding: 10px;
+            background-color: var(--panel-color);
+            border-top: 1px solid var(--border-color);
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .status-bar {
+            padding: 5px 20px;
+            background-color: var(--accent-color);
+            color: white;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        /* GitHub File Selector */
+        .gh-file-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin: 10px 0;
+            background: #1e1e1e;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+
+        .gh-file-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+
+        .gh-file-item:hover {
+            background-color: var(--row-hover);
+        }
+
+        .gh-file-item.folder {
+            color: #ffca28; /* Folder yellow */
+        }
+
+        .gh-file-item.selected {
+            background-color: var(--selected-bg);
+            border-left: 3px solid var(--accent-color);
+        }
+
+        .gh-file-item span {
+            margin-right: 8px;
+            font-size: 1.2em;
+        }
+
+        .modal-content {
+            background-color: var(--panel-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 24px;
+            min-width: 320px;
+            max-width: 400px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content h3 {
+            margin: 0 0 8px 0;
+            color: #fff;
+            font-size: 1.2em;
+        }
+
+        .modal-desc {
+            color: #888;
+            font-size: 0.9em;
+            margin-bottom: 20px;
+        }
+
+        .modal-field {
+            margin-bottom: 16px;
+        }
+
+        .modal-field label {
+            display: block;
+            margin-bottom: 6px;
+            color: #aaa;
+            font-size: 0.9em;
+        }
+
+        .modal-field input {
+            width: 100%;
+            padding: 8px 12px;
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: #fff;
+            font-size: 1em;
+            box-sizing: border-box;
+        }
+
+        .modal-field input:focus {
+            border-color: var(--accent-color);
+            outline: none;
+        }
+
+        .modal-info {
+            background-color: rgba(0, 122, 204, 0.15);
+            border: 1px solid var(--accent-color);
+            border-radius: 4px;
+            padding: 12px;
+            margin-bottom: 20px;
+            font-size: 0.85em;
+            color: #ccc;
+            line-height: 1.6;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        /* === Stand View (Skeuomorphic Style) === */
+        :root {
+            --skeuo-bg: #2b2b30;
+            --skeuo-inset-bg: #1e1e24;
+            --skeuo-light-shadow: #3e3e44;
+            --skeuo-dark-shadow: #19191c;
+            /* --skeuo-text-glow: #00e5ff; */
+            /* Cyan */
+            --skeuo-text-glow: #0ac;
+            /* Softer Cyan */
+        }
+
+        #standView {
+            background-color: #1e1e24;
+            /* Subtle grid pattern or noise could be nice, but simple dark bg works */
+        }
+
+        .stand-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 25px;
+            padding: 20px;
+            align-items: start;
+            /* Critical for independent height */
+        }
+
+        .stand-card {
+            background-color: var(--skeuo-bg);
+            border-radius: 20px;
+            /* Outset Shadow */
+            box-shadow:
+                8px 8px 16px var(--skeuo-dark-shadow),
+                -8px -8px 16px var(--skeuo-light-shadow);
+            padding: 20px;
+            color: #ccc;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Conflict state for stand card */
+        .stand-card.conflict {
+            background-color: rgba(139, 0, 0, 0.3);
+            border: 2px solid #f44336;
+            box-shadow:
+                0 0 15px rgba(244, 67, 54, 0.4),
+                8px 8px 16px var(--skeuo-dark-shadow),
+                -8px -8px 16px var(--skeuo-light-shadow);
+        }
+
+        /* Card Header */
+        .stand-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 40px;
+            margin-bottom: 15px;
+        }
+
+        .stand-title-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        /* Toggle Button (Round) */
+        .stand-toggle-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #2e2e33, #27272b);
+            box-shadow: 4px 4px 8px var(--skeuo-dark-shadow),
+                -4px -4px 8px var(--skeuo-light-shadow);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .stand-toggle-btn:active {
+            box-shadow: inset 3px 3px 6px var(--skeuo-dark-shadow),
+                inset -3px -3px 6px var(--skeuo-light-shadow);
+        }
+
+        .stand-toggle-btn svg {
+            fill: #888;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            width: 20px;
+            height: 20px;
+        }
+
+        .stand-card.expanded .stand-toggle-btn svg {
+            transform: rotate(90deg);
+            fill: var(--skeuo-text-glow);
+        }
+
+        /* Stand Number Title */
+        .stand-number {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: var(--skeuo-text-glow);
+            text-shadow: 0 0 8px rgba(0, 238, 255, 0.3);
+            letter-spacing: 1px;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        /* Header Stats */
+        .stand-stats {
+            display: flex;
+            gap: 10px;
+            font-size: 0.85em;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Microsoft YaHei UI', sans-serif;
+        }
+
+        .stat-item .stat-label {
+            font-weight: 500;
+        }
+
+        .stat-item .stat-count {
+            font-weight: bold;
+        }
+
+        .stat-item.stat-arr {
+            color: #4CAF50;
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+
+        .stat-item.stat-dep {
+            color: #2196F3;
+            border: 1px solid rgba(33, 150, 243, 0.3);
+        }
+
+        /* Flight indicator dots */
+        .flight-dot {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin: 0 1px;
+            box-shadow: 0 0 4px currentColor;
+            cursor: help;
+        }
+
+        /* Expandable Content (Inset Screen) */
+        .stand-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0.5;
+        }
+
+        .stand-card.expanded .stand-body {
+            /* JS will set specific max-height or we use a large enough value */
+            max-height: 500px;
+            opacity: 1;
+            margin-top: 10px;
+        }
+
+        .stand-list-container {
+            background-color: var(--skeuo-inset-bg);
+            border-radius: 12px;
+            box-shadow: inset 4px 4px 8px var(--skeuo-dark-shadow),
+                inset -4px -4px 8px var(--skeuo-light-shadow);
+            padding: 10px 15px;
+        }
+
+        .flight-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.9em;
+        }
+
+        .flight-item:last-child {
+            border-bottom: none;
+        }
+
+        .flight-callsign {
+            color: #ddd;
+            font-weight: 500;
+        }
+
+        .flight-time {
+            font-family: 'Microsoft YaHei UI', 'Segoe UI', sans-serif;
+            color: #aaa;
+        }
+
+        .flight-tag {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+        }
+
+        .tag-arr {
+            border: 2px solid rgba(76, 175, 80, 0.5);
+        }
+
+        .tag-dep {
+            border: 2px solid rgba(33, 150, 243, 0.5);
+        }
+
+        /* Arrow icons for flight type */
+        .arrow-icon {
+            width: 20px;
+            height: 20px;
+            fill: none;
+            stroke-width: 3.5;
+        }
+
+        .arrow-icon.arr {
+            stroke: #4CAF50;
+        }
+
+        .arrow-icon.dep {
+            stroke: #2196F3;
+        }
+
+        .empty-stand-msg {
+            text-align: center;
+            color: #555;
+            padding: 20px 0;
+            font-style: italic;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="toolbar">
+        <!-- GitHub Login Status Area -->
+        <div id="githubAuthArea" class="input-group" style="background-color: rgba(0,0,0,0.2); border-radius: 20px; padding: 4px 12px;">
+            <img id="ghAvatar" src="" style="width:24px; height:24px; border-radius:50%; display:none;">
+            <span id="ghUsername" style="font-size: 0.85em; color: #ccc;">未登录</span>
+            <button id="btnGHAuth" class="secondary" onclick="handleGHLogin()" style="padding: 2px 8px; font-size: 0.8em; border-radius: 10px;">🔑 GitHub 登录</button>
+        </div>
+
+        <div class="title">✈️ Ground ATC Editor</div>
+
+        <button onclick="newFile()" class="secondary">新建 (清空)</button>
+
+        <div class="file-input-wrapper">
+            <button>📂 打开 CSV</button>
+            <input type="file" id="csvInput" accept=".csv" onchange="loadCSV(this)">
+        </div>
+
+        <div class="file-input-wrapper">
+            <button id="btnUploadConfig" class="secondary" onclick="handleConfigUploadClick()">⚙️ 上传配置 (CFG)</button>
+            <input type="file" id="cfgInput" accept=".cfg,.txt" multiple onchange="loadConfigs(this)" style="display:none;">
+        </div>
+
+        <div class="file-input-wrapper">
+            <button class="secondary">📞 导入呼号表</button>
+            <input type="file" id="callsignInput" accept=".csv" onchange="loadCallsigns(this)">
+        </div>
+
+        <!-- Airport Code Lock -->
+        <div class="input-group">
+            <label for="airportCode">当前机场:</label>
+            <input type="text" id="airportCode" placeholder="ICAO" maxlength="4"
+                style="width: 50px; text-transform: uppercase;">
+            <button id="btnLock" class="secondary" onclick="toggleAirportLock()"
+                style="padding: 2px 8px; font-size: 0.8em;">🔓 锁定</button>
+        </div>
+
+        <div style="flex:1"></div>
+
+        <div class="input-group">
+            <label for="exportFilename">文件名:</label>
+            <input type="text" id="exportFilename" placeholder="flight_schedule" style="width: 150px;"
+                value="flight_schedule">
+            <span style="color: #888;">.csv</span>
+        </div>
+        <button onclick="downloadCSV()" style="background-color: #4CAF50;">💾 导出 CSV</button>
+    </div>
+
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('arrival')">🛬 到达航班 (Arrivals)</div>
+        <div class="tab" onclick="switchTab('departure')">🛫 出发航班 (Departures)</div>
+        <div class="tab" onclick="switchTab('all')">📋 全部航班 (All)</div>
+        <div class="tab" onclick="switchTab('standView')">🏢 停机坪视图 (Stands)</div>
+    </div>
+
+    <div class="content">
+        <!-- List View Container -->
+        <div id="listViewContainer" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+            <div class="table-container">
+                <table id="dataTable">
+                    <thead>
+                        <tr id="headerRow">
+                            <!-- Headers injected by JS -->
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <!-- Rows injected by JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="add-row-bar">
+                <!-- New Batch Buttons with Logic Fix -->
+                <button id="btnSetArr" class="secondary" onclick="batchSetAsArrival()" disabled title="需锁定当前机场">📥
+                    设置到达</button>
+                <button id="btnSetDep" class="secondary" onclick="batchSetAsDeparture()" disabled title="需锁定当前机场">📤
+                    设置出发</button>
+                <div style="width: 20px; border-right: 1px solid #444; margin-right: 10px;"></div>
+                <button class="secondary" onclick="deduplicateCallsigns()" title="自动修复重复呼号">🔧 呼号去重</button>
+                <button id="btnAutoSchedule" class="secondary" onclick="openAutoScheduleModal()" title="自动分配时间">⏱️
+                    自动配表</button>
+                <button id="btnAirportInfo" class="secondary" onclick="openAirportInfoModal()" title="配置机场停机位">🏢
+                    机场信息</button>
+                <button onclick="addRow()">+ 添加航班</button>
+            </div>
+        </div>
+
+        <!-- Stand View Container -->
+        <div id="standViewContainer"
+            style="display: none; height: 100%; overflow-y: auto; background-color: var(--skeuo-inset-bg);">
+            <div id="standGrid" class="stand-grid">
+                <!-- Stand Cards Injected Here -->
+            </div>
+        </div>
+    </div>
+
+    <div class="status-bar" id="statusBar">
+        <span id="statusMsg">就绪</span>
+        <span id="statsInfo">航班数: 0</span>
+    </div>
+
+    <!-- 自动配表对话框 -->
+    <div id="autoScheduleModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h3>⏱️ 自动配表</h3>
+            <p class="modal-desc">为当前视图中的航班自动分配时间</p>
+
+            <div class="modal-field">
+                <label for="autoStartTime">开始时间:</label>
+                <input type="text" id="autoStartTime" placeholder="HH:mm:ss" value="08:00:00">
+            </div>
+
+            <div class="modal-field">
+                <label for="autoInterval">间隔时间 (分钟):</label>
+                <input type="number" id="autoInterval" value="5" min="1" max="120">
+            </div>
+
+            <div class="modal-info" id="autoSchedulePreview">
+                <!-- 预览信息动态生成 -->
+            </div>
+
+            <div class="modal-actions">
+                <button class="secondary" onclick="closeAutoScheduleModal()">取消</button>
+                <button onclick="applyAutoSchedule()">✓ 应用</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 机场信息对话框 -->
+    <div id="airportInfoModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h3>🏢 机场信息</h3>
+            <p class="modal-desc">配置当前机场的停机位信息</p>
+
+            <div class="modal-field">
+                <label for="standCount">停机位数量:</label>
+                <input type="number" id="standCount" placeholder="例如: 12" value="" min="1" max="99">
+            </div>
+
+            <div class="modal-info" id="airportInfoPreview">
+                <div><strong>当前状态:</strong> 未配置停机位</div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="secondary" onclick="closeAirportInfoModal()">取消</button>
+                <button onclick="applyAirportInfo()">✓ 生成停机位</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 确认对话框 -->
+    <div id="confirmModal" class="modal-overlay" style="display: none; z-index: 2000;">
+        <div class="modal-content" style="max-width: 360px;">
+            <h3>⚠️ 确认操作</h3>
+            <p id="confirmMessage" style="color: #ddd; line-height: 1.5; margin-bottom: 20px;"></p>
+            <div class="modal-actions">
+                <button class="secondary" id="btnConfirmCancel">取消</button>
+                <button id="btnConfirmOk" style="background-color: #c62828;">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script -->
+    <script>
+        const defaultCallsignsCSV = `callSign,airline
+CCA3115,CCA
+CDG2701,CDG
+CDG8001,CDG
+CDG8031,CDG
+CDG8085,CDG
+CDG8416,CDG
+CES1111,CES
+CES5657,CES
+CES9197,CES
+CFE2281,CFE
+CFE3492,CFE
+CFE4462,CFE
+CFE8461,CFE
+CFE8703,CFE
+CFE8704,CFE
+CFE8739,CFE
+CHH7306,CHH
+CJX8923,CJX
+CQH6596,CQH
+CQH7171,CQH
+CSC3612,CSC
+CSC6918,CSC
+CSC8056,CSC
+CSN3712,CSN
+CSN8545,CSN
+CSN8733,CSN
+CSZ2861,CSZ
+CSZ3690,CSZ
+CXA8069,CXA
+UEA1889,UEA
+UEA7323,UEA`;
+
+        let allFlights = [];
+        let currentTab = 'arrival';
+        let currentAirportCode = "";
+        let isAirportLocked = false;
+
+        let selectedIndices = new Set();
+        let lastVisualIndex = null;
+
+        let timeOffsets = { arrival: 10, departure: 10 };
+        let exportDirHandle = null; // 导出目录句柄
+
+        let config = {
+            aircraftTypes: [
+                "AIRBUS A-320ceo", "AIRBUS A-320neo", "AIRBUS A-321neo", "AIRBUS A-330-300",
+                "AIRBUS A-350-900", "BOEING 737 MAX 8", "BOEING 737-800", "BOEING 747-8I",
+                "BOEING 777-300ER", "COMAC C-919"
+            ],
+            airlines: [
+                "AAL", "AFR", "ASA", "AVA", "BAW", "CCA", "CDG", "CES", "CHH", "CJX", "CQH",
+                "CSC", "CSN", "CSZ", "CXA", "DAL", "DKH", "FFT", "GCR", "HXA", "JAL", "JZA",
+                "KNA", "KPA", "LKE", "OKA", "OTC", "QTR", "RYR", "SIA", "SWR", "THA", "TVB",
+                "UAL", "UEA", "VIR"
+            ],
+            callsigns: [],
+            stands: [],
+            voices: ["CN-Captain-Young", "CN-Captain-Middle-Aged", "CN-Captain-Young-EN"],
+            languages: ["zh", "en"],
+
+            mapping: {
+                aircraftToAirlines: {},
+                airlineToAircrafts: {},
+                callsignToAirline: {},
+                airlineToCallsigns: {}
+            }
+        };
+
+        window.onload = function () {
+            // Default mapping init (from AircraftLiveryPath.cfg)
+            const defaultAcMap = {
+                "AIRBUS A-320ceo": ["CCA", "CES", "CHH", "CQH", "CSC", "CSN", "CSZ", "UEA"],
+                "AIRBUS A-320neo": ["AVA", "BAW", "CCA", "CES", "CHH", "CQH", "CSC", "CSN", "CSZ", "FFT", "UEA"],
+                "AIRBUS A-321neo": ["AAL", "DAL", "FFT", "JBU"],
+                "AIRBUS A-330-300": ["CCA", "CSN", "VIR"],
+                "AIRBUS A-350-900": ["AFR", "DAL", "JAL"],
+                "BOEING 737 MAX 8": ["CDG", "CSN"],
+                "BOEING 737-800": ["AAL", "ASA", "CDG", "CES", "CHH", "CJX", "CSN", "CXA", "DAL", "SWA", "UAL"],
+                "BOEING 747-8I": ["CCA", "DLH", "KAL"],
+                "BOEING 777-300ER": ["ACA", "AFR", "BAW", "CCA", "UAL"],
+                "COMAC C-919": ["CCA", "CES", "CSN"]
+            };
+            config.mapping.aircraftToAirlines = defaultAcMap;
+
+            buildReverseMapping();
+            parseCallsignConfig(defaultCallsignsCSV);
+            renderHeader();
+            renderTable();
+            updateStats();
+            updateBatchButtons();
+
+            // 绑定自动配表输入事件
+            document.getElementById('autoStartTime').addEventListener('input', updateAutoSchedulePreview);
+            document.getElementById('autoInterval').addEventListener('input', updateAutoSchedulePreview);
+
+            // 绑定机场信息输入事件
+            document.getElementById('standCount').addEventListener('input', updateAirportInfoPreview);
+        };
+
+        function buildReverseMapping() {
+            config.mapping.airlineToAircrafts = {};
+            config.airlines.forEach(al => config.mapping.airlineToAircrafts[al] = []);
+            for (const [acType, allowedAirlines] of Object.entries(config.mapping.aircraftToAirlines)) {
+                allowedAirlines.forEach(al => {
+                    if (!config.mapping.airlineToAircrafts[al]) config.mapping.airlineToAircrafts[al] = [];
+                    if (!config.mapping.airlineToAircrafts[al].includes(acType)) config.mapping.airlineToAircrafts[al].push(acType);
+                });
+            }
+        }
+
+        const headers = [
+            { key: 'callSign', label: '呼号', type: 'select', source: 'callsigns', width: '120px', required: true },
+            { key: 'departure', label: '起飞机场', width: '80px', required: true },
+            { key: 'arrival', label: '到达机场', width: '80px', required: true },
+            { key: 'stand', label: '停机位', type: 'select', source: 'stands', width: '70px', required: true },
+            { key: 'runway', label: '跑道', width: '60px', required: true },
+            { key: 'offBlockTime', label: '推出时间', type: 'time', tab: 'departure' },
+            { key: 'takeOffTime', label: '起飞时间', type: 'time', tab: 'departure', hasOffset: true },
+            { key: 'landingTime', label: '着陆时间', type: 'time', tab: 'arrival' },
+            { key: 'inBlockTime', label: '入位时间', type: 'time', tab: 'arrival', hasOffset: true },
+            { key: 'airline', label: '航司', type: 'select', source: 'airlines', width: '80px' },
+            { key: 'aircraftType', label: '机型', type: 'select', source: 'aircraftTypes', width: '150px' },
+            { key: 'voice', label: '语音', type: 'select', source: 'voices', width: '120px' },
+            { key: 'language', label: '语言', type: 'select', source: 'languages', width: '60px' },
+        ];
+
+        // Stand View State
+        let expandedStands = new Set();
+        const sortStands = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' }).compare;
+
+        function switchTab(tab) {
+            currentTab = tab;
+            selectedIndices.clear();
+            lastVisualIndex = null;
+            document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+            // Fix: event might not be available if called programmatically, use strict check
+            if (window.event && window.event.target.classList.contains('tab')) {
+                window.event.target.classList.add('active');
+            } else {
+                // If called programmatically, find tab
+                const tabs = document.querySelectorAll('.tab');
+                if (tab === 'arrival') tabs[0].classList.add('active');
+                if (tab === 'departure') tabs[1].classList.add('active');
+                if (tab === 'all') tabs[2].classList.add('active');
+                if (tab === 'standView') tabs[3].classList.add('active');
+            }
+
+            const listView = document.getElementById('listViewContainer');
+            const standView = document.getElementById('standViewContainer');
+
+            if (tab === 'standView') {
+                listView.style.display = 'none';
+                standView.style.display = 'block';
+                renderStandView();
+            } else {
+                listView.style.display = 'flex'; // Changed to flex as defined in HTML
+                standView.style.display = 'none';
+                renderHeader();
+                renderTable();
+            }
+        }
+
+        // === Stand View Rendering ===
+        function renderStandView() {
+            const container = document.getElementById('standGrid');
+            container.innerHTML = '';
+
+            // 1. Check if stands are configured
+            if (!config.stands || config.stands.length === 0) {
+                container.innerHTML = '<div class="empty-stand-msg" style="grid-column: 1/-1;">暂无停机位信息，请先在下方工具栏点击"🏢 每机位信息"进行配置。</div>';
+                return;
+            }
+
+            // 2. Group flights by stand
+            const standData = {};
+            config.stands.forEach(s => {
+                standData[s] = { arrivals: [], departures: [] };
+            });
+
+            allFlights.forEach(f => {
+                if (f.stand && standData[f.stand]) {
+                    const type = getFlightType(f);
+                    if (type === 'arrival') standData[f.stand].arrivals.push(f);
+                    else standData[f.stand].departures.push(f);
+                }
+            });
+
+            // 3. Sort stands
+            const sortedStands = [...config.stands].sort(sortStands);
+
+            // 4. Generate Cards
+            sortedStands.forEach(stand => {
+                const data = standData[stand];
+                const card = document.createElement('div');
+                card.id = `stand-card-${stand}`;
+
+                // Content HTML
+                const arrCount = data.arrivals.length;
+                const depCount = data.departures.length;
+
+                // 冲突检测：多到达 或 先进后出
+                let hasConflict = false;
+
+                // 规则1: 多到达冲突 (≥2 个到达航班)
+                if (arrCount >= 2) {
+                    hasConflict = true;
+                }
+
+                // 规则2: 到达-出发时间冲突 (先进后出)
+                if (!hasConflict && arrCount >= 1 && depCount >= 1) {
+                    data.arrivals.forEach(arr => {
+                        data.departures.forEach(dep => {
+                            const arrInBlock = arr.inBlockTime || arr.landingTime;
+                            const depTakeOff = dep.takeOffTime || dep.offBlockTime;
+                            // 冲突条件：到达入位时间 <= 出发起飞时间
+                            if (arrInBlock && depTakeOff && compareTime(arrInBlock, depTakeOff) <= 0) {
+                                hasConflict = true;
+                            }
+                        });
+                    });
+                }
+
+                // Apply conflict class
+                card.className = `stand-card ${expandedStands.has(stand) ? 'expanded' : ''} ${hasConflict ? 'conflict' : ''}`;
+
+                // Flight List HTML
+                let flightListHtml = '';
+
+                // 创建按时间排序的航班序列（用于图标显示）
+                const sortedFlightsForIcons = [
+                    ...data.arrivals.map(f => ({ _type: 'arr', _time: f.landingTime || f.inBlockTime })),
+                    ...data.departures.map(f => ({ _type: 'dep', _time: f.offBlockTime || f.takeOffTime }))
+                ].sort((a, b) => (a._time || '').localeCompare(b._time || ''));
+
+                // 生成图标HTML
+                let iconsHtml = '';
+                sortedFlightsForIcons.forEach(f => {
+                    const color = f._type === 'arr' ? '#4CAF50' : '#2196F3';
+                    const title = f._type === 'arr' ? '进港' : '出港';
+                    iconsHtml += `<span class="flight-dot" style="background-color:${color};" title="${title} ${f._time || ''}"></span>`;
+                });
+                if (sortedFlightsForIcons.length === 0) {
+                    iconsHtml = '<span style="color:#555;font-size:0.8em;">(空闲)</span>';
+                }
+
+                if (arrCount + depCount === 0) {
+                    flightListHtml = '<div style="text-align:center; padding:10px; color:#555;">(空闲)</div>';
+                } else {
+                    // Combine and sort by time
+                    const allStandFlights = [
+                        ...data.arrivals.map(f => ({ ...f, _type: 'arr', _time: f.landingTime || f.inBlockTime })),
+                        ...data.departures.map(f => ({ ...f, _type: 'dep', _time: f.offBlockTime || f.takeOffTime }))
+                    ].sort((a, b) => (a._time || '').localeCompare(b._time || ''));
+
+                    allStandFlights.forEach(f => {
+                        const isArr = f._type === 'arr';
+                        const time = f._time || '--:--';
+                        const tagClass = isArr ? 'tag-arr' : 'tag-dep';
+                        // 箭头图标：进港绿色向下，出港蓝色向上
+                        const arrowIcon = isArr
+                            ? '<svg viewBox="0 0 24 24" class="arrow-icon arr"><path d="M12 4v12m0 0l-5-5m5 5l5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+                            : '<svg viewBox="0 0 24 24" class="arrow-icon dep"><path d="M12 20V8m0 0l5 5m-5-5l-5 5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+                        flightListHtml += `
+                            <div class="flight-item">
+                                <div class="flight-tag ${tagClass}">${arrowIcon}</div>
+                                <div class="flight-callsign">${f.callSign || '???'}</div>
+                                <div class="flight-time">${time}</div>
+                            </div>
+                        `;
+                    });
+                }
+
+                card.innerHTML = `
+                    <div class="stand-header">
+                        <div class="stand-title-group">
+                            <button class="stand-toggle-btn" onclick="toggleStandCard('${stand}')">
+                                <svg viewBox="0 0 10 10"><path d="M2.5 1.5 Q2 1, 2 1.8 L2 8.2 Q2 9, 2.5 8.5 L7.5 5.5 Q8.2 5, 7.5 4.5 L2.5 1.5 Z" /></svg>
+                            </button>
+                            <div class="stand-number">停机位 ${stand}</div>
+                        </div>
+                        <div class="stand-stats">
+                            ${iconsHtml}
+                        </div>
+                    </div>
+                    <div class="stand-body">
+                        <div class="stand-list-container">
+                            ${flightListHtml}
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function toggleStandCard(stand) {
+            const card = document.getElementById(`stand-card-${stand}`);
+            if (expandedStands.has(stand)) {
+                expandedStands.delete(stand);
+                card.classList.remove('expanded');
+            } else {
+                expandedStands.add(stand);
+                card.classList.add('expanded');
+            }
+        }
+
+        // --- Logic ---
+        function parseTime(timeStr) {
+            if (!timeStr) return null;
+            const parts = timeStr.split(':');
+            if (parts.length !== 3) return null;
+            return { h: parseInt(parts[0]), m: parseInt(parts[1]), s: parseInt(parts[2]) };
+        }
+        function formatTime(h, m, s) {
+            const pad = (n) => n.toString().padStart(2, '0');
+            return `${pad(h)}:${pad(m)}:${pad(s)}`;
+        }
+        function addMinutes(timeStr, minutesToAdd) {
+            const t = parseTime(timeStr);
+            if (!t) return timeStr;
+            let totalMin = t.h * 60 + t.m + minutesToAdd;
+            if (totalMin < 0) totalMin += 24 * 60;
+            totalMin = totalMin % (24 * 60);
+            return formatTime(Math.floor(totalMin / 60), totalMin % 60, t.s);
+        }
+        function isValidTimeFormat(str) {
+            return /^([01]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/.test(str);
+        }
+
+        // === Unified Flight Type Determination Logic ===
+        function getFlightType(f) {
+            const offBlock = f.offBlockTime ? f.offBlockTime.trim() : "";
+            const takeOff = f.takeOffTime ? f.takeOffTime.trim() : "";
+            const landing = f.landingTime ? f.landingTime.trim() : "";
+            const inBlock = f.inBlockTime ? f.inBlockTime.trim() : "";
+
+            // 计算到达和出发时间的完整度
+            const hasArrivalTimes = landing || inBlock;
+            const hasDepartureTimes = offBlock || takeOff;
+
+            // 1. 只有出发时间 -> 出发航班
+            if (hasDepartureTimes && !hasArrivalTimes) return 'departure';
+            // 2. 只有到达时间 -> 到达航班
+            if (hasArrivalTimes && !hasDepartureTimes) return 'arrival';
+            // 3. 两者都有 -> 根据时间数量和主要时间判断
+            if (hasArrivalTimes && hasDepartureTimes) {
+                const arrCount = (landing ? 1 : 0) + (inBlock ? 1 : 0);
+                const depCount = (offBlock ? 1 : 0) + (takeOff ? 1 : 0);
+                // 哪边时间更完整就认定为哪种类型
+                if (depCount > arrCount) return 'departure';
+                if (arrCount > depCount) return 'arrival';
+                // 数量相同时，优先看 landingTime（通常到达航班先填 landing）
+                if (landing) return 'arrival';
+                return 'departure';
+            }
+
+            // 4. Airport Code based (Fallback for drafts)
+            if (isAirportLocked && currentAirportCode) {
+                if (f.arrival === currentAirportCode) return 'arrival';
+                if (f.departure === currentAirportCode) return 'departure';
+            }
+
+            // 5. Default fallback
+            return 'arrival';
+        }
+
+        function handleTimeKeyDown(e, input, index, key) {
+            if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'PageUp' || e.key === 'PageDown') {
+                e.preventDefault();
+                let delta = 0;
+                if (e.key === 'ArrowUp') delta = 1;
+                if (e.key === 'ArrowDown') delta = -1;
+                if (e.key === 'PageUp') delta = 10;
+                if (e.key === 'PageDown') delta = -10;
+
+                const currentVal = input.value;
+                if (!isValidTimeFormat(currentVal)) return;
+
+                const newVal = addMinutes(currentVal, delta);
+                input.value = newVal;
+                updateFlight(index, key, newVal);
+                triggerAutoCalc(index, key, newVal);
+                renderTable(); // 重新渲染以更新冲突检测
+            }
+        }
+        function handleTimeBlur(e, originalValue, index, key) {
+            const val = e.target.value.trim();
+            if (val === "") return;
+            if (!isValidTimeFormat(val)) {
+                alert("请输入正确的24小时制时间格式！(HH:mm:ss)");
+                e.target.value = originalValue;
+            } else {
+                updateFlight(index, key, val);
+                triggerAutoCalc(index, key, val);
+                renderTable(); // 重新渲染以更新冲突检测
+            }
+        }
+        function handleOffsetChange(e) {
+            const val = parseInt(e.target.value);
+            if (isNaN(val)) return;
+            timeOffsets[currentTab] = val;
+            const baseKey = currentTab === 'arrival' ? 'landingTime' : 'offBlockTime';
+            const targetKey = currentTab === 'arrival' ? 'inBlockTime' : 'takeOffTime';
+            allFlights.forEach((f, idx) => {
+                const type = getFlightType(f);
+                const visible = currentTab === 'arrival' ? (type === 'arrival') : (type === 'departure');
+                if (currentTab !== 'all' && visible && f[baseKey]) {
+                    f[targetKey] = addMinutes(f[baseKey], val);
+                }
+            });
+            renderTable();
+        }
+        function triggerAutoCalc(index, changedKey, newVal) {
+            if (currentTab === 'all') return;
+            const offset = timeOffsets[currentTab];
+            if (!offset && offset !== 0) return;
+            let targetKey = null;
+            if (currentTab === 'arrival' && changedKey === 'landingTime') targetKey = 'inBlockTime';
+            if (currentTab === 'departure' && changedKey === 'offBlockTime') targetKey = 'takeOffTime';
+            if (targetKey) {
+                const calcVal = addMinutes(newVal, offset);
+                allFlights[index][targetKey] = calcVal;
+                const inputs = document.querySelectorAll(`input[data-row="${index}"][data-key="${targetKey}"]`);
+                if (inputs.length > 0) inputs[0].value = calcVal;
+            }
+        }
+
+        // --- Selection & Batch Logic ---
+        function getFilteredFlights() {
+            let result = allFlights.map((f, index) => ({ flight: f, index: index }))
+                .filter(item => {
+                    const f = item.flight;
+
+                    // 1. Tab Type Check
+                    if (currentTab === 'all') return true;
+                    const type = getFlightType(f);
+                    if (currentTab !== type) return false;
+
+                    // 2. Strict Location Filter (New)
+                    if (isAirportLocked && currentAirportCode) {
+                        if (currentTab === 'arrival' && f.arrival !== currentAirportCode) return false;
+                        if (currentTab === 'departure' && f.departure !== currentAirportCode) return false;
+                    }
+
+                    return true;
+                });
+
+            // 全部航班视图：按时间升序排序
+            if (currentTab === 'all') {
+                result.sort((a, b) => {
+                    // 获取各航班的关键时间（着陆时间或推出时间，取较早的）
+                    const getTime = (f) => f.landingTime || f.offBlockTime || '';
+                    const timeA = getTime(a.flight);
+                    const timeB = getTime(b.flight);
+                    return timeA.localeCompare(timeB);
+                });
+            }
+
+            return result;
+        }
+
+        function handleRowSelection(e, dataIndex, visualIndex) {
+            if (e.button === 0) {
+                if (e.shiftKey) {
+                    if (lastVisualIndex !== null) {
+                        const start = Math.min(lastVisualIndex, visualIndex);
+                        const end = Math.max(lastVisualIndex, visualIndex);
+                        const currentFiltered = getFilteredFlights();
+                        for (let i = start; i <= end; i++) {
+                            if (currentFiltered[i]) {
+                                selectedIndices.add(currentFiltered[i].index);
+                            }
+                        }
+                    } else {
+                        selectedIndices.add(dataIndex);
+                    }
+                } else if (e.ctrlKey || e.metaKey) {
+                    if (selectedIndices.has(dataIndex)) selectedIndices.delete(dataIndex);
+                    else selectedIndices.add(dataIndex);
+                    lastVisualIndex = visualIndex;
+                } else {
+                    selectedIndices.clear();
+                    selectedIndices.add(dataIndex);
+                    lastVisualIndex = visualIndex;
+                }
+            } else if (e.button === 2) {
+                if (e.shiftKey) {
+                    selectedIndices.delete(dataIndex);
+                    e.preventDefault();
+                }
+            }
+            updateSelectionVisuals();
+        }
+
+        function updateSelectionVisuals() {
+            document.querySelectorAll('#tableBody tr').forEach(tr => {
+                const idx = parseInt(tr.dataset.index);
+                if (selectedIndices.has(idx)) tr.classList.add('selected-row');
+                else tr.classList.remove('selected-row');
+            });
+        }
+
+        function updateBatchButtons() {
+            const btnSetArr = document.getElementById('btnSetArr');
+            const btnSetDep = document.getElementById('btnSetDep');
+            const enabled = isAirportLocked && currentAirportCode !== "";
+
+            btnSetArr.disabled = !enabled;
+            btnSetDep.disabled = !enabled;
+
+            if (enabled) {
+                btnSetArr.title = `将选中行转换为到达航班 (${currentAirportCode})`;
+                btnSetDep.title = `将选中行转换为出发航班 (${currentAirportCode})`;
+            } else {
+                btnSetArr.title = "需锁定当前机场";
+                btnSetDep.title = "需锁定当前机场";
+            }
+        }
+
+        // === Fixed Logic: Force Overwrite & Robust Swap ===
+        function batchSetAsArrival() {
+            const freshCode = document.getElementById('airportCode').value.trim().toUpperCase();
+            if (!isAirportLocked || !freshCode) return;
+            if (selectedIndices.size === 0) { alert("请先选择至少一行"); return; }
+
+            let count = 0;
+            selectedIndices.forEach(idx => {
+                const f = allFlights[idx];
+                if (!f) return;
+
+                const oldArr = f.arrival;
+                f.arrival = freshCode;
+
+                if (f.departure === freshCode) {
+                    f.departure = (oldArr && oldArr !== freshCode) ? oldArr : "ZBAA";
+                }
+
+                if (f.offBlockTime && !f.landingTime) {
+                    f.landingTime = f.offBlockTime;
+                    f.offBlockTime = "";
+                    f.takeOffTime = "";
+                    const offset = timeOffsets['arrival'] || 10;
+                    f.inBlockTime = addMinutes(f.landingTime, offset);
+                }
+                else if (f.landingTime) {
+                    f.offBlockTime = "";
+                    f.takeOffTime = "";
+                }
+                else {
+                    f.offBlockTime = "";
+                    f.takeOffTime = "";
+                }
+                count++;
+            });
+            renderTable();
+            updateStats();
+            showStatus(`已将 ${count} 条记录转换为到达航班`);
+        }
+
+        function batchSetAsDeparture() {
+            const freshCode = document.getElementById('airportCode').value.trim().toUpperCase();
+            if (!isAirportLocked || !freshCode) return;
+            if (selectedIndices.size === 0) { alert("请先选择至少一行"); return; }
+
+            let count = 0;
+            selectedIndices.forEach(idx => {
+                const f = allFlights[idx];
+                if (!f) return;
+
+                const oldDep = f.departure;
+                f.departure = freshCode;
+
+                if (f.arrival === freshCode) {
+                    f.arrival = (oldDep && oldDep !== freshCode) ? oldDep : "ZBAA";
+                }
+
+                if (f.landingTime && !f.offBlockTime) {
+                    f.offBlockTime = f.landingTime;
+                    f.landingTime = "";
+                    f.inBlockTime = "";
+                    const offset = timeOffsets['departure'] || 10;
+                    f.takeOffTime = addMinutes(f.offBlockTime, offset);
+                }
+                else if (f.offBlockTime) {
+                    f.landingTime = "";
+                    f.inBlockTime = "";
+                }
+                else {
+                    f.landingTime = "";
+                    f.inBlockTime = "";
+                }
+                count++;
+            });
+            renderTable();
+            updateStats();
+            showStatus(`已将 ${count} 条记录转换为出发航班`);
+        }
+
+        function toggleAirportLock() {
+            const input = document.getElementById('airportCode');
+            const btn = document.getElementById('btnLock');
+            if (!isAirportLocked) {
+                const code = input.value.trim().toUpperCase();
+                if (!code) { alert("请输入机场代号"); return; }
+                currentAirportCode = code;
+                isAirportLocked = true;
+                input.value = code;
+                input.disabled = true;
+                btn.innerHTML = "🔒 解锁";
+                btn.classList.add("active-lock");
+            } else {
+                isAirportLocked = false;
+                input.disabled = false;
+                btn.innerHTML = "🔓 锁定";
+                btn.classList.remove("active-lock");
+            }
+            updateBatchButtons();
+            renderTable();
+        }
+
+        function deduplicateCallsigns() {
+            const usedCallsigns = new Set(allFlights.map(f => f.callSign).filter(c => c));
+            const seenThisRun = new Set();
+            let changes = 0;
+            allFlights.forEach(f => {
+                if (!f.callSign) return;
+                if (seenThisRun.has(f.callSign)) {
+                    const airline = f.airline;
+                    const available = config.mapping.airlineToCallsigns[airline] || [];
+                    const candidate = available.find(c => !usedCallsigns.has(c));
+                    if (candidate) {
+                        f.callSign = candidate;
+                        usedCallsigns.add(candidate);
+                        changes++;
+                    }
+                } else {
+                    seenThisRun.add(f.callSign);
+                }
+            });
+            if (changes > 0) {
+                renderTable();
+                updateStats();
+                alert(`已自动修复 ${changes} 个重复呼号`);
+            } else {
+                alert("未发现可修复的重复呼号 (或无可用替代)");
+            }
+        }
+
+        function highlightDuplicates(callsign) {
+            if (!callsign) return;
+            document.querySelectorAll(`tr[data-callsign="${callsign}"]`).forEach(el => el.classList.add('highlight-group'));
+        }
+        function unhighlightDuplicates(callsign) {
+            if (!callsign) return;
+            document.querySelectorAll(`tr[data-callsign="${callsign}"]`).forEach(el => el.classList.remove('highlight-group'));
+        }
+
+        // === 停机位冲突检测 ===
+        function compareTime(time1, time2) {
+            // 返回负数表示 time1 < time2，0 表示相等，正数表示 time1 > time2
+            const t1 = parseTime(time1);
+            const t2 = parseTime(time2);
+            if (!t1 || !t2) return 0;
+            const mins1 = t1.h * 60 + t1.m;
+            const mins2 = t2.h * 60 + t2.m;
+            return mins1 - mins2;
+        }
+
+        function detectStandConflicts() {
+            const conflicts = new Map(); // stand -> Set of conflicting flight indices
+            const standFlights = new Map(); // stand -> { arrivals: [], departures: [] }
+
+            // 1. 按停机位分组航班
+            allFlights.forEach((f, idx) => {
+                if (!f.stand) return;
+                if (!standFlights.has(f.stand)) {
+                    standFlights.set(f.stand, { arrivals: [], departures: [] });
+                }
+                const type = getFlightType(f);
+                if (type === 'arrival') {
+                    standFlights.get(f.stand).arrivals.push({ flight: f, index: idx });
+                } else {
+                    standFlights.get(f.stand).departures.push({ flight: f, index: idx });
+                }
+            });
+
+            // 2. 检测冲突
+            standFlights.forEach((data, stand) => {
+                const conflictIndices = new Set();
+
+                // 规则2: 多到达冲突 (≥2 个到达航班)
+                if (data.arrivals.length >= 2) {
+                    data.arrivals.forEach(a => conflictIndices.add(a.index));
+                }
+
+                // 规则1: 到达-出发冲突
+                data.arrivals.forEach(arr => {
+                    data.departures.forEach(dep => {
+                        // 使用 inBlockTime，如果没有则用 landingTime 作为近似
+                        const arrInBlock = arr.flight.inBlockTime || arr.flight.landingTime;
+                        // 使用 takeOffTime，如果没有则用 offBlockTime 作为近似
+                        const depTakeOff = dep.flight.takeOffTime || dep.flight.offBlockTime;
+                        // 冲突条件：到达入位时间 <= 出发起飞时间（先进后出：到达先入位，出发还没起飞）
+                        if (arrInBlock && depTakeOff && compareTime(arrInBlock, depTakeOff) <= 0) {
+                            conflictIndices.add(arr.index);
+                            conflictIndices.add(dep.index);
+                        }
+                    });
+                });
+
+                if (conflictIndices.size > 0) {
+                    conflicts.set(stand, conflictIndices);
+                }
+            });
+
+            return conflicts;
+        }
+
+        function highlightConflicts(stand) {
+            if (!stand) return;
+            document.querySelectorAll(`tr[data-conflict-stand="${stand}"]`).forEach(el => {
+                el.classList.add('highlight-conflict');
+            });
+        }
+
+        function unhighlightConflicts(stand) {
+            if (!stand) return;
+            document.querySelectorAll(`tr[data-conflict-stand="${stand}"]`).forEach(el => {
+                el.classList.remove('highlight-conflict');
+            });
+        }
+
+        function updateStats() {
+            let arrCount = 0; let depCount = 0;
+            allFlights.forEach(f => {
+                const type = getFlightType(f);
+                if (type === 'arrival') arrCount++; else depCount++;
+            });
+            document.getElementById('statsInfo').innerText = `总计: ${allFlights.length} | 到达: ${arrCount} | 出发: ${depCount}`;
+        }
+        function showStatus(msg) {
+            document.getElementById('statusMsg').innerText = msg;
+            setTimeout(() => document.getElementById('statusMsg').innerText = '就绪', 3000);
+        }
+
+        // --- Rendering ---
+        function renderHeader() {
+            const tr = document.getElementById('headerRow');
+            tr.innerHTML = '';
+            headers.forEach(h => {
+                if (currentTab === 'all') {
+                    if (h.key === 'takeOffTime' || h.key === 'inBlockTime') return;
+                } else {
+                    if (h.tab && h.tab !== currentTab) return;
+                }
+                const th = document.createElement('th');
+                const container = document.createElement('div');
+                container.style.display = 'flex';
+                container.style.alignItems = 'center';
+                container.innerText = h.label;
+
+                // 呼号列添加随机排列按钮（仅在到达/出发视图）
+                if (h.key === 'callSign' && currentTab !== 'all') {
+                    const shuffleBtn = document.createElement('button');
+                    shuffleBtn.innerHTML = '🔀';
+                    shuffleBtn.className = 'header-btn';
+                    shuffleBtn.style.cssText = 'margin-left: 8px; padding: 2px 6px; font-size: 0.9em; cursor: pointer; background: transparent; border: 1px solid #555; border-radius: 4px;';
+                    shuffleBtn.title = '随机排列当前视图的航班';
+                    shuffleBtn.onclick = shuffleFlights;
+                    container.appendChild(shuffleBtn);
+                }
+
+                // 停机位列添加清空按钮
+                if (h.key === 'stand') {
+                    const clearBtn = document.createElement('button');
+                    clearBtn.innerHTML = '🗑️';
+                    clearBtn.className = 'header-btn';
+                    clearBtn.style.cssText = 'margin-left: 8px; padding: 2px 6px; font-size: 0.9em; cursor: pointer; background: transparent; border: 1px solid #555; border-radius: 4px;';
+                    clearBtn.title = '清空当前视图航班的停机位';
+                    clearBtn.onclick = clearStands;
+                    container.appendChild(clearBtn);
+                }
+
+                if (h.hasOffset && currentTab !== 'all') {
+                    const offsetInput = document.createElement('input');
+                    offsetInput.type = 'number';
+                    offsetInput.className = 'header-offset';
+                    offsetInput.placeholder = '+min';
+                    offsetInput.value = timeOffsets[currentTab] || '';
+                    offsetInput.onchange = handleOffsetChange;
+                    offsetInput.title = "输入增加的分钟数，自动计算该列时间";
+                    container.appendChild(offsetInput);
+                }
+                th.appendChild(container);
+                th.style.width = h.width || 'auto';
+                tr.appendChild(th);
+            });
+            const thAction = document.createElement('th');
+            thAction.style.width = '40px';
+            thAction.innerText = '操作';
+            tr.appendChild(thAction);
+        }
+
+        // 随机排列当前视图的航班
+        function shuffleFlights() {
+            if (currentTab === 'all') {
+                alert('请先切换到「到达航班」或「出发航班」标签页');
+                return;
+            }
+
+            // 获取当前视图的航班索引
+            const filtered = getFilteredFlights();
+            if (filtered.length < 2) return;
+
+            // Fisher-Yates 洗牌算法
+            const indices = filtered.map(item => item.index);
+            const flights = indices.map(idx => allFlights[idx]);
+
+            for (let i = flights.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [flights[i], flights[j]] = [flights[j], flights[i]];
+            }
+
+            // 将洗牌后的航班写回原位置
+            indices.forEach((originalIdx, newIdx) => {
+                allFlights[originalIdx] = flights[newIdx];
+            });
+
+            renderTable();
+            showStatus(`已随机排列 ${flights.length} 条航班`);
+        }
+
+        // 清空当前视图航班的停机位
+        async function clearStands() {
+            const filtered = getFilteredFlights();
+            if (filtered.length === 0) {
+                alert('当前视图没有航班数据');
+                return;
+            }
+
+            const confirmed = await showConfirmModal(`确定要清空当前视图 ${filtered.length} 条航班的停机位吗？`);
+            if (!confirmed) return;
+
+            filtered.forEach(item => {
+                allFlights[item.index].stand = '';
+            });
+
+            renderTable();
+            showStatus(`已清空 ${filtered.length} 条航班的停机位`);
+        }
+
+        // 自定义确认对话框
+        function showConfirmModal(message) {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('confirmModal');
+                const msgEl = document.getElementById('confirmMessage');
+                const btnOk = document.getElementById('btnConfirmOk');
+                const btnCancel = document.getElementById('btnConfirmCancel');
+
+                msgEl.textContent = message;
+                modal.style.display = 'flex';
+
+                const cleanup = () => {
+                    modal.style.display = 'none';
+                    btnOk.onclick = null;
+                    btnCancel.onclick = null;
+                };
+
+                btnOk.onclick = () => {
+                    cleanup();
+                    resolve(true);
+                };
+
+                btnCancel.onclick = () => {
+                    cleanup();
+                    resolve(false);
+                };
+            });
+        }
+
+        function renderTable() {
+            if (currentTab === 'standView') {
+                renderStandView();
+                return;
+            }
+
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            const callsignCounts = {};
+            allFlights.forEach(f => {
+                if (f.callSign) callsignCounts[f.callSign] = (callsignCounts[f.callSign] || 0) + 1;
+            });
+
+            // 检测停机位冲突
+            const standConflicts = detectStandConflicts();
+            const conflictIndices = new Set();
+            standConflicts.forEach((indices, stand) => {
+                indices.forEach(idx => conflictIndices.add(idx));
+            });
+
+            // 检测先出后进停机位
+            const turnaroundStats = getStandUsageStats();
+            const turnaroundStands = turnaroundStats.turnarounds;
+
+            const filteredFlights = getFilteredFlights();
+
+            filteredFlights.forEach((item, visualIndex) => {
+                const tr = document.createElement('tr');
+                const f = item.flight;
+                const idx = item.index;
+                tr.dataset.index = idx;
+                tr.onmousedown = (e) => handleRowSelection(e, idx, visualIndex);
+                tr.oncontextmenu = (e) => { if (e.shiftKey) e.preventDefault(); };
+
+                if (selectedIndices.has(idx)) tr.classList.add('selected-row');
+
+                // 重复呼号高亮
+                const isDuplicate = f.callSign && callsignCounts[f.callSign] > 1;
+                if (isDuplicate) {
+                    tr.classList.add('duplicate-row');
+                    tr.dataset.callsign = f.callSign;
+                    tr.addEventListener('mouseenter', () => highlightDuplicates(f.callSign));
+                    tr.addEventListener('mouseleave', () => unhighlightDuplicates(f.callSign));
+                }
+
+                // 停机位冲突高亮
+                const hasConflict = conflictIndices.has(idx);
+                if (hasConflict) {
+                    tr.classList.add('conflict-row');
+                    // 找到冲突的停机位
+                    standConflicts.forEach((indices, stand) => {
+                        if (indices.has(idx)) {
+                            tr.dataset.conflictStand = stand;
+                        }
+                    });
+                    tr.addEventListener('mouseenter', () => highlightConflicts(tr.dataset.conflictStand));
+                    tr.addEventListener('mouseleave', () => unhighlightConflicts(tr.dataset.conflictStand));
+                }
+
+                // 先出后进停机位永久高亮（仅当不存在冲突时）
+                if (f.stand && turnaroundStands.has(f.stand) && !hasConflict) {
+                    tr.classList.add('turnaround-row');
+                    tr.dataset.turnaroundStand = f.stand;
+                    tr.addEventListener('mouseenter', () => highlightTurnaround(f.stand));
+                    tr.addEventListener('mouseleave', () => unhighlightTurnaround(f.stand));
+                }
+
+                headers.forEach(h => {
+                    if (currentTab === 'all') {
+                        if (h.key === 'takeOffTime' || h.key === 'inBlockTime') return;
+                    } else {
+                        if (h.tab && h.tab !== currentTab) return;
+                    }
+                    const td = document.createElement('td');
+                    if (h.type === 'select') {
+                        const select = document.createElement('select');
+                        let options = config[h.source];
+                        if (h.key === 'airline') {
+                            const acType = f.aircraftType;
+                            if (acType && config.mapping.aircraftToAirlines[acType]) {
+                                const allowedAirlines = config.mapping.aircraftToAirlines[acType];
+                                options = options.filter(al => allowedAirlines.includes(al));
+                            }
+                        }
+                        else if (h.key === 'aircraftType') {
+                            const al = f.airline;
+                            if (al && config.mapping.airlineToAircrafts[al]) {
+                                const allowedTypes = config.mapping.airlineToAircrafts[al];
+                                options = options.filter(at => allowedTypes.includes(at));
+                            }
+                        }
+                        else if (h.key === 'callSign') {
+                            const al = f.airline;
+                            if (al && config.mapping.airlineToCallsigns[al]) {
+                                options = config.mapping.airlineToCallsigns[al];
+                            }
+                        }
+                        else if (h.key === 'stand') {
+                            // 停机位特殊处理：如果未配置且有现有值，保留现有值作为选项
+                            if (options.length === 0 && f[h.key]) {
+                                options = [f[h.key]];
+                            }
+                            // 添加空选项作为占位符
+                            if (options.length > 0 && !f[h.key]) {
+                                const emptyOpt = document.createElement('option');
+                                emptyOpt.value = '';
+                                emptyOpt.text = '-- 选择停机位 --';
+                                emptyOpt.selected = true;
+                                select.appendChild(emptyOpt);
+                            }
+                        }
+                        if (f[h.key] && !options.includes(f[h.key])) {
+                            const opt = document.createElement('option');
+                            opt.value = f[h.key];
+                            opt.text = f[h.key] + " (非配置)";
+                            select.appendChild(opt);
+                        }
+                        options.forEach(optVal => {
+                            const opt = document.createElement('option');
+                            opt.value = optVal;
+                            opt.text = optVal;
+                            if (optVal === f[h.key]) opt.selected = true;
+                            select.appendChild(opt);
+                        });
+                        select.onchange = (e) => {
+                            const newVal = e.target.value;
+                            updateFlight(idx, h.key, newVal);
+                            if (h.key === 'callSign') {
+                                const mappedAirline = config.mapping.callsignToAirline[newVal];
+                                if (mappedAirline) updateFlight(idx, 'airline', mappedAirline);
+                            }
+                            renderTable();
+                        };
+
+                        // 自动同步：如果航班没有该字段值，但下拉框有选项，则保存当前显示的值
+                        // 排除停机位字段（需要用户主动选择）
+                        if (h.key !== 'stand' && !f[h.key] && select.options.length > 0) {
+                            const currentValue = select.value;
+                            if (currentValue) {
+                                allFlights[idx][h.key] = currentValue;
+                            }
+                        }
+
+                        td.appendChild(select);
+                    } else {
+                        const input = document.createElement('input');
+                        input.type = 'text';
+                        input.value = f[h.key] || '';
+                        input.dataset.row = idx;
+                        input.dataset.key = h.key;
+                        if (isAirportLocked) {
+                            if ((h.key === 'departure' || h.key === 'arrival') && f[h.key] === currentAirportCode) {
+                                input.readOnly = true;
+                                input.className = 'locked';
+                            }
+                        }
+                        if (h.type === 'time') {
+                            input.placeholder = "HH:mm:ss";
+                            input.onfocus = (e) => { e.target.setAttribute('data-original', e.target.value); };
+                            input.onblur = (e) => {
+                                const orig = e.target.getAttribute('data-original');
+                                handleTimeBlur(e, orig, idx, h.key);
+                            };
+                            input.onkeydown = (e) => handleTimeKeyDown(e, input, idx, h.key);
+                        } else {
+                            input.onchange = (e) => updateFlight(idx, h.key, e.target.value);
+                        }
+                        td.appendChild(input);
+                    }
+                    tr.appendChild(td);
+                });
+                const tdAction = document.createElement('td');
+                tdAction.className = 'cell-action';
+                tdAction.innerHTML = `<button class="btn-delete" onclick="deleteFlightRecord(${idx})">🗑️</button>`;
+                tr.appendChild(tdAction);
+                tbody.appendChild(tr);
+            });
+        }
+
+        function updateFlight(index, key, value) {
+            allFlights[index][key] = value;
+        }
+
+        function addRow() {
+            let defDeparture = 'ZBAA';
+            let defArrival = 'ZSJN';
+            let isDepartureIntent = true;
+            if (currentTab === 'arrival') isDepartureIntent = false;
+            else if (currentTab === 'all') isDepartureIntent = true;
+
+            if (isAirportLocked && currentAirportCode) {
+                if (!isDepartureIntent) defArrival = currentAirportCode;
+                else defDeparture = currentAirportCode;
+            } else {
+                if (!isDepartureIntent) { defArrival = 'ZSJN'; defDeparture = 'ZBAA'; }
+                else { defDeparture = 'ZSJN'; defArrival = 'ZBAA'; }
+            }
+
+            const defAirline = config.airlines[0] || 'CSN';
+            let defAircraft = config.aircraftTypes[0] || 'BOEING 737-800';
+            if (config.mapping.airlineToAircrafts[defAirline] && config.mapping.airlineToAircrafts[defAirline].length > 0) {
+                defAircraft = config.mapping.airlineToAircrafts[defAirline][0];
+            }
+
+            let defCallsign = '';
+            if (config.mapping.airlineToCallsigns[defAirline] && config.mapping.airlineToCallsigns[defAirline].length > 0) {
+                defCallsign = config.mapping.airlineToCallsigns[defAirline][0];
+            } else if (config.callsigns.length > 0) {
+                defCallsign = config.callsigns[0];
+            }
+
+            const newFlight = {
+                callSign: defCallsign || 'NEW001',
+                departure: defDeparture,
+                arrival: defArrival,
+                stand: '1',
+                runway: '01',
+                airline: defAirline,
+                aircraftType: defAircraft,
+                voice: config.voices[0] || 'CN-Captain-Young',
+                language: 'zh'
+            };
+
+            if (isDepartureIntent) {
+                newFlight.offBlockTime = '08:00:00';
+                if (timeOffsets.departure) {
+                    newFlight.takeOffTime = addMinutes('08:00:00', timeOffsets.departure);
+                } else {
+                    newFlight.takeOffTime = '08:10:00';
+                }
+                newFlight.landingTime = '';
+                newFlight.inBlockTime = '';
+            } else {
+                newFlight.offBlockTime = '';
+                newFlight.takeOffTime = '';
+                newFlight.landingTime = '08:00:00';
+                if (timeOffsets.arrival) {
+                    newFlight.inBlockTime = addMinutes('08:00:00', timeOffsets.arrival);
+                } else {
+                    newFlight.inBlockTime = '08:10:00';
+                }
+            }
+
+            allFlights.push(newFlight);
+            renderTable();
+            updateStats();
+            const container = document.querySelector('.table-container');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function deleteFlightRecord(index) {
+            if (confirm("确定删除该航班吗?")) {
+                allFlights.splice(index, 1);
+                selectedIndices.delete(index);
+                selectedIndices.clear();
+                renderTable();
+                updateStats();
+            }
+        }
+        function newFile() {
+            if (confirm("确定新建吗? 未保存的数据将丢失。")) {
+                allFlights = [];
+                selectedIndices.clear();
+                const csvInput = document.getElementById('csvInput');
+                if (csvInput) csvInput.value = '';
+                renderTable();
+                updateStats();
+                showStatus("已新建空表");
+            }
+        }
+        function loadCSV(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const text = e.target.result;
+                parseCSV(text);
+                input.value = '';
+            };
+            reader.readAsText(file);
+        }
+        function parseCSV(text) {
+            const lines = text.split(/\r\n|\n/).filter(l => l.trim() !== '' && !l.trim().startsWith('#'));
+            if (lines.length < 2) { alert("CSV 格式错误或为空"); return; }
+            const normalizeKey = (k) => {
+                k = k.trim();
+                if (k === 'offBlockTIme') return 'offBlockTime';
+                if (k === 'inBlockTIme') return 'inBlockTime';
+                if (k === 'takeOffTIme') return 'takeOffTime';
+                return k;
+            };
+            const headerLine = lines[0].split(',').map(normalizeKey);
+            const newFlights = [];
+            for (let i = 1; i < lines.length; i++) {
+                const cols = lines[i].split(',').map(c => c.trim());
+                if (cols.length < headerLine.length) continue;
+                let flight = {};
+                headerLine.forEach((h, idx) => { flight[h] = cols[idx]; });
+                newFlights.push(flight);
+            }
+            allFlights = [...allFlights, ...newFlights]; // 增量导入（追加模式）
+            selectedIndices.clear();
+            renderTable();
+            updateStats();
+
+            // 自动检测并锁定当前机场
+            const detectedAirport = detectCurrentAirport();
+            if (detectedAirport && !isAirportLocked) {
+                const input = document.getElementById('airportCode');
+                const btn = document.getElementById('btnLock');
+                currentAirportCode = detectedAirport;
+                isAirportLocked = true;
+                input.value = detectedAirport;
+                input.disabled = true;
+                btn.innerHTML = "🔒 解锁";
+                btn.classList.add("active-lock");
+                updateBatchButtons();
+                showStatus(`已加载 ${allFlights.length} 条航班数据，自动检测并锁定机场: ${detectedAirport}`);
+            } else {
+                showStatus(`已加载 ${allFlights.length} 条航班数据`);
+            }
+        }
+
+        // 自动检测当前机场：统计出现次数等于航班总数的机场代码
+        function detectCurrentAirport() {
+            if (allFlights.length === 0) return null;
+
+            const count = {};
+            allFlights.forEach(f => {
+                if (f.departure) count[f.departure] = (count[f.departure] || 0) + 1;
+                if (f.arrival) count[f.arrival] = (count[f.arrival] || 0) + 1;
+            });
+
+            const total = allFlights.length;
+            for (const code in count) {
+                if (count[code] === total) return code;
+            }
+            return null;
+        }
+        function loadConfigs(input) {
+            const files = Array.from(input.files);
+            let loadedCount = 0;
+            config.mapping.aircraftToAirlines = {};
+            config.mapping.airlineToAircrafts = {};
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const text = e.target.result;
+                    if (file.name.includes("ModelPath")) parseModelConfig(text);
+                    else if (file.name.includes("LiveryPath")) parseLiveryConfig(text);
+                    loadedCount++;
+                    if (loadedCount === files.length) {
+                        showStatus("配置加载完成");
+                        buildReverseMapping();
+                        renderTable();
+                    }
+                };
+                reader.readAsText(file);
+            });
+            input.value = '';
+        }
+
+        function loadCallsigns(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const text = e.target.result;
+                parseCallsignConfig(text);
+                showStatus("呼号表已更新");
+                renderTable();
+                input.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        function parseCallsignConfig(text) {
+            const lines = text.split(/\r\n|\n/);
+            const callsigns = [];
+            config.mapping.callsignToAirline = {};
+            config.mapping.airlineToCallsigns = {};
+
+            config.airlines.forEach(al => config.mapping.airlineToCallsigns[al] = []);
+
+            lines.forEach(line => {
+                line = line.trim();
+                if (!line || line.startsWith('callSign')) return;
+                const parts = line.split(',');
+                if (parts.length >= 2) {
+                    const cs = parts[0].trim();
+                    const al = parts[1].trim();
+                    if (cs && al) {
+                        callsigns.push(cs);
+                        config.mapping.callsignToAirline[cs] = al;
+                        if (!config.mapping.airlineToCallsigns[al]) {
+                            config.mapping.airlineToCallsigns[al] = [];
+                        }
+                        config.mapping.airlineToCallsigns[al].push(cs);
+                    }
+                }
+            });
+            config.callsigns = callsigns.sort();
+            console.log("Loaded Callsigns:", callsigns.length);
+        }
+
+        function parseModelConfig(text) {
+            const types = [];
+            const lines = text.split(/\r\n|\n/);
+            lines.forEach(line => {
+                const parts = line.split('=');
+                if (parts.length >= 2) {
+                    const key = parts[0].trim();
+                    if (key) types.push(key);
+                }
+            });
+            if (types.length > 0) {
+                config.aircraftTypes = types;
+            }
+        }
+        function parseLiveryConfig(text) {
+            const airlines = new Set();
+            const lines = text.split(/\r\n|\n/);
+            let currentAircraft = null;
+            lines.forEach(line => {
+                line = line.trim();
+                if (!line) return;
+                if (line.includes('=')) {
+                    const parts = line.split('=');
+                    const key = parts[0].trim();
+                    if (key && key.length === 3) {
+                        airlines.add(key);
+                        if (currentAircraft) {
+                            // 正向映射：机型 -> 航空公司列表
+                            if (!config.mapping.aircraftToAirlines[currentAircraft]) config.mapping.aircraftToAirlines[currentAircraft] = [];
+                            if (!config.mapping.aircraftToAirlines[currentAircraft].includes(key)) config.mapping.aircraftToAirlines[currentAircraft].push(key);
+                            // 反向映射：航空公司 -> 机型列表
+                            if (!config.mapping.airlineToAircrafts[key]) config.mapping.airlineToAircrafts[key] = [];
+                            if (!config.mapping.airlineToAircrafts[key].includes(currentAircraft)) config.mapping.airlineToAircrafts[key].push(currentAircraft);
+                        }
+                    }
+                } else {
+                    if (!line.startsWith('[') && !line.startsWith('/')) {
+                        currentAircraft = line;
+                        if (!config.mapping.aircraftToAirlines[currentAircraft]) config.mapping.aircraftToAirlines[currentAircraft] = [];
+                    }
+                }
+            });
+            if (airlines.size > 0) {
+                config.airlines = Array.from(airlines).sort();
+            }
+        }
+        async function downloadCSV() {
+            const arrivals = allFlights.filter(f => !f.offBlockTime && f.landingTime);
+            const departures = allFlights.filter(f => !(!f.offBlockTime && f.landingTime));
+            arrivals.sort((a, b) => (a.landingTime || '').localeCompare(b.landingTime || ''));
+            departures.sort((a, b) => (a.offBlockTime || '').localeCompare(b.offBlockTime || ''));
+            const sortedFlights = [...arrivals, ...departures];
+            const headerKeys = headers.filter(h => h.key).map(h => h.key);
+            let csvContent = headerKeys.join(',') + "\n";
+            sortedFlights.forEach(f => {
+                const row = headerKeys.map(key => f[key] || '').join(',');
+                csvContent += row + "\n";
+            });
+
+            // 获取用户输入的文件名
+            let filename = document.getElementById('exportFilename').value.trim();
+            if (!filename) filename = 'flight_schedule';
+            filename = filename.replace(/\.csv$/i, '') + '.csv';
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+
+            // 尝试使用 File System Access API（选择目录后直接导出）
+            if ('showDirectoryPicker' in window) {
+                try {
+                    const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+                    const fileHandle = await dirHandle.getFileHandle(filename, { create: true });
+                    const writable = await fileHandle.createWritable();
+                    await writable.write(blob);
+                    await writable.close();
+                    showStatus(`已导出: ${filename} → ${dirHandle.name}/`);
+                    return;
+                } catch (err) {
+                    if (err.name === 'AbortError') return; // 用户取消
+                    console.warn('目录导出失败，回退到传统下载:', err);
+                }
+            }
+
+            // 回退：传统下载方式
+            const link = document.createElement("a");
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", filename);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                showStatus(`已下载: ${filename}`);
+            }
+        }
+
+        // === 自动配表功能 ===
+        function openAutoScheduleModal() {
+            // 禁止在"全部"标签页使用
+            if (currentTab === 'all') {
+                alert('请先切换到「到达航班」或「出发航班」标签页');
+                return;
+            }
+
+            const filtered = getFilteredFlights();
+            if (filtered.length === 0) {
+                alert('当前视图没有航班数据');
+                return;
+            }
+
+            // 更新预览信息
+            updateAutoSchedulePreview();
+
+            // 显示模态框
+            document.getElementById('autoScheduleModal').style.display = 'flex';
+        }
+
+        function closeAutoScheduleModal() {
+            document.getElementById('autoScheduleModal').style.display = 'none';
+        }
+
+        function updateAutoSchedulePreview() {
+            const filtered = getFilteredFlights();
+            const startTime = document.getElementById('autoStartTime').value;
+            const interval = parseInt(document.getElementById('autoInterval').value) || 5;
+
+            const tabLabel = currentTab === 'arrival' ? '到达航班' : '出发航班';
+            const timeField = currentTab === 'arrival' ? '着陆时间' : '推出时间';
+            const lastTime = filtered.length > 0 ? addMinutes(startTime, interval * (filtered.length - 1)) : startTime;
+
+            const previewEl = document.getElementById('autoSchedulePreview');
+            previewEl.innerHTML = `
+                <div><strong>当前视图:</strong> ${tabLabel}</div>
+                <div><strong>航班数量:</strong> ${filtered.length} 条</div>
+                <div><strong>设置字段:</strong> ${timeField}</div>
+                <div><strong>时间范围:</strong> ${startTime} → ${lastTime}</div>
+            `;
+        }
+
+        function applyAutoSchedule() {
+            const startTimeStr = document.getElementById('autoStartTime').value.trim();
+            const interval = parseInt(document.getElementById('autoInterval').value);
+
+            // 验证输入
+            if (!isValidTimeFormat(startTimeStr)) {
+                alert('请输入正确的时间格式 (HH:mm:ss)');
+                return;
+            }
+            if (isNaN(interval) || interval < 1) {
+                alert('间隔时间必须为正整数');
+                return;
+            }
+
+            const filtered = getFilteredFlights();
+            const offset = timeOffsets[currentTab] || 10;
+
+            // 确定要设置的字段
+            const primaryKey = currentTab === 'arrival' ? 'landingTime' : 'offBlockTime';
+            const secondaryKey = currentTab === 'arrival' ? 'inBlockTime' : 'takeOffTime';
+
+            // 按顺序设置时间
+            filtered.forEach((item, i) => {
+                const flight = allFlights[item.index];
+                const calculatedTime = addMinutes(startTimeStr, interval * i);
+
+                flight[primaryKey] = calculatedTime;
+                flight[secondaryKey] = addMinutes(calculatedTime, offset);
+            });
+
+            // 关闭对话框并刷新
+            closeAutoScheduleModal();
+            renderTable();
+            updateStats();
+            showStatus(`已为 ${filtered.length} 条航班自动配置时间`);
+        }
+
+        // === 机场信息功能 ===
+        function openAirportInfoModal() {
+            // 如果已有停机位配置，显示当前数量
+            const currentCount = config.stands.length;
+            if (currentCount > 0) {
+                document.getElementById('standCount').value = currentCount;
+            }
+            updateAirportInfoPreview();
+            document.getElementById('airportInfoModal').style.display = 'flex';
+        }
+
+        function closeAirportInfoModal() {
+            document.getElementById('airportInfoModal').style.display = 'none';
+        }
+
+        // 停机位使用状况统计（含时间校验）
+        // 合法蓝色高亮条件：
+        // 1. 多出发（无到达）- 合法
+        // 2. 1到达+1出发，且出发时间 < 到达时间（先出后进）- 合法
+        function getStandUsageStats() {
+            const arrivals = new Set();   // 有到达航班的停机位
+            const departures = new Set(); // 有出发航班的停机位
+            const standFlights = new Map(); // 用于时间校验
+
+            allFlights.forEach(f => {
+                if (!f.stand) return;
+                const type = getFlightType(f);
+                if (type === 'arrival') arrivals.add(f.stand);
+                if (type === 'departure') departures.add(f.stand);
+
+                // 收集每个停机位的航班用于时间校验
+                if (!standFlights.has(f.stand)) {
+                    standFlights.set(f.stand, { arrivalFlights: [], departureFlights: [] });
+                }
+                if (type === 'arrival') {
+                    standFlights.get(f.stand).arrivalFlights.push(f);
+                } else {
+                    standFlights.get(f.stand).departureFlights.push(f);
+                }
+            });
+
+            // 检测合法的蓝色高亮停机位
+            const turnarounds = new Set();
+            standFlights.forEach((data, stand) => {
+                const arrCount = data.arrivalFlights.length;
+                const depCount = data.departureFlights.length;
+
+                // 场景1: 多出发（无到达，且≥2个出发）- 合法，蓝色
+                if (arrCount === 0 && depCount >= 2) {
+                    turnarounds.add(stand);
+                }
+                // 场景2: 1到达+1出发，且先出后进 - 合法，蓝色
+                else if (arrCount === 1 && depCount === 1) {
+                    const arr = data.arrivalFlights[0];
+                    const dep = data.departureFlights[0];
+                    const arrTime = arr.inBlockTime || arr.landingTime;
+                    const depTime = dep.takeOffTime || dep.offBlockTime;
+
+                    // 先出后进：出发时间 < 到达时间
+                    if (arrTime && depTime && compareTime(depTime, arrTime) < 0) {
+                        turnarounds.add(stand);
+                    }
+                }
+                // 场景3: 1到达+多出发，需要检查所有出发都在到达之前
+                else if (arrCount === 1 && depCount > 1) {
+                    const arr = data.arrivalFlights[0];
+                    const arrTime = arr.inBlockTime || arr.landingTime;
+
+                    // 检查是否所有出发都在到达之前完成
+                    const allDeparturesBeforeArrival = data.departureFlights.every(dep => {
+                        const depTime = dep.takeOffTime || dep.offBlockTime;
+                        return arrTime && depTime && compareTime(depTime, arrTime) < 0;
+                    });
+
+                    if (allDeparturesBeforeArrival) {
+                        turnarounds.add(stand);
+                    }
+                }
+            });
+
+            return { arrivals, departures, turnarounds };
+        }
+
+        function updateAirportInfoPreview() {
+            const countInput = document.getElementById('standCount').value;
+            const count = parseInt(countInput) || 0;
+            const previewEl = document.getElementById('airportInfoPreview');
+
+            let html = '';
+            if (count > 0 && count <= 99) {
+                const first = '1';
+                const last = count.toString();
+                html = `
+                    <div><strong>停机位数量:</strong> ${count} 个</div>
+                    <div><strong>代号范围:</strong> ${first} ~ ${last}</div>
+                `;
+            } else if (config.stands.length > 0) {
+                html = `
+                    <div><strong>当前已配置:</strong> ${config.stands.length} 个停机位</div>
+                    <div><strong>代号范围:</strong> ${config.stands[0]} ~ ${config.stands[config.stands.length - 1]}</div>
+                `;
+            } else {
+                html = `<div><strong>当前状态:</strong> 未配置停机位</div>`;
+            }
+
+            // 添加使用状况统计
+            const stats = getStandUsageStats();
+            const sortNum = (a, b) => parseInt(a) - parseInt(b);
+
+            if (stats.arrivals.size > 0 || stats.departures.size > 0) {
+                // 生成先出后进的可点击标签
+                const turnaroundBadges = [...stats.turnarounds].sort(sortNum)
+                    .map(s => `<span class="turnaround-badge" onmouseenter="highlightTurnaround('${s}')" onmouseleave="unhighlightTurnaround('${s}')">${s}</span>`)
+                    .join('') || '<span style="color: #888;">无</span>';
+
+                html += `
+                    <hr style="border-color: #444; margin: 12px 0;">
+                    <div style="margin-bottom: 6px;"><strong>📊 使用状况:</strong></div>
+                    <div>有到达: ${stats.arrivals.size} 个 <span style="color: #888;">(${[...stats.arrivals].sort(sortNum).join(', ') || '无'})</span></div>
+                    <div>有出发: ${stats.departures.size} 个 <span style="color: #888;">(${[...stats.departures].sort(sortNum).join(', ') || '无'})</span></div>
+                    <div>先出后进: ${stats.turnarounds.size} 个 ${turnaroundBadges}</div>
+                `;
+            }
+
+            previewEl.innerHTML = html;
+        }
+
+        // 先出后进停机位高亮
+        function highlightTurnaround(stand) {
+            if (!stand) return;
+            document.querySelectorAll('#tableBody tr').forEach(tr => {
+                const idx = parseInt(tr.dataset.index);
+                const flight = allFlights[idx];
+                if (flight && flight.stand === stand) {
+                    tr.classList.add('highlight-turnaround');
+                }
+            });
+        }
+
+        function unhighlightTurnaround(stand) {
+            document.querySelectorAll('tr.highlight-turnaround').forEach(el => {
+                el.classList.remove('highlight-turnaround');
+            });
+        }
+
+        function applyAirportInfo() {
+            const count = parseInt(document.getElementById('standCount').value);
+
+            if (isNaN(count) || count < 1 || count > 99) {
+                alert('请输入有效的停机位数量 (1-99)');
+                return;
+            }
+
+            // 生成停机位代号
+            config.stands = [];
+            for (let i = 1; i <= count; i++) {
+                config.stands.push(i.toString());
+            }
+
+            closeAirportInfoModal();
+            renderTable();
+            showStatus(`已生成 ${count} 个停机位 (01 ~ ${count.toString().padStart(2, '0')})`);
+        }
+        // === GitHub Auth & Remote Config Logic ===
+        let ghState = {
+            token: localStorage.getItem('gh_token') || '',
+            user: null,
+            repo: 'contextcross/ground-atc'
+        };
+
+        async function handleGHLogin() {
+            if (ghState.token && ghState.user) {
+                if (confirm(`确定退出账号 ${ghState.user.login} 吗？`)) {
+                    ghState.token = '';
+                    ghState.user = null;
+                    localStorage.removeItem('gh_token');
+                    updateGHUI();
+                    showStatus("已退出 GitHub 登录");
+                }
+                return;
+            }
+
+            const token = prompt("请输入您的 GitHub Personal Access Token (PAT):\n1. 访问 GitHub Settings -> Developer settings -> Personal access tokens\n2. 生成一个具有 'repo' 权限的 Token\n3. 将 Token 粘贴到此处以便访问私有或特定仓库文件。");
+            
+            if (token) {
+                ghState.token = token.trim();
+                const success = await fetchGHUser();
+                if (success) {
+                    localStorage.setItem('gh_token', ghState.token);
+                    updateGHUI();
+                    showStatus("GitHub 登录成功");
+                } else {
+                    ghState.token = '';
+                    alert("登录失败，请检查 Token 是否有效或网络是否通畅。");
+                }
+            }
+        }
+
+        async function fetchGHUser() {
+            try {
+                const res = await fetch('https://api.github.com/user', {
+                    headers: { 'Authorization': `token ${ghState.token}` }
+                });
+                if (res.ok) {
+                    ghState.user = await res.json();
+                    return true;
+                }
+            } catch (e) {
+                console.error("Fetch GH User Error:", e);
+            }
+            return false;
+        }
+
+        function updateGHUI() {
+            const btn = document.getElementById('btnGHAuth');
+            const username = document.getElementById('ghUsername');
+            const avatar = document.getElementById('ghAvatar');
+            
+            if (ghState.token && ghState.user) {
+                btn.innerHTML = "🚪 退出";
+                username.innerText = ghState.user.login;
+                avatar.src = ghState.user.avatar_url;
+                avatar.style.display = 'block';
+                username.style.color = 'var(--accent-color)';
+            } else {
+                btn.innerHTML = "🔑 GitHub 登录";
+                username.innerText = "未登录";
+                avatar.style.display = 'none';
+                username.style.color = '#ccc';
+            }
+        }
+
+        function handleConfigUploadClick() {
+            if (ghState.token && ghState.user) {
+                openGHFileSelector();
+            } else {
+                document.getElementById('cfgInput').click();
+            }
+        }
+
+        async function openGHFileSelector(path = '') {
+            showStatus(`正在连接 GitHub 读取: ${path || '根目录'}...`);
+            try {
+                const res = await fetch(`https://api.github.com/repos/${ghState.repo}/contents/${path}`, {
+                    headers: { 'Authorization': `token ${ghState.token}` }
+                });
+                
+                if (!res.ok) throw new Error(`无法访问路径 (${res.status})`);
+                
+                const items = await res.json();
+                
+                // 排序：文件夹在前，文件在后
+                items.sort((a, b) => (b.type === 'dir' ? 1 : -1) - (a.type === 'dir' ? 1 : -1));
+
+                // 只有根目录时创建模态框，后续只是刷新内容
+                let modal = document.getElementById('ghFileModal');
+                if (!modal) {
+                    modal = document.createElement('div');
+                    modal.id = 'ghFileModal';
+                    modal.className = 'modal-overlay';
+                    document.body.appendChild(modal);
+                }
+
+                // 处理返回上一级
+                let backHtml = '';
+                if (path) {
+                    const parentPath = path.substring(0, path.lastIndexOf('/'));
+                    backHtml = `
+                        <div class="gh-file-item" style="color: var(--accent-color);" onclick="openGHFileSelector('${parentPath}')">
+                            <span>🔙</span> .. (返回上一级)
+                        </div>
+                    `;
+                }
+
+                let itemsHtml = items.map(item => {
+                    if (item.type === 'dir') {
+                        return `
+                            <div class="gh-file-item folder" onclick="openGHFileSelector('${item.path}')">
+                                <span>📁</span> <strong>${item.name}</strong>
+                            </div>
+                        `;
+                    } else if (item.name.endsWith('.cfg') || item.name.endsWith('.txt')) {
+                        return `
+                            <div class="gh-file-item" onclick="this.classList.toggle('selected')">
+                                <input type="hidden" class="file-url" value="${item.download_url}">
+                                <input type="hidden" class="file-name" value="${item.name}">
+                                <span>📄</span> ${item.name}
+                            </div>
+                        `;
+                    }
+                    return ''; // 忽略其他类型文件
+                }).join('');
+
+                modal.innerHTML = `
+                    <div class="modal-content" style="max-width: 500px; width: 90%;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <h3 style="margin:0;">📂 选择 GitHub 远程配置</h3>
+                            <button class="secondary" style="padding: 2px 8px;" onclick="document.getElementById('ghFileModal').remove()">✕</button>
+                        </div>
+                        <p class="modal-desc" style="word-break: break-all;">当前路径: <strong>${ghState.repo}/${path || ''}</strong></p>
+                        <div class="gh-file-list">
+                            ${backHtml}
+                            ${itemsHtml || '<div style="padding:20px; text-align:center; color:#666;">此目录下没有匹配的 .cfg 文件</div>'}
+                        </div>
+                        <div class="modal-actions">
+                            <button class="secondary" onclick="document.getElementById('ghFileModal').remove()">取消</button>
+                            <button onclick="loadGHSelectedFiles()">加载选中文件</button>
+                        </div>
+                    </div>
+                `;
+                showStatus("请选择文件或进入文件夹");
+
+            } catch (e) {
+                console.error("GH API Error:", e);
+                alert("获取列表失败: " + e.message);
+            }
+        }
+
+        async function loadGHSelectedFiles() {
+            const selectedItems = document.querySelectorAll('.gh-file-item.selected');
+            if (selectedItems.length === 0) {
+                alert("请先选择至少一个文件。");
+                return;
+            }
+
+            const filesToLoad = Array.from(selectedItems).map(item => ({
+                url: item.querySelector('.file-url').value,
+                name: item.querySelector('.file-name').value
+            }));
+
+            document.getElementById('ghFileModal').remove();
+            showStatus(`正在下载 ${filesToLoad.length} 个配置文件...`);
+            
+            let loadedCount = 0;
+            config.mapping.aircraftToAirlines = {};
+            config.mapping.airlineToAircrafts = {};
+
+            for (const file of filesToLoad) {
+                try {
+                    const res = await fetch(file.url, {
+                        headers: { 'Authorization': `token ${ghState.token}` }
+                    });
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    const text = await res.text();
+                    
+                    if (file.name.includes("ModelPath")) parseModelConfig(text);
+                    else if (file.name.includes("LiveryPath")) parseLiveryConfig(text);
+                    
+                    loadedCount++;
+                } catch (e) {
+                    console.error(`下载失败: ${file.name}`, e);
+                }
+            }
+
+            if (loadedCount > 0) {
+                showStatus(`已从 GitHub 加载 ${loadedCount} 个配置`);
+                buildReverseMapping();
+                renderTable();
+            } else {
+                showStatus("加载失败，请重试");
+            }
+        }
+
+        // 页面加载时恢复登录状态
+        if (ghState.token) {
+            fetchGHUser().then(success => {
+                if (success) updateGHUI();
+            });
+        }
+    </script>
+</body>
+
+</html>
