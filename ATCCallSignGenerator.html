@@ -1,0 +1,2082 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATC CallSign Voice Generator</title>
+    <style>
+        /* CSS Variables - WinUI 3 Dark Theme Palette */
+        :root {
+            --bg-color: #202020;
+            --card-bg: #2d2d2d;
+            --accent-color: #0078d4;
+            --accent-hover: #006cc1;
+            --text-primary: #ffffff;
+            --text-secondary: #cccccc;
+            --border-color: #454545;
+            --input-bg: #333333;
+            --success-color: #107c10;
+            --error-color: #c50f1f;
+            --warning-color: #d83b01;
+            --font-family: "Segoe UI", system-ui, sans-serif;
+            --radius-std: 8px;
+            --radius-sm: 4px;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 20px;
+            height: 100vh;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Utility Classes */
+        .flex {
+            display: flex;
+        }
+
+        .flex-col {
+            flex-direction: column;
+        }
+
+        .gap-2 {
+            gap: 8px;
+        }
+
+        .gap-4 {
+            gap: 16px;
+        }
+
+        .items-center {
+            align-items: center;
+        }
+
+        .justify-between {
+            justify-content: space-between;
+        }
+
+        .flex-1 {
+            flex: 1;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Typography */
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        h2 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        .text-sm {
+            font-size: 12px;
+        }
+
+        .text-sec {
+            color: var(--text-secondary);
+        }
+
+        /* Components */
+        button {
+            background-color: var(--card-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 6px 16px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        button:hover {
+            background-color: #3d3d3d;
+        }
+
+        button:active {
+            background-color: #454545;
+        }
+
+        button.primary {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+
+        button.primary:hover {
+            background-color: var(--accent-hover);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        select,
+        input[type="text"],
+        input[type="password"] {
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            /* Updated bottom border to full border */
+            border-bottom: 2px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 6px 8px;
+            border-radius: var(--radius-sm);
+            outline: none;
+            font-family: inherit;
+        }
+
+        select:focus,
+        input:focus {
+            border-bottom-color: var(--accent-color);
+        }
+
+        /* Layout Area */
+        .header-bar {
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+
+        .control-panel {
+            background-color: var(--card-bg);
+            padding: 16px;
+            border-radius: var(--radius-std);
+            margin-bottom: 16px;
+        }
+
+        .main-content {
+            background-color: var(--card-bg);
+            border-radius: var(--radius-std);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            position: relative;
+        }
+
+        /* Data Table */
+        .table-container {
+            flex: 1;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            position: sticky;
+            top: 0;
+            background-color: #353535;
+            /* Slightly lighter than card */
+            padding: 12px;
+            font-weight: 600;
+            border-bottom: 1px solid var(--border-color);
+            z-index: 10;
+        }
+
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #3d3d3d;
+        }
+
+        tr:hover td {
+            background-color: #383838;
+        }
+
+        tr.selected td {
+            background-color: rgba(0, 120, 212, 0.3);
+            /* Accent transparent */
+        }
+
+        /* Status Badges */
+        .badge {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .badge-pending {
+            background-color: #454545;
+            color: #ccc;
+        }
+
+        .badge-processing {
+            background-color: var(--accent-color);
+            color: #fff;
+        }
+
+        .badge-completed {
+            background-color: #ff9800;
+            /* Orange */
+            color: #fff;
+        }
+
+        .badge-edited {
+            background-color: #00a200;
+            /* Green */
+            color: #fff;
+        }
+
+        .badge-failed {
+            background-color: var(--error-color);
+            color: #fff;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal {
+            background: var(--card-bg);
+            padding: 24px;
+            border-radius: var(--radius-std);
+            width: 400px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border-color);
+        }
+
+        .modal-header {
+            margin-bottom: 16px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .modal-footer {
+            margin-top: 24px;
+            text-align: right;
+        }
+
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 2000;
+        }
+
+        .toast {
+            background: var(--card-bg);
+            border-left: 4px solid var(--accent-color);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s ease-out;
+            min-width: 200px;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Drop Area */
+        .drop-area {
+            border: 2px dashed var(--border-color);
+            border-radius: var(--radius-std);
+            padding: 20px;
+            text-align: center;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .drop-area:hover,
+        .drop-area.drag-over {
+            border-color: var(--accent-color);
+            background: rgba(0, 120, 212, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Header -->
+    <div class="header-bar flex items-center justify-between">
+        <div class="flex items-center gap-4">
+            <h1>ATC CallSign Voice Generator</h1>
+            <span class="text-sec text-sm">v1.0.0</span>
+        </div>
+        <div class="flex gap-2">
+            <button id="btnSettings">⚙️ 设置</button>
+        </div>
+    </div>
+
+    <!-- Control Panel -->
+    <div class="control-panel flex items-center justify-between gap-4">
+        <div class="flex items-center gap-4 flex-1">
+            <div class="flex flex-col gap-2">
+                <label class="text-sm text-sec">预设 (Preset)</label>
+                <select id="presetSelect" style="min-width: 200px;">
+                    <!-- Options populated by JS -->
+                </select>
+            </div>
+
+            <div class="flex flex-col gap-2 flex-1">
+                <label class="text-sm text-sec">CSV 文件导入</label>
+                <div id="dropArea" class="drop-area"
+                    style="padding: 4px 12px; display: flex; align-items: center; justify-content: center;">
+                    <span id="fileLabel">点击或拖拽 CSV 文件至此</span>
+                    <input type="file" id="csvInput" accept=".csv" hidden>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2" style="margin-top: 20px;">
+            <button id="btnGenerateSelected" class="primary" disabled>🔊 生成选中</button>
+            <button id="btnExportAll" disabled>📥 导出全部</button>
+            <button id="btnClear">🗑️ 清空</button>
+        </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="flex justify-between items-center" style="margin-bottom: 8px; padding: 0 4px;">
+        <span class="text-sec text-sm" id="statusText">等待导入任务...</span>
+        <span class="text-sec text-sm" id="progressText"></span>
+    </div>
+
+    <!-- Main Table -->
+    <div class="main-content">
+        <div class="table-container">
+            <table id="taskTable">
+                <thead>
+                    <tr>
+                        <th width="80">序号</th>
+                        <th width="150">呼号 (CallSign)</th>
+                        <th>翻译文本预览 (Text)</th>
+                        <th width="120">状态</th>
+                        <th width="150">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- Rows populated by JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header">设置</div>
+            <div class="flex flex-col gap-4">
+                <div class="flex flex-col gap-2">
+                    <label class="text-sm">MiniMax API Key</label>
+                    <input type="password" id="apiKeyInput" placeholder="输入 API Key...">
+                </div>
+                <div class="flex flex-col gap-2">
+                    <label class="text-sm">MiniMax Group ID</label>
+                    <input type="text" id="groupIdInput" placeholder="输入 Group ID (可选)">
+                </div>
+                <div class="flex flex-col gap-2">
+                    <label class="text-sm">API Endpoint (服务器区域)</label>
+                    <select id="apiEndpointSelect">
+                        <option value="https://api.minimax.chat/v1/t2a_v2">国内版 (minimax.chat)</option>
+                        <option value="https://api.minimaxi.com/v1/t2a_v2">国际版 (minimaxi.com)</option>
+                    </select>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <label class="text-sm">MiniMax Model (模型版本)</label>
+                    <select id="modelSelect">
+                        <option value="speech-01-turbo">speech-01-turbo (默认)</option>
+                        <option value="speech-01-hd">speech-01-hd</option>
+                        <option value="speech-02-turbo">speech-02-turbo</option>
+                        <option value="speech-02-hd">speech-02-hd</option>
+                        <option value="speech-2.6-turbo">speech-2.6-turbo</option>
+                        <option value="speech-2.6-hd">speech-2.6-hd</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer flex gap-2 justify-between">
+                <button id="btnCloseSettings">关闭</button>
+                <button id="btnSaveSettings" class="primary">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div id="confirmModal" class="modal-overlay hidden" style="z-index: 2000;">
+        <div class="modal" style="width: 400px; max-width: 90vw;">
+            <div class="modal-header">提示 (Warning)</div>
+            <div id="confirmMessage" class="text-sm"
+                style="white-space: pre-wrap; margin-bottom: 24px; color: #ddd; line-height: 1.5;"></div>
+            <div class="modal-footer flex gap-2 justify-end">
+                <button id="btnConfirmCancel">取消</button>
+                <button id="btnConfirmOk" class="primary">确定 (Continue)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audio Editor Modal -->
+    <div id="audioEditorModal" class="modal-overlay hidden">
+        <div class="modal" style="width: 700px; max-width: 95vw;">
+            <div class="modal-header flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <span>音频编辑器 - </span>
+                    <span id="editorFileName"></span>
+                </div>
+                <div class="flex gap-2">
+                    <button id="btnPrevTask" class="text-sm" title="上一条">◀</button>
+                    <button id="btnNextTask" class="text-sm" title="下一条">▶</button>
+                </div>
+            </div>
+
+            <!-- Waveform Container -->
+            <div id="waveform" class="mb-4" style="background: #000; border-radius: 4px; border: 1px solid #444;"></div>
+
+            <!-- Reference Audio Section -->
+            <div class="reference-section mb-4">
+                <div class="flex justify-between items-center mb-2">
+                    <label class="text-sm" style="color: #ff9800;">参考音频 (Reference)</label>
+                    <button id="btnClearRef" class="text-sm" style="padding: 2px 8px; display: none;">✖ 清除</button>
+                </div>
+                <!-- Dropzone (shown when no ref audio) -->
+                <div id="refDropzone" class="dropzone"
+                    style="background: #1a1a1a; border: 2px dashed #555; border-radius: 4px; min-height: 90px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #888; transition: all 0.2s;">
+                    <span>点击或拖拽导入参考音频</span>
+                </div>
+                <!-- Waveform container (shown when ref audio loaded) -->
+                <div id="waveformRef"
+                    style="display: none; background: #1a1a1a; border: 1px solid #ff9800; border-radius: 4px;"></div>
+                <input type="file" id="refFileInput" accept="audio/*" style="display: none;">
+            </div>
+
+            <!-- Controls (Split Layout) -->
+            <div class="grid grid-cols-2 gap-4 mb-4"
+                style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; background: #2a2a2a; padding: 16px; border-radius: 8px;">
+                <!-- Left Column: Basic -->
+                <div class="flex flex-col gap-4">
+                    <h3 style="margin: 0 0 8px 0; font-size: 14px; border-bottom: 1px solid #444; padding-bottom: 4px;">
+                        基础参数</h3>
+                    <div class="flex flex-col gap-2">
+                        <label class="text-sm">音量 (Gain: <span id="valVol">0</span> dB)</label>
+                        <input type="range" id="sliderVol" min="-20" max="20" step="1" value="0">
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <label class="text-sm">语速 (Rate: <span id="valRate">1.0</span>x)</label>
+                        <input type="range" id="sliderRate" min="0.5" max="2.0" step="0.1" value="1.0">
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <label class="text-sm">音调 (Pitch: <span id="valPitch">0</span> cents)</label>
+                        <input type="range" id="sliderPitch" min="-1200" max="1200" step="50" value="0">
+                    </div>
+                </div>
+
+                <!-- Right Column: Effects -->
+                <div class="flex flex-col gap-4">
+                    <div class="flex justify-between items-center"
+                        style="border-bottom: 1px solid #444; padding-bottom: 4px; margin-bottom: 8px;">
+                        <h3 style="margin: 0; font-size: 14px;">无线电特效</h3>
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" id="checkRadio" style="width: 16px; height: 16px;">
+                            <label for="checkRadio" class="text-sm cursor-pointer">启用</label>
+                        </div>
+                    </div>
+
+                    <div id="radioFxControls" class="flex flex-col gap-3"
+                        style="opacity: 0.5; pointer-events: none; transition: opacity 0.2s;">
+                        <div class="flex flex-col gap-1">
+                            <label class="text-sm text-sec">高通 (HPF: <span id="valHPF">300</span> Hz)</label>
+                            <input type="range" id="sliderHighpass" min="0" max="1000" step="10" value="300">
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="text-sm text-sec">低通 (LPF: <span id="valLPF">3500</span> Hz)</label>
+                            <input type="range" id="sliderLowpass" min="1000" max="8000" step="100" value="3500">
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="text-sm text-sec">失真 (Dist: <span id="valDist">50</span>)</label>
+                            <input type="range" id="sliderDistortion" min="0" max="100" step="1" value="50">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer flex gap-2 justify-between">
+                <div class="flex gap-2">
+                    <button id="btnEditorPlay">▶ 预览</button>
+                    <button id="btnEditorReset">重置</button>
+                    <button id="btnDeleteRegion" disabled style="color: #ff6b6b;">✂ 删除选中</button>
+                </div>
+                <div class="flex gap-2">
+                    <button id="btnEditorCancel">取消</button>
+                    <button id="btnEditorSave" class="primary">💾 保存更改</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+
+
+    <!-- Wavesurfer.js (JSDelivr) -->
+
+
+    <script>
+        /**
+         * Logic Implementation with:
+         * 1. Airline Mapping & Phonetic Translation
+         * 2. Concurrency Control (Queue)
+         * 3. UI Interaction
+         */
+
+
+        // --- Configuration & Constants ---
+
+        const PRESETS = [
+            // English Presets (Inferred)
+            { id: "Aaron", name: "Aaron", lang: "en", voiceId: "Aaron", speed: 1, vol: 1, pitch: 0, emotion: "neutral" },
+            { id: "Christopher", name: "Christopher", lang: "en", voiceId: "male-qn-domineering", speed: 1, vol: 1, pitch: 0, emotion: "neutral" },
+            { id: "Fairy", name: "Fairy", lang: "en", voiceId: "female-shaonv", speed: 1.2, vol: 1, pitch: 0, emotion: "neutral" },
+
+            // Chinese Presets (Specified)
+            { id: "Hanser", name: "Hanser", lang: "zh", voiceId: "Chinese (Mandarin)_Crisp_Girl", speed: 1.35, vol: 1, pitch: 0, emotion: "neutral" },
+            { id: "CN-Captain-Young", name: "CN-Captain-Young", lang: "zh", voiceId: "Chinese (Mandarin)_Radio_Host", speed: 1.2, vol: 0.5, pitch: 0, emotion: "neutral" },
+            { id: "CN-Captain-Middle-Aged", name: "CN-Captain-Middle-Aged", lang: "zh", voiceId: "Chinese (Mandarin)_Reliable_Executive", speed: 1.2, vol: 0.5, pitch: -1, emotion: "neutral" },
+
+            // Cross-Language / Variants (Inferred/Mapped)
+            { id: "CN-Captain-Young-EN", name: "CN-Captain-Young-EN", lang: "en", voiceId: "Chinese (Mandarin)_Radio_Host", speed: 1.2, vol: 0.5, pitch: 0, emotion: "neutral" },
+            { id: "Hanser-EN", name: "Hanser-EN", lang: "en", voiceId: "Chinese (Mandarin)_Crisp_Girl", speed: 1.35, vol: 1, pitch: 0, emotion: "neutral" }
+        ];
+
+        // Airline Data
+        const AIRLINES = {
+            "CCA": { zh: "国航", en: "Air China" },
+            "CES": { zh: "东方", en: "China Eastern" },
+            "CSN": { zh: "南方", en: "China Southern" },
+            "CHH": { zh: "海南", en: "Hainan" },
+            "CDG": { zh: "成都", en: "Chengdu" },
+            "CSC": { zh: "四川", en: "Sichuan Air" },
+            "CXA": { zh: "白鹭", en: "Bailu Air" },
+            "CQH": { zh: "春秋", en: "Spring Air" },
+            "CSZ": { zh: "深圳", en: "Shenzhen Air" }, // Duplicate in prompt?
+            "CJX": { zh: "长安", en: "Chang An" },
+            "UEA": { zh: "联航", en: "United Eagle" }
+        };
+
+        const DIGIT_MAP_ZH = { '0': '洞', '1': '幺', '2': '两', '3': '三', '4': '四', '5': '五', '6': '六', '7': '拐', '8': '八', '9': '九' };
+
+        // English digits are standard numbers, but prompt says "One", "Two" etc. 
+        // We will just let TTS handle single digits, but "0" -> "Zero".
+        const DIGIT_MAP_EN = { '0': 'Zero', '1': 'One', '2': 'Two', '3': 'Three', '4': 'Four', '5': 'Five', '6': 'Six', '7': 'Seven', '8': 'Eight', '9': 'Nine' };
+
+        // --- State Management ---
+        let appState = {
+            apiKey: localStorage.getItem('minimax_api_key') || '',
+            groupId: localStorage.getItem('minimax_group_id') || '',
+            apiEndpoint: localStorage.getItem('minimax_api_endpoint') || 'https://api.minimax.chat/v1/t2a_v2',
+            apiModel: localStorage.getItem('minimax_api_model') || 'speech-01-turbo',
+            tasks: [], // { id, callSign, text, status, blob, error, presetId }
+            processingCount: 0,
+            queue: [], // IDs waiting
+            currentPreset: PRESETS[2], // Default CN-Captain-Young
+            selectedIds: new Set(),
+            lastRequestTime: 0 // New: Track last API call time for rate limiting
+        };
+
+        const MAX_CONCURRENCY = 2; // Lowered from 3 to 2
+        const REQUEST_INTERVAL = 300; // New: 300ms minimum interval between requests
+
+        // --- DOM Elements ---
+        const els = {
+            presetSelect: document.getElementById('presetSelect'),
+            csvInput: document.getElementById('csvInput'),
+            dropArea: document.getElementById('dropArea'),
+            fileLabel: document.getElementById('fileLabel'),
+            tableBody: document.getElementById('tableBody'),
+            btnGenerateSelected: document.getElementById('btnGenerateSelected'),
+            btnExportAll: document.getElementById('btnExportAll'),
+            btnClear: document.getElementById('btnClear'),
+            statusText: document.getElementById('statusText'),
+            progressText: document.getElementById('progressText'),
+            settingsModal: document.getElementById('settingsModal'),
+            btnSettings: document.getElementById('btnSettings'),
+            btnCloseSettings: document.getElementById('btnCloseSettings'),
+            btnSaveSettings: document.getElementById('btnSaveSettings'),
+            apiKeyInput: document.getElementById('apiKeyInput'),
+            groupIdInput: document.getElementById('groupIdInput'),
+            apiEndpointSelect: document.getElementById('apiEndpointSelect'),
+            modelSelect: document.getElementById('modelSelect'),
+            toastContainer: document.getElementById('toastContainer')
+        };
+
+        // --- Initialization ---
+        function init() {
+            // Populate Presets
+            PRESETS.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = p.name;
+                els.presetSelect.appendChild(opt);
+            });
+            els.presetSelect.value = appState.currentPreset.id;
+
+            // Load API Key safely
+            els.apiKeyInput.value = appState.apiKey;
+            els.groupIdInput.value = appState.groupId;
+            els.apiEndpointSelect.value = appState.apiEndpoint;
+            els.modelSelect.value = appState.apiModel;
+
+            // Event Listeners
+            setupEventListeners();
+
+            // Unload protection
+            window.addEventListener('beforeunload', (e) => {
+                const hasUnexported = appState.tasks.some(t => t.status === 'completed' && !t.exported);
+                if (hasUnexported || appState.processingCount > 0) {
+                    e.preventDefault();
+                    e.returnValue = '';
+                }
+            });
+        }
+
+        function setupEventListeners() {
+            // Settings
+            els.btnSettings.onclick = () => els.settingsModal.classList.remove('hidden');
+            els.btnCloseSettings.onclick = () => els.settingsModal.classList.add('hidden');
+            els.btnSaveSettings.onclick = () => {
+                const key = els.apiKeyInput.value.trim();
+                const groupId = els.groupIdInput.value.trim();
+                const endpoint = els.apiEndpointSelect.value;
+                const model = els.modelSelect.value;
+
+                if (key) {
+                    appState.apiKey = key;
+                    appState.groupId = groupId;
+                    appState.apiEndpoint = endpoint;
+                    appState.apiModel = model;
+
+                    localStorage.setItem('minimax_api_key', key);
+                    localStorage.setItem('minimax_group_id', groupId);
+                    localStorage.setItem('minimax_api_endpoint', endpoint);
+                    localStorage.setItem('minimax_api_model', model);
+
+                    showToast('设置已保存', 'success');
+                    els.settingsModal.classList.add('hidden');
+                } else {
+                    showToast('API Key 不能为空', 'error');
+                }
+            };
+
+            // Preset Change
+            els.presetSelect.onchange = () => {
+                const pid = els.presetSelect.value;
+                appState.currentPreset = PRESETS.find(p => p.id === pid);
+                appState.selectedIds.clear();
+                renderTable(); // Re-render with new preset view
+            };
+
+            // File Upload
+            els.dropArea.onclick = () => els.csvInput.click();
+            els.csvInput.onchange = (e) => handleFile(e.target.files[0]);
+
+            // Drag & Drop
+            els.dropArea.ondragover = (e) => { e.preventDefault(); els.dropArea.classList.add('drag-over'); };
+            els.dropArea.ondragleave = () => els.dropArea.classList.remove('drag-over');
+            els.dropArea.ondrop = (e) => {
+                e.preventDefault();
+                els.dropArea.classList.remove('drag-over');
+                if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+            };
+
+            // Actions
+            els.btnGenerateSelected.onclick = startSelectedGeneration;
+            els.btnExportAll.onclick = exportAll;
+            els.btnClear.onclick = async () => {
+                if (await showConfirmModal('确定清空所有任务吗？(这将影响所有预设)')) {
+                    appState.tasks = []; // Clear all 
+                    appState.queue = [];
+                    appState.processingCount = 0;
+                    appState.selectedIds.clear();
+                    renderTable();
+                    updateStatus();
+                }
+            };
+        }
+
+        // --- Core Logic: Parsing & Translation ---
+
+        function handleFile(file) {
+            if (!file) return;
+            els.fileLabel.textContent = file.name;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const text = e.target.result;
+                const lines = text.split(/\r?\n/);
+                const newTasks = [];
+
+                // Simple CSV parsing, assuming header might exist
+                // Finding columns
+                let callSignIdx = 0;
+                let airlineIdx = -1; // Optional if we extract from callsign, but prompt says "Parsing logic: identify callSign and airline columns"
+
+                const header = lines[0].toLowerCase().split(',');
+                callSignIdx = header.findIndex(h => h.includes('callsign'));
+                if (callSignIdx === -1) callSignIdx = 0; // Fallback to first col
+
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+                    const cols = line.split(',');
+                    const cs = cols[callSignIdx]?.trim();
+
+                    if (cs) {
+                        const newTask = {
+                            id: Date.now() + i,
+                            callSign: cs.toUpperCase(),
+                            results: {} // Map: presetId -> { status, text, blob, exported, error }
+                        };
+                        newTasks.push(newTask);
+                    }
+                }
+
+                appState.tasks = [...appState.tasks, ...newTasks];
+                renderTable();
+                showToast(`已导入 ${newTasks.length} 条基础任务 (所有预设共享)`);
+                updateStatus();
+            };
+            reader.readAsText(file);
+        }
+
+        function translateCallSign(callSign, lang) {
+            // Regex to separate Letters and Numbers
+            // e.g. CSN8733 -> CSN, 8733
+            const match = callSign.match(/^([A-Z]+)(\d+.*)$/);
+            if (!match) return callSign; // Fallback
+
+            const code = match[1];
+            const numberPart = match[2];
+
+            const airline = AIRLINES[code];
+            // If airline unknown, read letters directly? Or spell out?
+            // Prompt doesn't specify unknown behavior. We'll spell letters.
+
+            let airlineName = "";
+
+            if (lang === 'zh') {
+                airlineName = airline ? airline.zh : code;
+                // Digits
+                const digits = numberPart.split('').map(d => DIGIT_MAP_ZH[d] || d).join('');
+                return `${airlineName}${digits}`;
+            } else {
+                // English
+                airlineName = airline ? airline.en : code; // Or spell check? Code usually ok.
+                // Digits with space
+                const digits = numberPart.split('').map(d => DIGIT_MAP_EN[d] || d).join(' ');
+                return `${airlineName} ${digits}`;
+            }
+        }
+
+        // updateTablePreviews removed - no longer re-translating on switch
+
+        // --- Rendering ---
+
+        // --- Rendering ---
+
+        function renderTable() {
+            els.tableBody.innerHTML = '';
+
+            // Show ALL tasks, but state is derived from currentPreset matches
+            const currentPid = appState.currentPreset.id;
+
+            appState.tasks.forEach((task, index) => {
+                // Get or Init Result for this preset
+                let result = task.results[currentPid];
+                if (!result) {
+                    // Virtual pending state
+                    result = {
+                        status: 'pending',
+                        text: translateCallSign(task.callSign, appState.currentPreset.lang),
+                        blob: null
+                    };
+                    // We don't save it to 'results' yet to keep memory clean? 
+                    // Or we should just for caching text. 
+                    // Let's compute text on fly for display if missing.
+                }
+
+                const tr = document.createElement('tr');
+
+                // Status Badge logic
+                let badgeClass = 'badge-pending';
+                let statusLabel = '等待中';
+                if (result.status === 'processing') { badgeClass = 'badge-processing'; statusLabel = '生成中...'; }
+                else if (result.status === 'completed') { badgeClass = 'badge-completed'; statusLabel = '已完成'; }
+                else if (result.status === 'edited') { badgeClass = 'badge-edited'; statusLabel = '已编辑'; }
+                else if (result.status === 'failed') { badgeClass = 'badge-failed'; statusLabel = '失败'; }
+
+                // Actions logic: Need to pass Preset ID context? Or just Task ID.
+                // Action handles finding the task and then looking up current preset.
+                let actionsHtml = '';
+                if (result.status === 'completed' || result.status === 'edited') {
+                    // Play, Regenerate & Edit
+                    actionsHtml = `
+                        <button class="text-sm" onmousedown="event.stopPropagation()" onclick="playAudio('${task.id}')">▶️</button>
+                        <button class="text-sm" onmousedown="event.stopPropagation()" onclick="retryTask('${task.id}')">↻</button>
+                        <button class="text-sm" onmousedown="event.stopPropagation()" onclick="openAudioEditor('${task.id}')">🛠️</button>
+                    `;
+                } else if (result.status === 'failed' || result.status === 'pending') {
+                    // Retry or Remove
+                    actionsHtml = `
+                        <button class="text-sm" onmousedown="event.stopPropagation()" onclick="retryTask('${task.id}')">↻</button>
+                        <button class="text-sm" onmousedown="event.stopPropagation()" onclick="removeTask('${task.id}')">✖</button>
+                    `;
+                }
+
+                tr.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td style="font-family: monospace; font-weight: bold;">${task.callSign}</td>
+                    <td>${result.text || translateCallSign(task.callSign, appState.currentPreset.lang)}</td>
+                    <td><span class="badge ${badgeClass}">${statusLabel}</span></td>
+                    <td>${actionsHtml}</td>
+                `;
+
+                // Selection Logic
+                if (appState.selectedIds.has(task.id)) {
+                    tr.classList.add('selected');
+                }
+
+                // Click Handlers
+                tr.onmousedown = (e) => handleRowClick(e, task.id);
+                tr.oncontextmenu = (e) => {
+                    if (e.shiftKey) {
+                        e.preventDefault(); // Prevent context menu on Shift+Right
+                    }
+                };
+
+                els.tableBody.appendChild(tr);
+            });
+
+            updateStatus();
+        }
+
+        function updateStatus() {
+            // Stats for Current Preset
+            const currentPid = appState.currentPreset.id;
+            const total = appState.tasks.length;
+
+            // Count status in current preset results
+            let completed = 0;
+            let failed = 0;
+
+            appState.tasks.forEach(t => {
+                const r = t.results[currentPid];
+                if (r) {
+                    if (r.status === 'completed') completed++;
+                    if (r.status === 'failed') failed++;
+                }
+            });
+
+            els.statusText.textContent = `总任务: ${total} | 当前预设统计`;
+            els.progressText.textContent = `成功: ${completed} / 失败: ${failed} / 总计: ${total}`;
+
+            // Button state relies on current selection in filter
+            // const canGenerate = total > 0 && appState.apiKey && appState.selectedIds.size > 0; 
+            // Actually button is bound to selection, which we cleared on mode switch.
+
+            els.btnGenerateSelected.disabled = total === 0 || !appState.apiKey || appState.selectedIds.size === 0;
+            els.btnGenerateSelected.textContent = `🔊 生成选中 (${appState.selectedIds.size})`;
+            els.btnExportAll.disabled = (completed + failed) === 0; // Or just completed? 
+            // In the previous code, completed was counted. Let's update count to include edited.
+
+            // Re-counting to include 'edited'
+            let totalSuccess = 0;
+            appState.tasks.forEach(t => {
+                const r = t.results[currentPid];
+                if (r && (r.status === 'completed' || r.status === 'edited')) totalSuccess++;
+            });
+            els.btnExportAll.disabled = totalSuccess === 0;
+
+            if (appState.processingCount > 0) {
+                els.statusText.textContent += ` | 正在处理 ${appState.processingCount} 个任务...`;
+            }
+        }
+
+        function showToast(msg, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            if (type === 'error') toast.style.borderLeftColor = 'var(--error-color)';
+            if (type === 'success') toast.style.borderLeftColor = 'var(--success-color)';
+            toast.textContent = msg;
+            els.toastContainer.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // --- Logic: Actions ---
+
+        window.removeTask = (id) => {
+            // Can't remove if processing
+            const t = appState.tasks.find(x => x.id == id);
+            if (t && t.status === 'processing') return;
+            appState.tasks = appState.tasks.filter(x => x.id != id);
+            renderTable();
+        };
+
+        window.retryTask = (id) => {
+            const t = appState.tasks.find(x => x.id == id);
+            if (!t) return;
+            if (!appState.apiKey) { showToast('请先设置 API Key', 'error'); return; }
+
+            // Reset status for current preset
+            const currentPid = appState.currentPreset.id;
+            if (!t.results[currentPid]) t.results[currentPid] = { blob: null };
+            t.results[currentPid].status = 'pending';
+            addToQueue(t, currentPid);
+        };
+
+        window.playAudio = (id) => {
+            const t = appState.tasks.find(x => x.id == id);
+            const currentPid = appState.currentPreset.id;
+            const res = t && t.results[currentPid];
+            if (res && res.blob) {
+                const url = URL.createObjectURL(res.blob);
+                const audio = new Audio(url);
+                audio.play();
+            }
+        };
+
+        // --- Selection Logic ---
+        function handleRowClick(e, id) {
+            // Left Click (0)
+            if (e.button === 0) {
+                if (e.shiftKey) {
+                    // Shift + Left: Add to selection (Multi-select)
+                    appState.selectedIds.add(id);
+                } else {
+                    // Normal Left: Select only this (Clear others)
+                    // But if usage wants standard behavior: Ctrl for toggle. 
+                    // User asked: "Shift+Left multi-select".
+                    appState.selectedIds.clear();
+                    appState.selectedIds.add(id);
+                }
+            }
+            // Right Click (2)
+            else if (e.button === 2) {
+                if (e.shiftKey) {
+                    // Shift + Right: Deselect
+                    appState.selectedIds.delete(id);
+                }
+            }
+            renderTable();
+        }
+
+        function startSelectedGeneration() {
+            if (!appState.apiKey) {
+                showToast('请先设置 API Key', 'error');
+                els.settingsModal.classList.remove('hidden');
+                return;
+            }
+
+            const currentPid = appState.currentPreset.id;
+
+            // Find valid tasks in Selection
+            const targets = appState.tasks.filter(t => {
+                if (!appState.selectedIds.has(t.id)) return false;
+                // Check status in CURRENT preset
+                const res = t.results[currentPid];
+                if (!res) return true; // Never run
+                return res.status === 'pending' || res.status === 'failed' || !res.status;
+            });
+
+            if (targets.length === 0) {
+                showToast('选中项中没有待处理的任务', 'info');
+                return;
+            }
+
+            showToast(`开始处理 ${targets.length} 个任务...`);
+            targets.forEach(t => addToQueue(t, currentPid));
+        }
+
+        function addToQueue(task, presetId) {
+            // Avoid duplicates
+            if (appState.queue.find(q => q.task.id === task.id && q.presetId === presetId)) return;
+
+            // Check processing status
+            const res = task.results[presetId];
+            if (res && res.status === 'processing') return;
+
+            appState.queue.push({ task, presetId });
+            processQueue();
+        }
+
+        function processQueue() {
+            if (appState.processingCount >= MAX_CONCURRENCY) return;
+            if (appState.queue.length === 0) return;
+
+            // Rate Limiting Check
+            const now = Date.now();
+            const timeSinceLast = now - appState.lastRequestTime;
+            if (timeSinceLast < REQUEST_INTERVAL) {
+                const delay = REQUEST_INTERVAL - timeSinceLast;
+                setTimeout(processQueue, delay);
+                return;
+            }
+
+            const item = appState.queue.shift();
+            const { task, presetId } = item;
+
+            // Initialize or update result object
+            if (!task.results[presetId]) {
+                task.results[presetId] = {
+                    blob: null,
+                    text: translateCallSign(task.callSign, PRESETS.find(p => p.id === presetId)?.lang || 'en')
+                };
+            }
+            task.results[presetId].status = 'processing';
+
+            appState.processingCount++;
+            appState.lastRequestTime = Date.now(); // Update timestamp
+            renderTable();
+
+            // Call API
+            generateAudio(task, presetId).finally(() => {
+                appState.processingCount--;
+                processQueue();
+            });
+        }
+
+        // --- API Integration ---
+
+        async function generateAudio(task, presetId) {
+            const preset = PRESETS.find(p => p.id === presetId) || appState.currentPreset;
+            const resObject = task.results[presetId];
+
+            // Construct Payload
+            const payload = {
+                "model": appState.apiModel,
+                "text": (resObject.text || translateCallSign(task.callSign, preset.lang)) + (preset.lang === 'zh' ? '。' : ''),
+                "stream": false,
+                "voice_setting": {
+                    "voice_id": preset.voiceId,
+                    "speed": preset.speed || 1,
+                    "vol": preset.vol || 1,
+                    "pitch": preset.pitch || 0,
+                    "emotion": preset.emotion || "neutral"
+                },
+                "audio_setting": {
+                    "sample_rate": 44100,
+                    "bitrate": 128000,
+                    "format": "wav",
+                    "channel": 2 // Dual channel safe ? usually 1 or 2. User asked for 2.
+                }
+            };
+
+            // Correction: The prompt model key might be for a specific endpoint. 
+            // https://api.minimaxi.com/v1/t2a_v2 usually matches "speech-01-..." models.
+            // I will use `speech-01-turbo` as it is faster and reliable for tools, 
+            // but I will allow user to changing it in code easily if needed.
+            // Actually, if I use the exact example from prompt:
+            payload.model = "speech-01-turbo";
+
+            try {
+                // Use configured endpoint
+                const url = new URL(appState.apiEndpoint);
+                if (appState.groupId) {
+                    url.searchParams.append("GroupId", appState.groupId);
+                }
+
+                const response = await fetch(url.toString(), {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${appState.apiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const err = await response.text();
+                    throw new Error(`API Error: ${response.status} - ${err}`);
+                }
+
+                const data = await response.json();
+
+                // MiniMax V2 Response format check
+                // Usually { base_resp: { status_code: 0 }, data: { audio: "hex..." } } or similar?
+                // Or might be binary if steam? But stream=false.
+                // NOTE: MiniMax T2A V2 usually returns JSON with "data": { "audio": "hex string" } or similar.
+
+                if (data.base_resp && data.base_resp.status_code !== 0) {
+                    throw new Error(`API Logic Error: ${data.base_resp.status_msg}`);
+                }
+
+                // Assuming data.data.audio is the hex string
+                if (data.data && data.data.audio) {
+                    const hex = data.data.audio;
+                    // Convert Hex to Blob
+                    const buffer = new Uint8Array(hex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+                    const blob = new Blob([buffer], { type: 'audio/wav' });
+
+                    resObject.blob = blob;
+                    resObject.status = 'completed';
+                } else {
+                    throw new Error("Invalid API Response Structure");
+                }
+
+            } catch (e) {
+                console.error(e);
+                resObject.status = 'failed';
+                showToast(`Task ${task.callSign} Failed: ${e.message}`, 'error');
+            } finally {
+                renderTable();
+            }
+        }
+
+        // --- Export ---
+
+        async function exportAll() {
+            // Collect completed/edited results for CURRENT preset
+            const currentPid = appState.currentPreset.id;
+            const currentPresetName = appState.currentPreset.name;
+            const validItems = [];
+            const uncalibratedItems = [];
+
+            appState.tasks.forEach(t => {
+                const res = t.results[currentPid];
+                if (res && res.blob) {
+                    if (res.status === 'edited') {
+                        validItems.push({ callSign: t.callSign, blob: res.blob, task: t, status: 'edited' });
+                    } else if (res.status === 'completed') {
+                        validItems.push({ callSign: t.callSign, blob: res.blob, task: t, status: 'completed' });
+                        uncalibratedItems.push(`${t.callSign}-${currentPresetName}`);
+                    }
+                }
+            });
+
+            if (validItems.length === 0) {
+                showToast('当前预设没有可导出的任务', 'info');
+                return;
+            }
+
+            // Warning for uncalibrated items
+            if (uncalibratedItems.length > 0) {
+                const msg = "还有以下音频未校准 (仅已完成，未人工编辑):\n\n" +
+                    uncalibratedItems.slice(0, 10).join('\n') +
+                    (uncalibratedItems.length > 10 ? `\n...等 ${uncalibratedItems.length} 个` : "") +
+                    "\n\n是否继续导出?";
+                if (!await showConfirmModal(msg)) {
+                    return; // Abort
+                }
+            }
+
+            try {
+                // 1. Open Directory Picker
+                const dirHandle = await window.showDirectoryPicker();
+
+                // 2. Create/Get Subfolder for Preset Name (Strict Match)
+                const presetName = appState.currentPreset.name;
+                const presetDir = await dirHandle.getDirectoryHandle(presetName, { create: true });
+
+                showToast(`正在导出 ${validItems.length} 个文件...`);
+
+                // 3. Write Files
+                let savedCount = 0;
+                for (const item of validItems) {
+                    try {
+                        const fileHandle = await presetDir.getFileHandle(`${item.callSign}.wav`, { create: true });
+                        const writable = await fileHandle.createWritable();
+                        await writable.write(item.blob);
+                        await writable.close();
+
+                        // Mark as exported
+                        item.task.results[currentPid].exported = true;
+                        savedCount++;
+                    } catch (e) {
+                        console.error(`Failed to write ${item.callSign}`, e);
+                        // Continue others
+                    }
+                }
+
+                showToast(`(✅ 导出完成: 成功 ${savedCount} / 总计 ${validItems.length}`);
+
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.error(err);
+                    showToast(`导出失败: ${err.message}`, 'error');
+                }
+            }
+        }
+
+
+
+
+
+
+
+        // Run
+        init();
+
+    </script>
+    <script src="https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.min.js"></script>
+    <script>
+        // --- Audio Editor Logic ---
+
+        // --- Audio Editor Logic ---
+
+        // Reference Audios stored per preset (in memory)
+        const referenceAudios = {}; // { [presetId]: Blob }
+
+        let editorState = {
+            taskId: null,
+            presetId: null,
+            originalBlob: null,
+            wavesurfer: null,
+            audioContext: null,
+            sourceNode: null,
+            gainNode: null,
+            // Stable Filter Nodes
+            hpNode: null,
+            lpNode: null,
+            distNode: null,
+            isPlaying: false,
+            // Reference Audio
+            refWavesurfer: null,
+            refBlob: null,
+            // Regions
+            regions: null,
+            activeRegion: null
+        };
+
+        const editorEls = {
+            modal: document.getElementById('audioEditorModal'),
+            fileName: document.getElementById('editorFileName'),
+            waveform: document.getElementById('waveform'),
+            sliderVol: document.getElementById('sliderVol'),
+            sliderRate: document.getElementById('sliderRate'),
+            sliderPitch: document.getElementById('sliderPitch'),
+            checkRadio: document.getElementById('checkRadio'),
+            valVol: document.getElementById('valVol'),
+            valRate: document.getElementById('valRate'),
+            valPitch: document.getElementById('valPitch'),
+            btnPlay: document.getElementById('btnEditorPlay'),
+            btnReset: document.getElementById('btnEditorReset'),
+            btnSave: document.getElementById('btnEditorSave'),
+            btnCancel: document.getElementById('btnEditorCancel'),
+            btnDeleteRegion: document.getElementById('btnDeleteRegion'),
+            // Reference Audio
+            waveformRef: document.getElementById('waveformRef'),
+            refFileInput: document.getElementById('refFileInput'),
+            btnClearRef: document.getElementById('btnClearRef'),
+            // New Controls
+            sliderHighpass: document.getElementById('sliderHighpass'),
+            sliderLowpass: document.getElementById('sliderLowpass'),
+            sliderDistortion: document.getElementById('sliderDistortion'),
+            valHPF: document.getElementById('valHPF'),
+            valLPF: document.getElementById('valLPF'),
+            valDist: document.getElementById('valDist'),
+            btnPrevTask: document.getElementById('btnPrevTask'),
+            btnNextTask: document.getElementById('btnNextTask')
+        };
+
+        function initAudioEditor() {
+            // Event Listeners
+            editorEls.btnPlay.onclick = toggleEditorPlay;
+            editorEls.btnReset.onclick = resetEditorParams;
+            editorEls.btnSave.onclick = saveAudioEditor;
+            editorEls.btnCancel.onclick = closeEditor;
+            editorEls.btnDeleteRegion.onclick = deleteSelectedRegion;
+
+            editorEls.sliderVol.oninput = updateEditorParams;
+            editorEls.sliderRate.oninput = updateEditorParams;
+            editorEls.sliderPitch.oninput = updateEditorParams;
+            editorEls.checkRadio.onchange = updateEditorParams;
+
+            // New FX Listeners
+            editorEls.sliderHighpass.oninput = updateEditorParams;
+            editorEls.sliderLowpass.oninput = updateEditorParams;
+            editorEls.sliderDistortion.oninput = updateEditorParams;
+
+            // Navigation Listeners
+            editorEls.btnPrevTask.onclick = () => navigateTask(-1);
+            editorEls.btnNextTask.onclick = () => navigateTask(1);
+
+            // Close on overlay click
+            editorEls.modal.onclick = (e) => {
+                if (e.target === editorEls.modal) closeEditor();
+            };
+
+            // Reference Audio Listeners
+            const refDropzone = document.getElementById('refDropzone');
+            refDropzone.onclick = () => editorEls.refFileInput.click();
+            refDropzone.ondragover = (e) => e.preventDefault();
+            refDropzone.ondragenter = (e) => {
+                e.preventDefault();
+                refDropzone.style.borderColor = '#ff9800';
+                refDropzone.style.background = '#333';
+            };
+            refDropzone.ondragleave = (e) => {
+                e.preventDefault();
+                refDropzone.style.borderColor = '#555';
+                refDropzone.style.background = '#1a1a1a';
+            };
+            refDropzone.ondrop = handleRefDrop;
+
+            editorEls.refFileInput.onchange = handleRefFileSelect;
+            editorEls.btnClearRef.onclick = () => {
+                const pid = editorState.presetId;
+                if (pid) delete referenceAudios[pid];
+                loadReferenceAudio(pid); // reload to clear
+            };
+
+            // Init Wavesurfer if not exists
+        }
+
+        // Called manually after main init
+        initAudioEditor();
+
+        // Helper to load WaveSurfer dynamically
+        async function ensureWaveSurferLoaded() {
+            if (window.WaveSurfer && window.WaveSurfer.Regions) return;
+
+            try {
+                const [wsModule, rgModule] = await Promise.all([
+                    import('https://cdn.jsdelivr.net/npm/wavesurfer.js@7/dist/wavesurfer.esm.js'),
+                    import('https://cdn.jsdelivr.net/npm/wavesurfer.js@7/dist/plugins/regions.esm.js')
+                ]);
+
+                window.WaveSurfer = wsModule.default;
+                // Attach Regions to WaveSurfer to match expected UMD structure
+                window.WaveSurfer.Regions = rgModule.default;
+            } catch (error) {
+                console.error("Failed to load WaveSurfer:", error);
+                showToast("无法加载音频组件，请检查网络", "error");
+                throw error;
+            }
+        }
+
+        async function openAudioEditor(taskId) {
+            await ensureWaveSurferLoaded();
+
+            const task = appState.tasks.find(t => t.id == taskId);
+            const currentPid = appState.currentPreset.id;
+            const res = task?.results[currentPid];
+
+            if (!res || !res.blob) {
+                showToast("无法加载音频", "error");
+                return;
+            }
+
+            editorState.taskId = taskId;
+            editorState.presetId = currentPid;
+            editorState.originalBlob = res.blob;
+
+            editorEls.fileName.textContent = `${task.callSign} (${appState.currentPreset.name})`;
+            editorEls.modal.classList.remove('hidden');
+
+            // Init Wavesurfer if not exists
+            // Init Wavesurfer if not exists
+            if (!editorState.wavesurfer) {
+                try {
+                    const RegionsPlugin = WaveSurfer.Regions || window.RegionsPlugin;
+                    if (!RegionsPlugin) {
+                        throw new Error("Regions plugin not loaded");
+                    }
+
+                    // Create Regions plugin
+                    editorState.regions = RegionsPlugin.create();
+
+                    // Check status for color
+                    const isEdited = res.status === 'edited';
+                    const waveColor = isEdited ? '#4caf50' : '#0078d4';
+                    const progressColor = isEdited ? '#81c784' : '#55aaff';
+
+                    editorState.wavesurfer = WaveSurfer.create({
+                        container: '#waveform',
+                        waveColor: waveColor,
+                        progressColor: progressColor,
+                        cursorColor: '#ffffff',
+                        height: 150,
+                        barWidth: 2,
+                        hideScrollbar: true,
+                        backend: 'MediaElement',
+                        plugins: [editorState.regions]
+                    });
+
+                    // Region events
+                    editorState.regions.enableDragSelection({
+                        color: 'rgba(255, 107, 107, 0.3)'
+                    });
+
+                    editorState.regions.on('region-created', (region) => {
+                        // Remove previous region if exists (only allow one)
+                        if (editorState.activeRegion && editorState.activeRegion !== region) {
+                            editorState.activeRegion.remove();
+                        }
+                        editorState.activeRegion = region;
+                        editorEls.btnDeleteRegion.disabled = false;
+                    });
+
+                    editorState.regions.on('region-updated', (region) => {
+                        editorState.activeRegion = region;
+                        editorEls.btnDeleteRegion.disabled = false;
+                    });
+                } catch (e) {
+                    console.error("Wavesurfer Init Error:", e);
+                    const debugInfo = window.WaveSurfer ? Object.keys(window.WaveSurfer).join(',') : "WaveSurfer undefined";
+                    showToast(`波形初始化失败: ${e.message} (Keys: ${debugInfo})`, "error");
+                    return;
+                }
+
+                editorState.wavesurfer.on('finish', () => {
+                    editorEls.btnPlay.textContent = "▶ 预览";
+                    editorState.isPlaying = false;
+                    // Chain reference audio playback
+                    if (editorState.refWavesurfer && editorState.refBlob) {
+                        editorState.refWavesurfer.play();
+                    }
+                });
+
+                editorState.wavesurfer.on('play', () => {
+                    editorEls.btnPlay.textContent = "⏸ 暂停";
+                    editorState.isPlaying = true;
+                });
+
+                editorState.wavesurfer.on('pause', () => {
+                    editorEls.btnPlay.textContent = "▶ 预览";
+                    editorState.isPlaying = false;
+                });
+
+                // Init Web Audio Graph ONCE when ready
+                editorState.wavesurfer.on('ready', initWebAudioGraph);
+            }
+
+            // Apply color based on current status (Green if edited, Blue if original)
+            const isEdited = res.status === 'edited';
+            editorState.wavesurfer.setOptions({
+                waveColor: isEdited ? '#4caf50' : '#0078d4',
+                progressColor: isEdited ? '#81c784' : '#55aaff'
+            });
+
+            // Load Blob
+            const url = URL.createObjectURL(res.blob);
+            await editorState.wavesurfer.load(url);
+
+            // Load Reference Audio for this preset if exists
+            loadReferenceAudio(currentPid);
+
+            resetEditorParams();
+        }
+
+        // Reference Audio Functions
+        function loadReferenceAudio(presetId) {
+            const refBlob = referenceAudios[presetId];
+            editorState.refBlob = refBlob || null;
+
+            const refDropzone = document.getElementById('refDropzone');
+
+            if (refBlob) {
+                // Show waveform, hide dropzone
+                refDropzone.style.display = 'none';
+                editorEls.waveformRef.style.display = 'block';
+                editorEls.btnClearRef.style.display = 'inline-block';
+
+                // Init or load ref wavesurfer
+                if (!editorState.refWavesurfer) {
+                    editorState.refWavesurfer = WaveSurfer.create({
+                        container: '#waveformRef',
+                        waveColor: '#ff9800',
+                        progressColor: '#ffb74d',
+                        cursorColor: '#ff9800',
+                        height: 90,
+                        barWidth: 2,
+                        hideScrollbar: true,
+                        cursorWidth: 0 // Hide cursor for reference
+                    });
+                }
+                const refUrl = URL.createObjectURL(refBlob);
+                editorState.refWavesurfer.load(refUrl);
+            } else {
+                // Reset UI - show dropzone, hide waveform
+                refDropzone.style.display = 'flex';
+                editorEls.waveformRef.style.display = 'none';
+                editorEls.btnClearRef.style.display = 'none';
+                if (editorState.refWavesurfer) {
+                    editorState.refWavesurfer.empty();
+                }
+            }
+        }
+
+        function handleRefFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) importReferenceAudio(file);
+            e.target.value = ''; // Reset for re-import
+        }
+
+        function handleRefDrop(e) {
+            e.preventDefault();
+            const refDropzone = document.getElementById('refDropzone');
+            refDropzone.style.borderColor = '#555';
+            refDropzone.style.background = '#1a1a1a';
+
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('audio/')) {
+                importReferenceAudio(file);
+            } else {
+                showToast("请拖放音频文件", "error");
+            }
+        }
+
+        function importReferenceAudio(file) {
+            const presetId = editorState.presetId;
+            const blob = file;
+            referenceAudios[presetId] = blob;
+            loadReferenceAudio(presetId);
+            showToast("参考音频已导入", "success");
+        }
+
+        function clearReferenceAudio() {
+            const presetId = editorState.presetId;
+            delete referenceAudios[presetId];
+            editorState.refBlob = null;
+
+            const refDropzone = document.getElementById('refDropzone');
+            refDropzone.style.display = 'flex';
+            editorEls.waveformRef.style.display = 'none';
+            editorEls.btnClearRef.style.display = 'none';
+
+            if (editorState.refWavesurfer) {
+                editorState.refWavesurfer.empty();
+            }
+            showToast("参考音频已清除", "info");
+        }
+
+        async function deleteSelectedRegion() {
+            if (!editorState.activeRegion) {
+                showToast("请先选中要删除的区域", "error");
+                return;
+            }
+
+            const region = editorState.activeRegion;
+            const startTime = region.start;
+            const endTime = region.end;
+
+            try {
+                // Decode current audio
+                const arrayBuffer = await editorState.originalBlob.arrayBuffer();
+                const tempCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const audioBuffer = await tempCtx.decodeAudioData(arrayBuffer);
+
+                const sampleRate = audioBuffer.sampleRate;
+                const numChannels = audioBuffer.numberOfChannels;
+
+                const startSample = Math.floor(startTime * sampleRate);
+                const endSample = Math.floor(endTime * sampleRate);
+                const deletionLength = endSample - startSample;
+
+                if (deletionLength <= 0) {
+                    showToast("选区无效", "error");
+                    return;
+                }
+
+                const newLength = audioBuffer.length - deletionLength;
+                const newBuffer = tempCtx.createBuffer(numChannels, newLength, sampleRate);
+
+                // Crossfade settings (10ms)
+                const fadeSamples = Math.floor(0.01 * sampleRate); // 10ms
+
+                for (let ch = 0; ch < numChannels; ch++) {
+                    const oldData = audioBuffer.getChannelData(ch);
+                    const newData = newBuffer.getChannelData(ch);
+
+                    // Copy data before the cut
+                    for (let i = 0; i < startSample; i++) {
+                        newData[i] = oldData[i];
+                    }
+
+                    // Copy data after the cut
+                    for (let i = 0; i < audioBuffer.length - endSample; i++) {
+                        newData[startSample + i] = oldData[endSample + i];
+                    }
+
+                    // Apply crossfade around the cut point
+                    // Fade out before cut (last fadeSamples of kept part)
+                    const fadeOutStart = Math.max(0, startSample - fadeSamples);
+                    for (let i = fadeOutStart; i < startSample; i++) {
+                        const fadePos = (i - fadeOutStart) / fadeSamples;
+                        newData[i] *= (1 - fadePos); // Linear fade out
+                    }
+
+                    // Fade in after cut (first fadeSamples of remaining part)
+                    const fadeInEnd = Math.min(newLength, startSample + fadeSamples);
+                    for (let i = startSample; i < fadeInEnd; i++) {
+                        const fadePos = (i - startSample) / fadeSamples;
+                        newData[i] *= fadePos; // Linear fade in
+                    }
+                }
+
+                // Convert to WAV blob
+                const newBlob = bufferToWave(newBuffer, 0, newBuffer.length);
+
+                // Update state
+                editorState.originalBlob = newBlob;
+
+                // Clear region
+                region.remove();
+                editorState.activeRegion = null;
+                editorEls.btnDeleteRegion.disabled = true;
+
+                // Reload waveform
+                const url = URL.createObjectURL(newBlob);
+                await editorState.wavesurfer.load(url);
+
+                tempCtx.close();
+                showToast("选区已删除", "success");
+
+            } catch (e) {
+                console.error("Delete region error:", e);
+                showToast("删除失败: " + e.message, "error");
+            }
+        }
+
+        function initWebAudioGraph() {
+            if (editorState.audioContext) return; // Already init
+
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                const ctx = new AudioContext();
+                editorState.audioContext = ctx;
+
+                const media = editorState.wavesurfer.getMediaElement();
+                // Important: Unlock audio on user interaction if needed, but we are inside a click handler chain usually.
+
+                // 1. Source
+                editorState.sourceNode = ctx.createMediaElementSource(media);
+
+                // 2. Create Filters (persistent)
+                editorState.hpNode = ctx.createBiquadFilter();
+                editorState.hpNode.type = 'highpass';
+                editorState.hpNode.frequency.value = 300;
+
+                editorState.lpNode = ctx.createBiquadFilter();
+                editorState.lpNode.type = 'lowpass';
+                editorState.lpNode.frequency.value = 3500;
+
+                editorState.distNode = ctx.createWaveShaper();
+                editorState.distNode.curve = makeDistortionCurve(50);
+                editorState.distNode.oversample = '4x';
+
+                // 3. Gain (Volume)
+                editorState.gainNode = ctx.createGain();
+
+                // 4. Connect Initial Graph (Bypassed)
+                // Source -> Gain -> Destination
+                editorState.sourceNode.connect(editorState.gainNode);
+                editorState.gainNode.connect(ctx.destination);
+
+                // Ensure pure media element volume is 1 (we control gainNode instead)
+                editorState.wavesurfer.setVolume(1);
+
+            } catch (e) {
+                console.error("Web Audio Init Failed:", e);
+                showToast("音频引擎初始化失败", "error");
+            }
+        }
+
+        function closeEditor() {
+            editorEls.modal.classList.add('hidden');
+            if (editorState.wavesurfer) {
+                editorState.wavesurfer.pause();
+            }
+            if (editorState.audioContext && editorState.audioContext.state !== 'closed') {
+                editorState.audioContext.suspend();
+            }
+        }
+
+        function resetEditorParams() {
+            editorEls.sliderVol.value = 0;
+            editorEls.sliderRate.value = 1.0;
+            editorEls.sliderPitch.value = 0;
+            editorEls.checkRadio.checked = false;
+            updateEditorParams();
+        }
+
+        function updateEditorParams() {
+            // Update UI Labels
+            editorEls.valVol.textContent = editorEls.sliderVol.value;
+            editorEls.valRate.textContent = editorEls.sliderRate.value;
+            editorEls.valPitch.textContent = editorEls.sliderPitch.value;
+
+            if (!editorState.wavesurfer || !editorState.audioContext) return;
+
+            // 1. Volume (GainNode)
+            // dB to linear gain: 10 ^ (dB / 20)
+            const db = parseFloat(editorEls.sliderVol.value);
+            const gain = Math.pow(10, db / 20);
+            editorState.gainNode.gain.cancelScheduledValues(0);
+            editorState.gainNode.gain.setValueAtTime(gain, editorState.audioContext.currentTime);
+            // Update visual waveform height based on gain (approximate visual feedback)
+            if (editorState.wavesurfer) {
+                // Ensure at least some visibility, clamp max scaling to avoid distortion
+                const visualScale = Math.min(Math.max(gain, 0.1), 3.0);
+                editorState.wavesurfer.setOptions({ barHeight: visualScale });
+            }
+
+            // 2. Playback Rate
+            const rate = parseFloat(editorEls.sliderRate.value);
+            editorState.wavesurfer.setPlaybackRate(rate);
+
+            // 3. Pitch (preserves duration if browser supports, usually works with setPlaybackRate(1) + detune, but here we likely coupled them.
+            // Actually wavesurfer V7 preserves pitch by default if using MediaElement?
+            // Wait, MediaElement 'preservesPitch' property.
+            // If we want independent pitch shift, we need Detune on bufferSource?
+            // But we are using MediaElement backend.
+            // HTMLMediaElement has 'preservesPitch' (true by default) and 'playbackRate'.
+            // Changing playbackRate changes speed AND pitch if preservesPitch=false.
+            // With preservesPitch=true (default), it changes speed but keeps pitch.
+            // Our sliderPitch logic needs to be verified.
+            // Current code likely wasn't actually checking sliderPitch for real-time.
+            // Let's implement Detune if we can, or just use playbackRate for now if that's what we have.
+            // Wait, if backend is MediaElement, we can't easily detune without changing speed unless we use a PitchShifter node which we don't have.
+            // However, the user asked for Pitch slider.
+            // The previous logic for pitch was likely effectively doing nothing or using preservePitch.
+            // Let's look at how we use it. We export using OfflineAudioContext.
+            // In Offline context (buffer based), we CAN use 'detune'.
+            // For preview (MediaElement), we might be limited.
+            // But let's focus on the routing update first.
+
+            // New: Update FX params
+            const hpf = parseInt(editorEls.sliderHighpass.value);
+            const lpf = parseInt(editorEls.sliderLowpass.value);
+            const dist = parseInt(editorEls.sliderDistortion.value);
+
+            editorEls.valHPF.textContent = hpf;
+            editorEls.valLPF.textContent = lpf;
+            editorEls.valDist.textContent = dist;
+
+            if (editorState.hpNode) editorState.hpNode.frequency.value = hpf;
+            if (editorState.lpNode) editorState.lpNode.frequency.value = lpf;
+            if (editorState.distNode) editorState.distNode.curve = makeDistortionCurve(dist);
+
+            // Routing
+            const useRadio = editorEls.checkRadio.checked;
+            updateGraphRouting(useRadio);
+
+            // UI Enabler
+            const fxControls = document.getElementById('radioFxControls');
+            if (fxControls) {
+                fxControls.style.opacity = useRadio ? '1' : '0.5';
+                fxControls.style.pointerEvents = useRadio ? 'auto' : 'none';
+            }
+            // Resume context if needed
+            if (editorState.audioContext.state === 'suspended') {
+                editorState.audioContext.resume();
+            }
+        }
+
+        function updateGraphRouting(useRadio) {
+            if (!editorState.sourceNode) return;
+            const ctx = editorState.audioContext;
+
+            // Disconnect everything
+            try { editorState.sourceNode.disconnect(); } catch (e) { }
+            try { editorState.hpNode.disconnect(); } catch (e) { }
+            try { editorState.distNode.disconnect(); } catch (e) { }
+            try { editorState.lpNode.disconnect(); } catch (e) { }
+            try { editorState.gainNode.disconnect(); } catch (e) { }
+
+            // Reconnect
+            if (useRadio) {
+                // Chain: Source -> HP -> Distortion -> LP -> Gain -> Dest
+                editorState.sourceNode.connect(editorState.hpNode);
+                editorState.hpNode.connect(editorState.distNode);
+                editorState.distNode.connect(editorState.lpNode);
+                editorState.lpNode.connect(editorState.gainNode);
+            } else {
+                // Chain: Source -> Gain -> Dest
+                editorState.sourceNode.connect(editorState.gainNode);
+            }
+
+            editorState.gainNode.connect(ctx.destination);
+        }
+
+        // Navigation Logic
+        function navigateTask(direction) {
+            if (!editorState.taskId) return;
+
+            const tasks = appState.tasks;
+            const startIndex = tasks.findIndex(t => t.id == editorState.taskId);
+            if (startIndex === -1) return;
+
+            // Get current preset ID to check correct status
+            const currentPid = appState.currentPreset ? appState.currentPreset.id : null;
+            if (!currentPid) return;
+
+            let newIndex = startIndex;
+            let found = false;
+
+            // Search loop
+            while (true) {
+                newIndex += direction;
+
+                // Boundary checks
+                if (newIndex < 0 || newIndex >= tasks.length) {
+                    break; // Stop at edges
+                }
+
+                const task = tasks[newIndex];
+                const result = task.results[currentPid];
+
+                // Skip incomplete tasks (only allow 'completed' or 'edited')
+                if (result && (result.status === 'completed' || result.status === 'edited')) {
+                    found = true;
+                    break;
+                }
+            }
+
+            if (found && newIndex !== startIndex) {
+                const newTask = tasks[newIndex];
+                openAudioEditor(newTask.id);
+            } else {
+                showToast("没有更多已完成的任务了", "info");
+            }
+        }
+
+        function toggleEditorPlay() {
+            if (editorState.wavesurfer) {
+                if (editorState.isPlaying) {
+                    // Pause both main and reference
+                    editorState.wavesurfer.pause();
+                    if (editorState.refWavesurfer) {
+                        editorState.refWavesurfer.pause();
+                    }
+                } else {
+                    // Resume AudioContext if suspended (browser autoplay policy)
+                    if (editorState.audioContext && editorState.audioContext.state === 'suspended') {
+                        editorState.audioContext.resume();
+                    }
+                    // Start playback
+                    editorState.wavesurfer.play();
+                }
+            }
+        }
+
+        async function saveAudioEditor() {
+            showToast("正在渲染音频...", "info");
+
+            try {
+                // 1. Decode Original
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const arrayBuffer = await editorState.originalBlob.arrayBuffer();
+                const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+
+                // 2. Setup Offline Context
+                const rate = parseFloat(editorEls.sliderRate.value);
+                const pitchCents = parseFloat(editorEls.sliderPitch.value);
+                const effectiveRate = rate * Math.pow(2, pitchCents / 1200);
+
+                // Adjust duration for speed
+                const newDuration = audioBuffer.duration / effectiveRate;
+
+                const offlineCtx = new OfflineAudioContext(
+                    audioBuffer.numberOfChannels,
+                    Math.ceil(newDuration * audioBuffer.sampleRate) + 50,
+                    audioBuffer.sampleRate
+                );
+
+                // 3. Build Offline Graph
+                const source = offlineCtx.createBufferSource();
+                source.buffer = audioBuffer;
+
+                // Params
+                source.playbackRate.value = rate;
+                source.detune.value = pitchCents;
+
+                let lastNode = source;
+
+                // Radio Effect
+                if (editorEls.checkRadio.checked) {
+                    const hp = offlineCtx.createBiquadFilter();
+                    hp.type = 'highpass';
+                    hp.frequency.value = 300;
+                    lastNode.connect(hp);
+                    lastNode = hp;
+
+                    const lp = offlineCtx.createBiquadFilter();
+                    lp.type = 'lowpass';
+                    lp.frequency.value = 3500;
+                    lastNode.connect(lp);
+                    lastNode = lp;
+
+                    const dist = offlineCtx.createWaveShaper();
+                    dist.curve = makeDistortionCurve(50);
+                    dist.oversample = '4x';
+                    lastNode.connect(dist);
+                    lastNode = dist;
+                }
+
+                // Volume
+                const gain = offlineCtx.createGain();
+                const volDb = parseFloat(editorEls.sliderVol.value);
+                gain.gain.value = Math.pow(10, volDb / 20);
+
+                lastNode.connect(gain);
+                gain.connect(offlineCtx.destination);
+
+                // 4. Render
+                source.start();
+                const renderedBuffer = await offlineCtx.startRendering();
+
+                // 5. Encoded to WAV Blob
+                const wavBlob = bufferToWave(renderedBuffer, 0, renderedBuffer.length);
+
+                // 6. Save back
+                const task = appState.tasks.find(t => t.id == editorState.taskId);
+                const currentPid = editorState.presetId;
+
+                task.results[currentPid].blob = wavBlob;
+                task.results[currentPid].status = 'edited';
+
+                renderTable();
+
+                showToast("音频已保存!", "success");
+
+                // Visual Feedback: Change waveform color to Green (Edited)
+                if (editorState.wavesurfer) {
+                    editorState.wavesurfer.setOptions({
+                        waveColor: '#4caf50', // Green
+                        progressColor: '#81c784'
+                    });
+                }
+                // Do NOT close editor
+                // closeEditor();
+
+            } catch (e) {
+                console.error(e);
+                showToast("渲染失败: " + e.message, "error");
+            }
+        }
+
+        // Utils
+        function makeDistortionCurve(amount) {
+            const k = typeof amount === 'number' ? amount : 50;
+            const n_samples = 44100;
+            const curve = new Float32Array(n_samples);
+            const deg = Math.PI / 180;
+            for (let i = 0; i < n_samples; ++i) {
+                const x = i * 2 / n_samples - 1;
+                curve[i] = (3 + k) * x * 20 * deg / (Math.PI + k * Math.abs(x));
+            }
+            return curve;
+        }
+
+        function showConfirmModal(message) {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('confirmModal');
+                const msgEl = document.getElementById('confirmMessage');
+                const btnOk = document.getElementById('btnConfirmOk');
+                const btnCancel = document.getElementById('btnConfirmCancel');
+
+                msgEl.textContent = message;
+                modal.classList.remove('hidden');
+
+                const cleanup = () => {
+                    modal.classList.add('hidden');
+                    btnOk.onclick = null;
+                    btnCancel.onclick = null;
+                };
+
+                btnOk.onclick = () => {
+                    cleanup();
+                    resolve(true);
+                };
+
+                btnCancel.onclick = () => {
+                    cleanup();
+                    resolve(false);
+                };
+            });
+        }
+
+        function bufferToWave(abuffer, offset, len) {
+            let numOfChan = abuffer.numberOfChannels;
+            let length = len * numOfChan * 2 + 44;
+            let buffer = new ArrayBuffer(length);
+            let view = new DataView(buffer);
+            let channels = [], i, sample;
+            let pos = 0;
+
+            // RIFF chunk descriptor
+            setUint32(0x46464952); // "RIFF"
+            setUint32(length - 8); // file length - 8
+            setUint32(0x45564157); // "WAVE"
+
+            // fmt sub-chunk
+            setUint32(0x20746d66); // "fmt "
+            setUint32(16); // length = 16
+            setUint16(1); // PCM (uncompressed)
+            setUint16(numOfChan);
+            setUint32(abuffer.sampleRate);
+            setUint32(abuffer.sampleRate * 2 * numOfChan); // avg. bytes/sec
+            setUint16(numOfChan * 2); // block-align
+            setUint16(16); // 16-bit (hardcoded in this util)
+
+            // data sub-chunk
+            setUint32(0x61746164); // "data"
+            setUint32(length - pos - 4);
+
+            // write interleaved data
+            for (i = 0; i < abuffer.numberOfChannels; i++)
+                channels.push(abuffer.getChannelData(i));
+
+            while (pos < length) {
+                for (i = 0; i < numOfChan; i++) {
+                    // interleave channels
+                    sample = Math.max(-1, Math.min(1, channels[i][offset])); // clamp
+                    sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767) | 0; // scale to 16-bit signed int
+                    view.setInt16(pos, sample, true); // write 16-bit sample
+                    pos += 2;
+                }
+                offset++;
+            }
+
+            return new Blob([buffer], { type: "audio/wav" });
+
+            function setUint16(data) { view.setUint16(pos, data, true); pos += 2; }
+            function setUint32(data) { view.setUint32(pos, data, true); pos += 4; }
+        }
+
+    </script>
+
+</html>
