@@ -894,6 +894,18 @@
         </div>
     </div>
 
+    <!-- 确认对话框 -->
+    <div id="confirmModal" class="modal-overlay" style="display: none; z-index: 2000;">
+        <div class="modal-content" style="max-width: 360px;">
+            <h3>⚠️ 确认操作</h3>
+            <p id="confirmMessage" style="color: #ddd; line-height: 1.5; margin-bottom: 20px;"></p>
+            <div class="modal-actions">
+                <button class="secondary" id="btnConfirmCancel">取消</button>
+                <button id="btnConfirmOk" style="background-color: #c62828;">确定</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Script -->
     <script>
         const defaultCallsignsCSV = `callSign,airline
@@ -1669,6 +1681,17 @@ UEA7323,UEA`;
                     container.appendChild(shuffleBtn);
                 }
 
+                // 停机位列添加清空按钮
+                if (h.key === 'stand') {
+                    const clearBtn = document.createElement('button');
+                    clearBtn.innerHTML = '🗑️';
+                    clearBtn.className = 'header-btn';
+                    clearBtn.style.cssText = 'margin-left: 8px; padding: 2px 6px; font-size: 0.9em; cursor: pointer; background: transparent; border: 1px solid #555; border-radius: 4px;';
+                    clearBtn.title = '清空当前视图航班的停机位';
+                    clearBtn.onclick = clearStands;
+                    container.appendChild(clearBtn);
+                }
+
                 if (h.hasOffset && currentTab !== 'all') {
                     const offsetInput = document.createElement('input');
                     offsetInput.type = 'number';
@@ -1716,6 +1739,54 @@ UEA7323,UEA`;
 
             renderTable();
             showStatus(`已随机排列 ${flights.length} 条航班`);
+        }
+
+        // 清空当前视图航班的停机位
+        async function clearStands() {
+            const filtered = getFilteredFlights();
+            if (filtered.length === 0) {
+                alert('当前视图没有航班数据');
+                return;
+            }
+
+            const confirmed = await showConfirmModal(`确定要清空当前视图 ${filtered.length} 条航班的停机位吗？`);
+            if (!confirmed) return;
+
+            filtered.forEach(item => {
+                allFlights[item.index].stand = '';
+            });
+
+            renderTable();
+            showStatus(`已清空 ${filtered.length} 条航班的停机位`);
+        }
+
+        // 自定义确认对话框
+        function showConfirmModal(message) {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('confirmModal');
+                const msgEl = document.getElementById('confirmMessage');
+                const btnOk = document.getElementById('btnConfirmOk');
+                const btnCancel = document.getElementById('btnConfirmCancel');
+
+                msgEl.textContent = message;
+                modal.style.display = 'flex';
+
+                const cleanup = () => {
+                    modal.style.display = 'none';
+                    btnOk.onclick = null;
+                    btnCancel.onclick = null;
+                };
+
+                btnOk.onclick = () => {
+                    cleanup();
+                    resolve(true);
+                };
+
+                btnCancel.onclick = () => {
+                    cleanup();
+                    resolve(false);
+                };
+            });
         }
 
         function renderTable() {
