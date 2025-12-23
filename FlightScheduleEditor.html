@@ -861,13 +861,24 @@
                 <input type="number" id="autoInterval" value="5" min="1" max="120">
             </div>
 
+            <hr style="border-color: #444; margin: 16px 0;">
+
+            <div class="modal-field">
+                <label for="autoTimeOffset">时间偏移 (分钟):</label>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <input type="number" id="autoTimeOffset" value="0" style="flex: 1;">
+                    <span style="color: #888; font-size: 0.85em;">正数=延后，负数=提前</span>
+                </div>
+            </div>
+
             <div class="modal-info" id="autoSchedulePreview">
                 <!-- 预览信息动态生成 -->
             </div>
 
             <div class="modal-actions">
                 <button class="secondary" onclick="closeAutoScheduleModal()">取消</button>
-                <button onclick="applyAutoSchedule()">✓ 应用</button>
+                <button class="secondary" onclick="applyTimeOffset()" style="background-color: #1565C0;">⏳ 仅偏移</button>
+                <button onclick="applyAutoSchedule()">✓ 应用配表</button>
             </div>
         </div>
     </div>
@@ -2369,6 +2380,49 @@ UEA7323,UEA`;
             renderTable();
             updateStats();
             showStatus(`已为 ${filtered.length} 条航班自动配置时间`);
+        }
+
+        // 仅应用时间偏移
+        function applyTimeOffset() {
+            const offsetMinutes = parseInt(document.getElementById('autoTimeOffset').value);
+
+            if (isNaN(offsetMinutes) || offsetMinutes === 0) {
+                alert('请输入有效的偏移分钟数（非零整数）');
+                return;
+            }
+
+            const filtered = getFilteredFlights();
+            if (filtered.length === 0) {
+                alert('当前视图没有航班数据');
+                return;
+            }
+
+            // 确定要偏移的字段
+            const primaryKey = currentTab === 'arrival' ? 'landingTime' : 'offBlockTime';
+            const secondaryKey = currentTab === 'arrival' ? 'inBlockTime' : 'takeOffTime';
+
+            let modifiedCount = 0;
+            filtered.forEach(item => {
+                const flight = allFlights[item.index];
+
+                // 偏移主时间字段
+                if (flight[primaryKey] && isValidTimeFormat(flight[primaryKey])) {
+                    flight[primaryKey] = addMinutes(flight[primaryKey], offsetMinutes);
+                    modifiedCount++;
+                }
+
+                // 偏移次时间字段
+                if (flight[secondaryKey] && isValidTimeFormat(flight[secondaryKey])) {
+                    flight[secondaryKey] = addMinutes(flight[secondaryKey], offsetMinutes);
+                }
+            });
+
+            closeAutoScheduleModal();
+            renderTable();
+            updateStats();
+
+            const direction = offsetMinutes > 0 ? '延后' : '提前';
+            showStatus(`已将 ${modifiedCount} 条航班时间${direction} ${Math.abs(offsetMinutes)} 分钟`);
         }
 
         // === 机场信息功能 ===
