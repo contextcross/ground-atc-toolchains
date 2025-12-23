@@ -476,6 +476,209 @@
             justify-content: flex-end;
             gap: 10px;
         }
+
+        /* === Stand View (Skeuomorphic Style) === */
+        :root {
+            --skeuo-bg: #2b2b30;
+            --skeuo-inset-bg: #1e1e24;
+            --skeuo-light-shadow: #3e3e44;
+            --skeuo-dark-shadow: #19191c;
+            /* --skeuo-text-glow: #00e5ff; */
+            /* Cyan */
+            --skeuo-text-glow: #0ac;
+            /* Softer Cyan */
+        }
+
+        #standView {
+            background-color: #1e1e24;
+            /* Subtle grid pattern or noise could be nice, but simple dark bg works */
+        }
+
+        .stand-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 25px;
+            padding: 20px;
+            align-items: start;
+            /* Critical for independent height */
+        }
+
+        .stand-card {
+            background-color: var(--skeuo-bg);
+            border-radius: 20px;
+            /* Outset Shadow */
+            box-shadow:
+                8px 8px 16px var(--skeuo-dark-shadow),
+                -8px -8px 16px var(--skeuo-light-shadow);
+            padding: 20px;
+            color: #ccc;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Card Header */
+        .stand-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 40px;
+            margin-bottom: 15px;
+        }
+
+        .stand-title-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        /* Toggle Button (Round) */
+        .stand-toggle-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #2e2e33, #27272b);
+            box-shadow: 4px 4px 8px var(--skeuo-dark-shadow),
+                -4px -4px 8px var(--skeuo-light-shadow);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .stand-toggle-btn:active {
+            box-shadow: inset 3px 3px 6px var(--skeuo-dark-shadow),
+                inset -3px -3px 6px var(--skeuo-light-shadow);
+        }
+
+        .stand-toggle-btn svg {
+            fill: #888;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            width: 20px;
+            height: 20px;
+        }
+
+        .stand-card.expanded .stand-toggle-btn svg {
+            transform: rotate(90deg);
+            fill: var(--skeuo-text-glow);
+        }
+
+        /* Stand Number Title */
+        .stand-number {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: var(--skeuo-text-glow);
+            text-shadow: 0 0 8px rgba(0, 238, 255, 0.3);
+            letter-spacing: 1px;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        /* Header Stats */
+        .stand-stats {
+            display: flex;
+            gap: 10px;
+            font-size: 0.85em;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Microsoft YaHei UI', sans-serif;
+        }
+
+        .stat-item .stat-label {
+            font-weight: 500;
+        }
+
+        .stat-item .stat-count {
+            font-weight: bold;
+        }
+
+        .stat-item.stat-arr {
+            color: #4CAF50;
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+
+        .stat-item.stat-dep {
+            color: #2196F3;
+            border: 1px solid rgba(33, 150, 243, 0.3);
+        }
+
+        /* Expandable Content (Inset Screen) */
+        .stand-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0.5;
+        }
+
+        .stand-card.expanded .stand-body {
+            /* JS will set specific max-height or we use a large enough value */
+            max-height: 500px;
+            opacity: 1;
+            margin-top: 10px;
+        }
+
+        .stand-list-container {
+            background-color: var(--skeuo-inset-bg);
+            border-radius: 12px;
+            box-shadow: inset 4px 4px 8px var(--skeuo-dark-shadow),
+                inset -4px -4px 8px var(--skeuo-light-shadow);
+            padding: 10px 15px;
+        }
+
+        .flight-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.9em;
+        }
+
+        .flight-item:last-child {
+            border-bottom: none;
+        }
+
+        .flight-callsign {
+            color: #ddd;
+            font-weight: 500;
+        }
+
+        .flight-time {
+            font-family: 'Microsoft YaHei UI', 'Segoe UI', sans-serif;
+            color: #aaa;
+        }
+
+        .flight-tag {
+            font-size: 0.75em;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+
+        .tag-arr {
+            color: #4CAF50;
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+
+        .tag-dep {
+            color: #2196F3;
+            border: 1px solid rgba(33, 150, 243, 0.3);
+        }
+
+        .empty-stand-msg {
+            text-align: center;
+            color: #555;
+            padding: 20px 0;
+            font-style: italic;
+        }
     </style>
 </head>
 
@@ -525,35 +728,47 @@
         <div class="tab active" onclick="switchTab('arrival')">🛬 到达航班 (Arrivals)</div>
         <div class="tab" onclick="switchTab('departure')">🛫 出发航班 (Departures)</div>
         <div class="tab" onclick="switchTab('all')">📋 全部航班 (All)</div>
+        <div class="tab" onclick="switchTab('standView')">🏢 停机坪视图 (Stands)</div>
     </div>
 
     <div class="content">
-        <div class="table-container">
-            <table id="dataTable">
-                <thead>
-                    <tr id="headerRow">
-                        <!-- Headers injected by JS -->
-                    </tr>
-                </thead>
-                <tbody id="tableBody">
-                    <!-- Rows injected by JS -->
-                </tbody>
-            </table>
+        <!-- List View Container -->
+        <div id="listViewContainer" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+            <div class="table-container">
+                <table id="dataTable">
+                    <thead>
+                        <tr id="headerRow">
+                            <!-- Headers injected by JS -->
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <!-- Rows injected by JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="add-row-bar">
+                <!-- New Batch Buttons with Logic Fix -->
+                <button id="btnSetArr" class="secondary" onclick="batchSetAsArrival()" disabled title="需锁定当前机场">📥
+                    设置到达</button>
+                <button id="btnSetDep" class="secondary" onclick="batchSetAsDeparture()" disabled title="需锁定当前机场">📤
+                    设置出发</button>
+                <div style="width: 20px; border-right: 1px solid #444; margin-right: 10px;"></div>
+                <button class="secondary" onclick="deduplicateCallsigns()" title="自动修复重复呼号">🔧 呼号去重</button>
+                <button id="btnAutoSchedule" class="secondary" onclick="openAutoScheduleModal()" title="自动分配时间">⏱️
+                    自动配表</button>
+                <button id="btnAirportInfo" class="secondary" onclick="openAirportInfoModal()" title="配置机场停机位">🏢
+                    机场信息</button>
+                <button onclick="addRow()">+ 添加航班</button>
+            </div>
         </div>
 
-        <div class="add-row-bar">
-            <!-- New Batch Buttons with Logic Fix -->
-            <button id="btnSetArr" class="secondary" onclick="batchSetAsArrival()" disabled title="需锁定当前机场">📥
-                设置到达</button>
-            <button id="btnSetDep" class="secondary" onclick="batchSetAsDeparture()" disabled title="需锁定当前机场">📤
-                设置出发</button>
-            <div style="width: 20px; border-right: 1px solid #444; margin-right: 10px;"></div>
-            <button class="secondary" onclick="deduplicateCallsigns()" title="自动修复重复呼号">🔧 呼号去重</button>
-            <button id="btnAutoSchedule" class="secondary" onclick="openAutoScheduleModal()" title="自动分配时间">⏱️
-                自动配表</button>
-            <button id="btnAirportInfo" class="secondary" onclick="openAirportInfoModal()" title="配置机场停机位">🏢
-                机场信息</button>
-            <button onclick="addRow()">+ 添加航班</button>
+        <!-- Stand View Container -->
+        <div id="standViewContainer"
+            style="display: none; height: 100%; overflow-y: auto; background-color: var(--skeuo-inset-bg);">
+            <div id="standGrid" class="stand-grid">
+                <!-- Stand Cards Injected Here -->
+            </div>
         </div>
     </div>
 
@@ -740,14 +955,144 @@ UEA7323,UEA`;
             { key: 'language', label: '语言', type: 'select', source: 'languages', width: '60px' },
         ];
 
+        // Stand View State
+        let expandedStands = new Set();
+        const sortStands = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' }).compare;
+
         function switchTab(tab) {
             currentTab = tab;
             selectedIndices.clear();
             lastVisualIndex = null;
             document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
-            event.target.classList.add('active');
-            renderHeader();
-            renderTable();
+            // Fix: event might not be available if called programmatically, use strict check
+            if (window.event && window.event.target.classList.contains('tab')) {
+                window.event.target.classList.add('active');
+            } else {
+                // If called programmatically, find tab
+                const tabs = document.querySelectorAll('.tab');
+                if (tab === 'arrival') tabs[0].classList.add('active');
+                if (tab === 'departure') tabs[1].classList.add('active');
+                if (tab === 'all') tabs[2].classList.add('active');
+                if (tab === 'standView') tabs[3].classList.add('active');
+            }
+
+            const listView = document.getElementById('listViewContainer');
+            const standView = document.getElementById('standViewContainer');
+
+            if (tab === 'standView') {
+                listView.style.display = 'none';
+                standView.style.display = 'block';
+                renderStandView();
+            } else {
+                listView.style.display = 'flex'; // Changed to flex as defined in HTML
+                standView.style.display = 'none';
+                renderHeader();
+                renderTable();
+            }
+        }
+
+        // === Stand View Rendering ===
+        function renderStandView() {
+            const container = document.getElementById('standGrid');
+            container.innerHTML = '';
+
+            // 1. Check if stands are configured
+            if (!config.stands || config.stands.length === 0) {
+                container.innerHTML = '<div class="empty-stand-msg" style="grid-column: 1/-1;">暂无停机位信息，请先在下方工具栏点击"🏢 每机位信息"进行配置。</div>';
+                return;
+            }
+
+            // 2. Group flights by stand
+            const standData = {};
+            config.stands.forEach(s => {
+                standData[s] = { arrivals: [], departures: [] };
+            });
+
+            allFlights.forEach(f => {
+                if (f.stand && standData[f.stand]) {
+                    const type = getFlightType(f);
+                    if (type === 'arrival') standData[f.stand].arrivals.push(f);
+                    else standData[f.stand].departures.push(f);
+                }
+            });
+
+            // 3. Sort stands
+            const sortedStands = [...config.stands].sort(sortStands);
+
+            // 4. Generate Cards
+            sortedStands.forEach(stand => {
+                const data = standData[stand];
+                const card = document.createElement('div');
+                card.className = `stand-card ${expandedStands.has(stand) ? 'expanded' : ''}`;
+                card.id = `stand-card-${stand}`;
+
+                // Content HTML
+                const arrCount = data.arrivals.length;
+                const depCount = data.departures.length;
+
+                // Flight List HTML
+                let flightListHtml = '';
+                if (arrCount + depCount === 0) {
+                    flightListHtml = '<div style="text-align:center; padding:10px; color:#555;">(空闲)</div>';
+                } else {
+                    // Combine and sort by time
+                    const allStandFlights = [
+                        ...data.arrivals.map(f => ({ ...f, _type: 'arr', _time: f.inBlockTime || f.landingTime })),
+                        ...data.departures.map(f => ({ ...f, _type: 'dep', _time: f.takeOffTime || f.offBlockTime }))
+                    ].sort((a, b) => (a._time || '').localeCompare(b._time || ''));
+
+                    allStandFlights.forEach(f => {
+                        const isArr = f._type === 'arr';
+                        const time = f._time || '--:--';
+                        const tagClass = isArr ? 'tag-arr' : 'tag-dep';
+                        const tagName = isArr ? '进' : '出';
+
+                        flightListHtml += `
+                            <div class="flight-item">
+                                <div class="flight-tag ${tagClass}">${tagName}</div>
+                                <div class="flight-callsign">${f.callSign || '???'}</div>
+                                <div class="flight-time">${time}</div>
+                            </div>
+                        `;
+                    });
+                }
+
+                card.innerHTML = `
+                    <div class="stand-header">
+                        <div class="stand-title-group">
+                            <button class="stand-toggle-btn" onclick="toggleStandCard('${stand}')">
+                                <svg viewBox="0 0 10 10"><path d="M2.5 1.5 Q2 1, 2 1.8 L2 8.2 Q2 9, 2.5 8.5 L7.5 5.5 Q8.2 5, 7.5 4.5 L2.5 1.5 Z" /></svg>
+                            </button>
+                            <div class="stand-number">停机位 ${stand}</div>
+                        </div>
+                        <div class="stand-stats">
+                            <div class="stat-item stat-dep" title="出港数量">
+                                <span class="stat-label">出</span><span class="stat-count">${depCount}</span>
+                            </div>
+                            <div class="stat-item stat-arr" title="进港数量">
+                                <span class="stat-label">进</span><span class="stat-count">${arrCount}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stand-body">
+                        <div class="stand-list-container">
+                            ${flightListHtml}
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function toggleStandCard(stand) {
+            const card = document.getElementById(`stand-card-${stand}`);
+            if (expandedStands.has(stand)) {
+                expandedStands.delete(stand);
+                card.classList.remove('expanded');
+            } else {
+                expandedStands.add(stand);
+                card.classList.add('expanded');
+            }
         }
 
         // --- Logic ---
@@ -1266,6 +1611,11 @@ UEA7323,UEA`;
         }
 
         function renderTable() {
+            if (currentTab === 'standView') {
+                renderStandView();
+                return;
+            }
+
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
             const callsignCounts = {};
