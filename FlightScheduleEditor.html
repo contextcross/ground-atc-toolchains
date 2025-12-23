@@ -269,14 +269,14 @@
             background: linear-gradient(90deg, var(--duplicate-bg) 50%, var(--conflict-bg) 50%);
         }
 
-        /* Turnaround Stand Highlighting (Blue) */
+        /* Turnaround Stand Highlighting (Yellow) */
         tr.turnaround-row {
-            background-color: rgba(0, 120, 215, 0.2) !important;
+            background-color: rgba(255, 193, 7, 0.2) !important;
         }
 
         tr.highlight-turnaround {
-            outline: 2px solid var(--accent-color);
-            background-color: rgba(0, 120, 215, 0.4) !important;
+            outline: 2px solid #ffc107;
+            background-color: rgba(255, 193, 7, 0.4) !important;
             z-index: 5;
             position: relative;
         }
@@ -287,15 +287,15 @@
             padding: 2px 8px;
             margin: 2px;
             background-color: #333;
-            border: 1px solid var(--accent-color);
+            border: 1px solid #ffc107;
             border-radius: 4px;
             cursor: pointer;
             transition: all 0.2s;
         }
 
         .turnaround-badge:hover {
-            background-color: var(--accent-color);
-            color: white;
+            background-color: #ffc107;
+            color: #000;
         }
 
         input,
@@ -655,6 +655,7 @@ UEA7323,UEA`;
         let lastVisualIndex = null;
 
         let timeOffsets = { arrival: 10, departure: 10 };
+        let exportDirHandle = null; // 导出目录句柄
 
         let config = {
             aircraftTypes: [
@@ -775,19 +776,37 @@ UEA7323,UEA`;
         // === Unified Flight Type Determination Logic ===
         function getFlightType(f) {
             const offBlock = f.offBlockTime ? f.offBlockTime.trim() : "";
+            const takeOff = f.takeOffTime ? f.takeOffTime.trim() : "";
             const landing = f.landingTime ? f.landingTime.trim() : "";
+            const inBlock = f.inBlockTime ? f.inBlockTime.trim() : "";
 
-            // 1. Time based (Explicit intent)
-            if (offBlock) return 'departure';
-            if (landing) return 'arrival';
+            // 计算到达和出发时间的完整度
+            const hasArrivalTimes = landing || inBlock;
+            const hasDepartureTimes = offBlock || takeOff;
 
-            // 2. Airport Code based (Fallback for drafts)
+            // 1. 只有出发时间 -> 出发航班
+            if (hasDepartureTimes && !hasArrivalTimes) return 'departure';
+            // 2. 只有到达时间 -> 到达航班
+            if (hasArrivalTimes && !hasDepartureTimes) return 'arrival';
+            // 3. 两者都有 -> 根据时间数量和主要时间判断
+            if (hasArrivalTimes && hasDepartureTimes) {
+                const arrCount = (landing ? 1 : 0) + (inBlock ? 1 : 0);
+                const depCount = (offBlock ? 1 : 0) + (takeOff ? 1 : 0);
+                // 哪边时间更完整就认定为哪种类型
+                if (depCount > arrCount) return 'departure';
+                if (arrCount > depCount) return 'arrival';
+                // 数量相同时，优先看 landingTime（通常到达航班先填 landing）
+                if (landing) return 'arrival';
+                return 'departure';
+            }
+
+            // 4. Airport Code based (Fallback for drafts)
             if (isAirportLocked && currentAirportCode) {
                 if (f.arrival === currentAirportCode) return 'arrival';
                 if (f.departure === currentAirportCode) return 'departure';
             }
 
-            // 3. Default fallback
+            // 5. Default fallback
             return 'arrival';
         }
 
@@ -1185,6 +1204,18 @@ UEA7323,UEA`;
                 container.style.display = 'flex';
                 container.style.alignItems = 'center';
                 container.innerText = h.label;
+
+                // 呼号列添加随机排列按钮（仅在到达/出发视图）
+                if (h.key === 'callSign' && currentTab !== 'all') {
+                    const shuffleBtn = document.createElement('button');
+                    shuffleBtn.innerHTML = '🔀';
+                    shuffleBtn.className = 'header-btn';
+                    shuffleBtn.style.cssText = 'margin-left: 8px; padding: 2px 6px; font-size: 0.9em; cursor: pointer; background: transparent; border: 1px solid #555; border-radius: 4px;';
+                    shuffleBtn.title = '随机排列当前视图的航班';
+                    shuffleBtn.onclick = shuffleFlights;
+                    container.appendChild(shuffleBtn);
+                }
+
                 if (h.hasOffset && currentTab !== 'all') {
                     const offsetInput = document.createElement('input');
                     offsetInput.type = 'number';
@@ -1203,6 +1234,35 @@ UEA7323,UEA`;
             thAction.style.width = '40px';
             thAction.innerText = '操作';
             tr.appendChild(thAction);
+        }
+
+        // 随机排列当前视图的航班
+        function shuffleFlights() {
+            if (currentTab === 'all') {
+                alert('请先切换到「到达航班」或「出发航班」标签页');
+                return;
+            }
+
+            // 获取当前视图的航班索引
+            const filtered = getFilteredFlights();
+            if (filtered.length < 2) return;
+
+            // Fisher-Yates 洗牌算法
+            const indices = filtered.map(item => item.index);
+            const flights = indices.map(idx => allFlights[idx]);
+
+            for (let i = flights.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [flights[i], flights[j]] = [flights[j], flights[i]];
+            }
+
+            // 将洗牌后的航班写回原位置
+            indices.forEach((originalIdx, newIdx) => {
+                allFlights[originalIdx] = flights[newIdx];
+            });
+
+            renderTable();
+            showStatus(`已随机排列 ${flights.length} 条航班`);
         }
 
         function renderTable() {
@@ -1638,24 +1698,19 @@ UEA7323,UEA`;
 
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
 
-            // 尝试使用 File System Access API（支持选择保存位置）
-            if ('showSaveFilePicker' in window) {
+            // 尝试使用 File System Access API（选择目录后直接导出）
+            if ('showDirectoryPicker' in window) {
                 try {
-                    const handle = await window.showSaveFilePicker({
-                        suggestedName: filename,
-                        types: [{
-                            description: 'CSV 文件',
-                            accept: { 'text/csv': ['.csv'] }
-                        }]
-                    });
-                    const writable = await handle.createWritable();
+                    const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+                    const fileHandle = await dirHandle.getFileHandle(filename, { create: true });
+                    const writable = await fileHandle.createWritable();
                     await writable.write(blob);
                     await writable.close();
-                    showStatus(`已保存: ${handle.name}`);
+                    showStatus(`已导出: ${filename} → ${dirHandle.name}/`);
                     return;
                 } catch (err) {
                     if (err.name === 'AbortError') return; // 用户取消
-                    console.warn('File System Access API failed, falling back to download:', err);
+                    console.warn('目录导出失败，回退到传统下载:', err);
                 }
             }
 
@@ -1670,6 +1725,7 @@ UEA7323,UEA`;
                 link.click();
                 document.body.removeChild(link);
                 URL.revokeObjectURL(url);
+                showStatus(`已下载: ${filename}`);
             }
         }
 
@@ -1768,20 +1824,70 @@ UEA7323,UEA`;
             document.getElementById('airportInfoModal').style.display = 'none';
         }
 
-        // 停机位使用状况统计
+        // 停机位使用状况统计（含时间校验）
+        // 合法蓝色高亮条件：
+        // 1. 多出发（无到达）- 合法
+        // 2. 1到达+1出发，且出发时间 < 到达时间（先出后进）- 合法
         function getStandUsageStats() {
             const arrivals = new Set();   // 有到达航班的停机位
             const departures = new Set(); // 有出发航班的停机位
+            const standFlights = new Map(); // 用于时间校验
 
             allFlights.forEach(f => {
                 if (!f.stand) return;
                 const type = getFlightType(f);
                 if (type === 'arrival') arrivals.add(f.stand);
                 if (type === 'departure') departures.add(f.stand);
+
+                // 收集每个停机位的航班用于时间校验
+                if (!standFlights.has(f.stand)) {
+                    standFlights.set(f.stand, { arrivalFlights: [], departureFlights: [] });
+                }
+                if (type === 'arrival') {
+                    standFlights.get(f.stand).arrivalFlights.push(f);
+                } else {
+                    standFlights.get(f.stand).departureFlights.push(f);
+                }
             });
 
-            // 交集：先出后进 (turnaround)
-            const turnarounds = new Set([...arrivals].filter(s => departures.has(s)));
+            // 检测合法的蓝色高亮停机位
+            const turnarounds = new Set();
+            standFlights.forEach((data, stand) => {
+                const arrCount = data.arrivalFlights.length;
+                const depCount = data.departureFlights.length;
+
+                // 场景1: 多出发（无到达，且≥2个出发）- 合法，蓝色
+                if (arrCount === 0 && depCount >= 2) {
+                    turnarounds.add(stand);
+                }
+                // 场景2: 1到达+1出发，且先出后进 - 合法，蓝色
+                else if (arrCount === 1 && depCount === 1) {
+                    const arr = data.arrivalFlights[0];
+                    const dep = data.departureFlights[0];
+                    const arrTime = arr.inBlockTime || arr.landingTime;
+                    const depTime = dep.takeOffTime || dep.offBlockTime;
+
+                    // 先出后进：出发时间 < 到达时间
+                    if (arrTime && depTime && compareTime(depTime, arrTime) < 0) {
+                        turnarounds.add(stand);
+                    }
+                }
+                // 场景3: 1到达+多出发，需要检查所有出发都在到达之前
+                else if (arrCount === 1 && depCount > 1) {
+                    const arr = data.arrivalFlights[0];
+                    const arrTime = arr.inBlockTime || arr.landingTime;
+
+                    // 检查是否所有出发都在到达之前完成
+                    const allDeparturesBeforeArrival = data.departureFlights.every(dep => {
+                        const depTime = dep.takeOffTime || dep.offBlockTime;
+                        return arrTime && depTime && compareTime(depTime, arrTime) < 0;
+                    });
+
+                    if (allDeparturesBeforeArrival) {
+                        turnarounds.add(stand);
+                    }
+                }
+            });
 
             return { arrivals, departures, turnarounds };
         }
