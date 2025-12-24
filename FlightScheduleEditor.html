@@ -1902,12 +1902,12 @@ UEA7323,UEA`;
                             if (options.length === 0 && f[h.key]) {
                                 options = [f[h.key]];
                             }
-                            // 添加空选项作为占位符
-                            if (options.length > 0 && !f[h.key]) {
+                            // 始终添加空选项，允许清除已分配的停机位
+                            if (options.length > 0) {
                                 const emptyOpt = document.createElement('option');
                                 emptyOpt.value = '';
-                                emptyOpt.text = '-- 选择停机位 --';
-                                emptyOpt.selected = true;
+                                emptyOpt.text = '-- 未分配 --';
+                                emptyOpt.selected = !f[h.key];
                                 select.appendChild(emptyOpt);
                             }
                         }
