@@ -883,6 +883,24 @@
                 <!-- Stand Cards Injected Here -->
             </div>
         </div>
+
+        <!-- GitHub Central Panel (New) -->
+        <div id="ghCentralPanel" class="modal-overlay" style="display: none;">
+            <div class="modal-content" style="width: 500px; max-width: 90%; background: rgba(30, 30, 36, 0.95); backdrop-filter: blur(10px); border: 1px solid var(--accent-color); box-shadow: 0 0 30px rgba(0,0,0,0.5);">
+                <div id="ghPanelHeader" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 id="ghPanelTitle" style="margin: 0; color: var(--accent-color);">GitHub 远程助手</h3>
+                    <button class="secondary" onclick="hideGHPanel()" style="background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
+                </div>
+                
+                <div id="ghPanelContent" style="min-height: 200px;">
+                    <!-- Content injected by JS -->
+                </div>
+
+                <div id="ghPanelFooter" class="modal-actions" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #333;">
+                    <!-- Actions injected by JS -->
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="status-bar" id="statusBar">
@@ -2579,73 +2597,119 @@ UEA7323,UEA`;
             renderTable();
             showStatus(`已生成 ${count} 个停机位 (01 ~ ${count.toString().padStart(2, '0')})`);
         }
-        // === GitHub Auth & Remote Config Logic ===
+        // === GitHub Auth & Remote Config Logic (Refactored) ===
         let ghState = {
             token: localStorage.getItem('gh_token') || '',
             user: null,
             repo: 'contextcross/ground-atc'
         };
 
+        function hideGHPanel() {
+            document.getElementById('ghCentralPanel').style.display = 'none';
+        }
+
+        function showGHPanel() {
+            document.getElementById('ghCentralPanel').style.display = 'flex';
+        }
+
         async function handleGHLogin() {
             if (ghState.token && ghState.user) {
-                if (confirm(`确定退出账号 ${ghState.user.login} 吗？`)) {
-                    ghState.token = '';
-                    ghState.user = null;
-                    localStorage.removeItem('gh_token');
-                    updateGHUI();
-                    showStatus("已退出 GitHub 登录");
-                }
+                // 显示注销确认界面
+                const content = document.getElementById('ghPanelContent');
+                const footer = document.getElementById('ghPanelFooter');
+                document.getElementById('ghPanelTitle').innerText = "GitHub 账号信息";
+                
+                content.innerHTML = `
+                    <div style="text-align: center; padding: 20px;">
+                        <img src="${ghState.user.avatar_url}" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid var(--accent-color); margin-bottom: 15px;">
+                        <h2 style="margin: 0; color: #fff;">${ghState.user.login}</h2>
+                        <p style="color: #888;">已授权访问仓库: ${ghState.repo}</p>
+                    </div>
+                `;
+                
+                footer.innerHTML = `
+                    <button class="secondary" onclick="hideGHPanel()">关闭</button>
+                    <button class="danger" onclick="logoutGH()">退出登录</button>
+                `;
+                showGHPanel();
                 return;
             }
 
-            const token = prompt("请输入您的 GitHub Personal Access Token (PAT):\n1. 访问 GitHub Settings -> Developer settings -> Personal access tokens\n2. 生成一个具有 'repo' 权限的 Token\n3. 将 Token 粘贴到此处以便访问私有或特定仓库文件。");
-            
-            if (token) {
-                ghState.token = token.trim();
-                const success = await fetchGHUser();
-                if (success) {
-                    localStorage.setItem('gh_token', ghState.token);
-                    updateGHUI();
-                    showStatus("GitHub 登录成功");
-                } else {
-                    ghState.token = '';
-                    alert("登录失败，请检查 Token 是否有效或网络是否通畅。");
-                }
-            }
+            // 显示登录界面
+            showLoginView();
         }
 
-        async function fetchGHUser() {
-            try {
-                const res = await fetch('https://api.github.com/user', {
-                    headers: { 'Authorization': `token ${ghState.token}` }
-                });
-                if (res.ok) {
-                    ghState.user = await res.json();
-                    return true;
-                }
-            } catch (e) {
-                console.error("Fetch GH User Error:", e);
-            }
-            return false;
+        function showLoginView() {
+            const content = document.getElementById('ghPanelContent');
+            const footer = document.getElementById('ghPanelFooter');
+            document.getElementById('ghPanelTitle').innerText = "GitHub 授权登录";
+            
+            content.innerHTML = `
+                <div class="modal-field">
+                    <label>Personal Access Token (PAT)</label>
+                    <input type="password" id="ghTokenInput" placeholder="在此粘贴您的 ghp_ 或 github_pat_ 开头的 Token" style="margin-bottom: 10px;">
+                    <p class="modal-desc" style="font-size: 0.8em;">需要权限: <strong>repo (Full access)</strong> 或 <strong>Contents (Read-only)</strong></p>
+                </div>
+                <div class="modal-info">
+                    Token 仅保存在您的本地浏览器缓存中，不会上传至任何服务器。
+                </div>
+            `;
+            
+            footer.innerHTML = `
+                <button class="secondary" onclick="hideGHPanel()">取消</button>
+                <button onclick="performGHLogin()">验证并登录</button>
+            `;
+            showGHPanel();
         }
 
-        function updateGHUI() {
-            const btn = document.getElementById('btnGHAuth');
-            const username = document.getElementById('ghUsername');
-            const avatar = document.getElementById('ghAvatar');
+        async function performGHLogin() {
+            const token = document.getElementById('ghTokenInput').value.trim();
+            if (!token) {
+                showErrorInPanel("请输入有效的 Token");
+                return;
+            }
+
+            ghState.token = token;
+            showStatus("正在验证 Token...");
             
-            if (ghState.token && ghState.user) {
-                btn.innerHTML = "🚪 退出";
-                username.innerText = ghState.user.login;
-                avatar.src = ghState.user.avatar_url;
-                avatar.style.display = 'block';
-                username.style.color = 'var(--accent-color)';
+            const success = await fetchGHUser();
+            if (success) {
+                localStorage.setItem('gh_token', ghState.token);
+                updateGHUI();
+                hideGHPanel();
+                showStatus("GitHub 登录成功");
             } else {
-                btn.innerHTML = "🔑 GitHub 登录";
-                username.innerText = "未登录";
-                avatar.style.display = 'none';
-                username.style.color = '#ccc';
+                ghState.token = '';
+                showErrorInPanel("登录失败：Token 无效或网络请求被拦截。请检查 Token 权限。");
             }
+        }
+
+        function logoutGH() {
+            ghState.token = '';
+            ghState.user = null;
+            localStorage.removeItem('gh_token');
+            updateGHUI();
+            hideGHPanel();
+            showStatus("已退出 GitHub 登录");
+        }
+
+        function showErrorInPanel(msg) {
+            const content = document.getElementById('ghPanelContent');
+            const footer = document.getElementById('ghPanelFooter');
+            document.getElementById('ghPanelTitle').innerText = "提示";
+            
+            content.innerHTML = `
+                <div style="text-align: center; padding: 20px;">
+                    <div style="font-size: 40px; margin-bottom: 10px;">⚠️</div>
+                    <p style="color: #f44336; line-height: 1.5;">${msg}</p>
+                </div>
+            `;
+            
+            footer.innerHTML = `
+                <button class="secondary" onclick="showLoginView()">返回重试</button>
+                <button class="secondary" onclick="hideGHPanel()">关闭</button>
+            `;
+            showGHPanel();
         }
 
         function handleConfigUploadClick() {
@@ -2657,80 +2721,53 @@ UEA7323,UEA`;
         }
 
         async function openGHFileSelector(path = '') {
-            showStatus(`正在连接 GitHub 读取: ${path || '根目录'}...`);
+            document.getElementById('ghPanelTitle').innerText = "选择远程配置";
+            const content = document.getElementById('ghPanelContent');
+            const footer = document.getElementById('ghPanelFooter');
+            
+            content.innerHTML = `<div style="text-align: center; padding: 40px; color: #888;">正在读取目录: ${path || '根目录'}...</div>`;
+            footer.innerHTML = `<button class="secondary" onclick="hideGHPanel()">取消</button>`;
+            showGHPanel();
+
             try {
                 const res = await fetch(`https://api.github.com/repos/${ghState.repo}/contents/${path}`, {
                     headers: { 'Authorization': `token ${ghState.token}` }
                 });
                 
                 if (!res.ok) throw new Error(`无法访问路径 (${res.status})`);
-                
                 const items = await res.json();
-                
-                // 排序：文件夹在前，文件在后
                 items.sort((a, b) => (b.type === 'dir' ? 1 : -1) - (a.type === 'dir' ? 1 : -1));
 
-                // 只有根目录时创建模态框，后续只是刷新内容
-                let modal = document.getElementById('ghFileModal');
-                if (!modal) {
-                    modal = document.createElement('div');
-                    modal.id = 'ghFileModal';
-                    modal.className = 'modal-overlay';
-                    document.body.appendChild(modal);
-                }
-
-                // 处理返回上一级
                 let backHtml = '';
                 if (path) {
                     const parentPath = path.substring(0, path.lastIndexOf('/'));
-                    backHtml = `
-                        <div class="gh-file-item" style="color: var(--accent-color);" onclick="openGHFileSelector('${parentPath}')">
-                            <span>🔙</span> .. (返回上一级)
-                        </div>
-                    `;
+                    backHtml = `<div class="gh-file-item" style="color: var(--accent-color);" onclick="openGHFileSelector('${parentPath}')"><span>🔙</span> .. (返回上一级)</div>`;
                 }
 
                 let itemsHtml = items.map(item => {
                     if (item.type === 'dir') {
-                        return `
-                            <div class="gh-file-item folder" onclick="openGHFileSelector('${item.path}')">
-                                <span>📁</span> <strong>${item.name}</strong>
-                            </div>
-                        `;
+                        return `<div class="gh-file-item folder" onclick="openGHFileSelector('${item.path}')"><span>📁</span> <strong>${item.name}</strong></div>`;
                     } else if (item.name.endsWith('.cfg') || item.name.endsWith('.txt')) {
-                        return `
-                            <div class="gh-file-item" onclick="this.classList.toggle('selected')">
-                                <input type="hidden" class="file-url" value="${item.download_url}">
-                                <input type="hidden" class="file-name" value="${item.name}">
-                                <span>📄</span> ${item.name}
-                            </div>
-                        `;
+                        return `<div class="gh-file-item" onclick="this.classList.toggle('selected')"><input type="hidden" class="file-url" value="${item.download_url}"><input type="hidden" class="file-name" value="${item.name}"><span>📄</span> ${item.name}</div>`;
                     }
-                    return ''; // 忽略其他类型文件
+                    return '';
                 }).join('');
 
-                modal.innerHTML = `
-                    <div class="modal-content" style="max-width: 500px; width: 90%;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                            <h3 style="margin:0;">📂 选择 GitHub 远程配置</h3>
-                            <button class="secondary" style="padding: 2px 8px;" onclick="document.getElementById('ghFileModal').remove()">✕</button>
-                        </div>
-                        <p class="modal-desc" style="word-break: break-all;">当前路径: <strong>${ghState.repo}/${path || ''}</strong></p>
-                        <div class="gh-file-list">
-                            ${backHtml}
-                            ${itemsHtml || '<div style="padding:20px; text-align:center; color:#666;">此目录下没有匹配的 .cfg 文件</div>'}
-                        </div>
-                        <div class="modal-actions">
-                            <button class="secondary" onclick="document.getElementById('ghFileModal').remove()">取消</button>
-                            <button onclick="loadGHSelectedFiles()">加载选中文件</button>
-                        </div>
+                content.innerHTML = `
+                    <p class="modal-desc" style="word-break: break-all; margin-top:0;">路径: <strong>${ghState.repo}/${path || ''}</strong></p>
+                    <div class="gh-file-list" style="max-height: 350px;">
+                        ${backHtml}
+                        ${itemsHtml || '<div style="padding:20px; text-align:center; color:#666;">此目录下没有匹配的文件</div>'}
                     </div>
                 `;
-                showStatus("请选择文件或进入文件夹");
+                
+                footer.innerHTML = `
+                    <button class="secondary" onclick="hideGHPanel()">取消</button>
+                    <button onclick="loadGHSelectedFiles()">加载选中文件</button>
+                `;
 
             } catch (e) {
-                console.error("GH API Error:", e);
-                alert("获取列表失败: " + e.message);
+                showErrorInPanel("读取 GitHub 目录失败: " + e.message);
             }
         }
 
@@ -2746,7 +2783,7 @@ UEA7323,UEA`;
                 name: item.querySelector('.file-name').value
             }));
 
-            document.getElementById('ghFileModal').remove();
+            hideGHPanel();
             showStatus(`正在下载 ${filesToLoad.length} 个配置文件...`);
             
             let loadedCount = 0;
@@ -2760,10 +2797,8 @@ UEA7323,UEA`;
                     });
                     if (!res.ok) throw new Error(`HTTP ${res.status}`);
                     const text = await res.text();
-                    
                     if (file.name.includes("ModelPath")) parseModelConfig(text);
                     else if (file.name.includes("LiveryPath")) parseLiveryConfig(text);
-                    
                     loadedCount++;
                 } catch (e) {
                     console.error(`下载失败: ${file.name}`, e);
@@ -2774,16 +2809,43 @@ UEA7323,UEA`;
                 showStatus(`已从 GitHub 加载 ${loadedCount} 个配置`);
                 buildReverseMapping();
                 renderTable();
-            } else {
-                showStatus("加载失败，请重试");
             }
         }
 
-        // 页面加载时恢复登录状态
+        async function fetchGHUser() {
+            try {
+                const res = await fetch('https://api.github.com/user', {
+                    headers: { 'Authorization': `token ${ghState.token}` }
+                });
+                if (res.ok) {
+                    ghState.user = await res.json();
+                    return true;
+                }
+            } catch (e) { console.error(e); }
+            return false;
+        }
+
+        function updateGHUI() {
+            const btn = document.getElementById('btnGHAuth');
+            const username = document.getElementById('ghUsername');
+            const avatar = document.getElementById('ghAvatar');
+            
+            if (ghState.token && ghState.user) {
+                btn.innerHTML = "👤 账号";
+                username.innerText = ghState.user.login;
+                avatar.src = ghState.user.avatar_url;
+                avatar.style.display = 'block';
+                username.style.color = 'var(--accent-color)';
+            } else {
+                btn.innerHTML = "🔑 GitHub 登录";
+                username.innerText = "未登录";
+                avatar.style.display = 'none';
+                username.style.color = '#ccc';
+            }
+        }
+
         if (ghState.token) {
-            fetchGHUser().then(success => {
-                if (success) updateGHUI();
-            });
+            fetchGHUser().then(success => { if (success) updateGHUI(); });
         }
     </script>
 </body>
