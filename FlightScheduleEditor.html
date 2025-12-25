@@ -715,11 +715,125 @@
         .flight-callsign {
             color: #ddd;
             font-weight: 500;
+            flex: 1;
+            /* 均分剩余空间 */
+            text-align: center;
+            /* 居中显示以脱离图标 */
+        }
+
+        .flight-actype-trigger {
+            background-color: transparent;
+            color: #ccc;
+            font-size: 0.8em;
+            flex: 1.4;
+            text-align: center;
+            margin-right: 4px;
+            padding: 2px 18px 2px 8px;
+            border-radius: 12px;
+            border-width: 1px;
+            border-style: solid;
+            cursor: pointer;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            /* Arrow Icon */
+            background-repeat: no-repeat;
+            background-position: right 4px center;
+            background-size: 16px;
+            user-select: none;
+            transition: background-color 0.2s;
+        }
+
+        .flight-actype-trigger:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        /* Arrival Style */
+        .flight-actype-trigger.type-arr {
+            border-color: rgba(76, 175, 80, 0.8);
+            color: #a5d6a7;
+            background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%234caf50'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+        }
+
+        /* Departure Style */
+        .flight-actype-trigger.type-dep {
+            border-color: rgba(33, 150, 243, 0.8);
+            color: #90caf9;
+            background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232196f3'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+        }
+
+        /* Custom Dropdown Container */
+        .custom-dropdown {
+            position: fixed;
+            z-index: 10000;
+            background-color: #2d2d30;
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+            max-height: 250px;
+            overflow-y: auto;
+            border: 1px solid #444;
+            padding: 6px;
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 0.9em;
+            min-width: 140px;
+            /* Scrollbar styling */
+            scrollbar-width: thin;
+            scrollbar-color: #555 transparent;
+        }
+
+        .custom-dropdown::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-dropdown::-webkit-scrollbar-thumb {
+            background-color: #555;
+            border-radius: 3px;
+        }
+
+        .custom-dropdown.type-arr {
+            border: 1px solid rgba(76, 175, 80, 0.6);
+            box-shadow: 0 8px 24px rgba(76, 175, 80, 0.15);
+        }
+
+        .custom-dropdown.type-dep {
+            border: 1px solid rgba(33, 150, 243, 0.6);
+            box-shadow: 0 8px 24px rgba(33, 150, 243, 0.15);
+        }
+
+        .custom-dropdown-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 6px;
+            color: #ddd;
+            margin-bottom: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .custom-dropdown-item:hover {
+            background-color: rgba(255, 255, 255, 0.08);
+        }
+
+        /* Selected State */
+        .custom-dropdown-item.selected.type-arr {
+            background-color: rgba(76, 175, 80, 0.25);
+            color: #a5d6a7;
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+
+        .custom-dropdown-item.selected.type-dep {
+            background-color: rgba(33, 150, 243, 0.25);
+            color: #90caf9;
+            border: 1px solid rgba(33, 150, 243, 0.3);
         }
 
         .flight-time {
             font-family: 'Microsoft YaHei UI', 'Segoe UI', sans-serif;
             color: #aaa;
+            flex: 0.8;
+            text-align: right;
+            min-width: 45px;
         }
 
         .flight-tag {
@@ -1274,7 +1388,9 @@ UEA7323,UEA`;
 
                     allStandFlights.forEach(f => {
                         const isArr = f._type === 'arr';
-                        const time = f._time || '--:--';
+                        // 时间格式改为 HH:mm
+                        const fullTime = f._time || '--:--:--';
+                        const shortTime = fullTime.substring(0, 5); // 只取 HH:mm
                         const tagClass = isArr ? 'tag-arr' : 'tag-dep';
                         // 箭头图标：进港绿色向下，出港蓝色向上
                         // 修正：垂直居中 (Y轴偏移调整)
@@ -1284,11 +1400,21 @@ UEA7323,UEA`;
 
                         const itemTypeClass = isArr ? 'type-arr' : 'type-dep';
 
+                        // 机型显示 (简化显示)
+                        const shortAcType = f.aircraftType ? f.aircraftType.replace(/AIRBUS |BOEING |COMAC /g, '') : '--';
+                        const airlineCode = f.airline || 'CSN';
+                        const currentAcType = f.aircraftType || '';
+
                         flightListHtml += `
                             <div class="flight-item ${itemTypeClass}" data-index="${f._index}" data-stand="${stand}">
                                 <div class="flight-tag ${tagClass}" onmousedown="DragManager.init(this, event)" onmouseup="handleIconUp(this)" onmouseleave="handleIconUp(this)">${arrowIcon}</div>
                                 <div class="flight-callsign">${f.callSign || '???'}</div>
-                                <div class="flight-time">${time}</div>
+                                <div class="flight-actype-trigger ${itemTypeClass}" 
+                                     onclick="openAcDropdown(event, ${f._index}, '${airlineCode}', '${currentAcType}')"
+                                     onmousedown="event.stopPropagation()">
+                                    ${shortAcType}
+                                </div>
+                                <div class="flight-time">${shortTime}</div>
                             </div>
                         `;
                     });
@@ -1721,6 +1847,116 @@ UEA7323,UEA`;
                 this.sourceStand = null;
             }
         };
+
+        // === Custom Dropdown Manager ===
+        const CustomDropdownManager = {
+            activeDropdown: null,
+            activeTrigger: null,
+
+            init() {
+                // Close on click outside
+                document.addEventListener('mousedown', (e) => {
+                    if (this.activeDropdown &&
+                        !this.activeDropdown.contains(e.target) &&
+                        !this.activeTrigger.contains(e.target)) {
+                        this.close();
+                    }
+                });
+                // Close on resize/scroll to prevent drift
+                window.addEventListener('resize', () => this.close());
+                window.addEventListener('scroll', () => this.close(), true);
+            },
+
+            open(triggerEl, options, callback, typeClass) {
+                if (this.activeDropdown) this.close();
+
+                this.activeTrigger = triggerEl;
+                const rect = triggerEl.getBoundingClientRect();
+
+                // Create container
+                const dropdown = document.createElement('div');
+                dropdown.className = `custom-dropdown ${typeClass}`;
+
+                // Populate options
+                options.forEach(opt => {
+                    const item = document.createElement('div');
+                    item.className = `custom-dropdown-item ${opt.selected ? 'selected' : ''} ${typeClass}`;
+                    item.textContent = opt.label;
+                    item.onclick = (e) => {
+                        e.stopPropagation(); // Stop propagation to avoid document click closing it immediately
+                        callback(opt.value);
+                        this.close();
+                    };
+                    dropdown.appendChild(item);
+                });
+
+                document.body.appendChild(dropdown);
+                this.activeDropdown = dropdown;
+
+                // Positioning logic
+                // Default: below, left aligned
+                let top = rect.bottom + 4;
+                let left = rect.left;
+
+                // If overflowing bottom, flip to above
+                if (top + dropdown.offsetHeight > window.innerHeight - 10) {
+                    top = rect.top - dropdown.offsetHeight - 4;
+                }
+
+                // If overflowing right
+                if (left + dropdown.offsetWidth > window.innerWidth) {
+                    left = window.innerWidth - dropdown.offsetWidth - 10;
+                }
+
+                dropdown.style.top = top + 'px';
+                dropdown.style.left = left + 'px';
+                dropdown.style.minWidth = Math.max(120, rect.width) + 'px';
+
+                // Scroll selected into view
+                const selected = dropdown.querySelector('.selected');
+                if (selected) {
+                    selected.scrollIntoView({ block: 'center', behavior: 'auto' });
+                }
+            },
+
+            close() {
+                if (this.activeDropdown) {
+                    this.activeDropdown.remove();
+                    this.activeDropdown = null;
+                    this.activeTrigger = null;
+                }
+            }
+        };
+
+        // Helper to open dropdown from flight item
+        function openAcDropdown(event, index, airline, currentType) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            const trigger = event.currentTarget; // Use currentTarget to get the div
+
+            // Get available types
+            let availableTypes = config.mapping.airlineToAircrafts[airline] || config.aircraftTypes;
+            if (currentType && !availableTypes.includes(currentType)) {
+                availableTypes = [...availableTypes, currentType];
+            }
+
+            // Map to options
+            const options = availableTypes.map(t => ({
+                label: t.replace(/AIRBUS |BOEING |COMAC /g, ''),
+                value: t,
+                selected: t === currentType
+            }));
+
+            const typeClass = trigger.classList.contains('type-arr') ? 'type-arr' : 'type-dep';
+
+            CustomDropdownManager.open(trigger, options, (val) => {
+                updateFlightAircraft(index, val);
+            }, typeClass);
+        }
+
+        // Initialize on load
+        window.addEventListener('load', () => CustomDropdownManager.init());
 
         // 处理图标按下（非拖拽场景，保留兼容）
         function handleIconDown(el, event) {
@@ -2445,6 +2681,18 @@ UEA7323,UEA`;
 
         function updateFlight(index, key, value) {
             allFlights[index][key] = value;
+        }
+
+        function updateFlightAircraft(dataIndex, newType) {
+            // 类型转换防止字符串索引问题
+            const idx = parseInt(dataIndex);
+            if (allFlights[idx]) {
+                allFlights[idx].aircraftType = newType;
+                // 数据更新后立即刷新视图
+                renderTable();
+                updateStats();
+                // console.log(`Flight ${idx} updated to ${newType}`);
+            }
         }
 
         function addRow() {
