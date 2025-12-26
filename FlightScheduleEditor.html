@@ -442,6 +442,44 @@
             z-index: 1000;
         }
 
+        /* GitHub File Selector */
+        .gh-file-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin: 10px 0;
+            background: #1e1e1e;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+
+        .gh-file-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+
+        .gh-file-item:hover {
+            background-color: var(--row-hover);
+        }
+
+        .gh-file-item.folder {
+            color: #ffca28; /* Folder yellow */
+        }
+
+        .gh-file-item.selected {
+            background-color: var(--selected-bg);
+            border-left: 3px solid var(--accent-color);
+        }
+
+        .gh-file-item span {
+            margin-right: 8px;
+            font-size: 1.2em;
+        }
+
         .modal-content {
             background-color: var(--panel-color);
             border: 1px solid var(--border-color);
@@ -543,7 +581,7 @@
                 -8px -8px 16px var(--skeuo-light-shadow);
             padding: 20px;
             color: #ccc;
-            transition: box-shadow 0.3s ease, border 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
             overflow: hidden;
             border: 1px solid rgba(255, 255, 255, 0.05);
         }
@@ -597,7 +635,7 @@
 
         .stand-toggle-btn svg {
             fill: #888;
-            transition: transform 0.3s ease-out;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
             width: 20px;
             height: 20px;
         }
@@ -666,14 +704,14 @@
         .stand-body {
             max-height: 0;
             overflow: hidden;
-            margin-top: 0;
-            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                margin-top 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0.5;
         }
 
         .stand-card.expanded .stand-body {
             /* JS will set specific max-height or we use a large enough value */
             max-height: 500px;
+            opacity: 1;
             margin-top: 10px;
         }
 
@@ -689,151 +727,23 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px 12px;
-            margin-bottom: 8px;
-            border-radius: 8px;
-            background-color: rgba(255, 255, 255, 0.03);
-            border: 1px solid transparent;
-            transition: background-color 0.2s ease;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
             font-size: 0.9em;
         }
 
         .flight-item:last-child {
-            margin-bottom: 0;
-        }
-
-        .flight-item.type-arr {
-            border: 2px solid rgba(76, 175, 80, 0.8);
-            box-shadow: 0 0 12px rgba(76, 175, 80, 0.3), inset 0 0 10px rgba(76, 175, 80, 0.05);
-        }
-
-        .flight-item.type-dep {
-            border: 2px solid rgba(33, 150, 243, 0.8);
-            box-shadow: 0 0 12px rgba(33, 150, 243, 0.3), inset 0 0 10px rgba(33, 150, 243, 0.05);
+            border-bottom: none;
         }
 
         .flight-callsign {
             color: #ddd;
             font-weight: 500;
-            flex: 1;
-            /* 均分剩余空间 */
-            text-align: center;
-            /* 居中显示以脱离图标 */
-        }
-
-        .flight-actype-trigger {
-            background-color: transparent;
-            color: #ccc;
-            font-size: 0.8em;
-            flex: 1.4;
-            text-align: center;
-            margin-right: 4px;
-            padding: 2px 18px 2px 8px;
-            border-radius: 12px;
-            border-width: 1px;
-            border-style: solid;
-            cursor: pointer;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            /* Arrow Icon */
-            background-repeat: no-repeat;
-            background-position: right 4px center;
-            background-size: 16px;
-            user-select: none;
-            transition: background-color 0.2s;
-        }
-
-        .flight-actype-trigger:hover {
-            background-color: rgba(255, 255, 255, 0.05);
-        }
-
-        /* Arrival Style */
-        .flight-actype-trigger.type-arr {
-            border-color: rgba(76, 175, 80, 0.8);
-            color: #a5d6a7;
-            background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%234caf50'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
-        }
-
-        /* Departure Style */
-        .flight-actype-trigger.type-dep {
-            border-color: rgba(33, 150, 243, 0.8);
-            color: #90caf9;
-            background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232196f3'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
-        }
-
-        /* Custom Dropdown Container */
-        .custom-dropdown {
-            position: fixed;
-            z-index: 10000;
-            background-color: #2d2d30;
-            border-radius: 8px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
-            max-height: 250px;
-            overflow-y: auto;
-            border: 1px solid #444;
-            padding: 6px;
-            font-family: 'Segoe UI', sans-serif;
-            font-size: 0.9em;
-            min-width: 140px;
-            /* Scrollbar styling */
-            scrollbar-width: thin;
-            scrollbar-color: #555 transparent;
-        }
-
-        .custom-dropdown::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .custom-dropdown::-webkit-scrollbar-thumb {
-            background-color: #555;
-            border-radius: 3px;
-        }
-
-        .custom-dropdown.type-arr {
-            border: 1px solid rgba(76, 175, 80, 0.6);
-            box-shadow: 0 8px 24px rgba(76, 175, 80, 0.15);
-        }
-
-        .custom-dropdown.type-dep {
-            border: 1px solid rgba(33, 150, 243, 0.6);
-            box-shadow: 0 8px 24px rgba(33, 150, 243, 0.15);
-        }
-
-        .custom-dropdown-item {
-            padding: 8px 12px;
-            cursor: pointer;
-            border-radius: 6px;
-            color: #ddd;
-            margin-bottom: 2px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .custom-dropdown-item:hover {
-            background-color: rgba(255, 255, 255, 0.08);
-        }
-
-        /* Selected State */
-        .custom-dropdown-item.selected.type-arr {
-            background-color: rgba(76, 175, 80, 0.25);
-            color: #a5d6a7;
-            border: 1px solid rgba(76, 175, 80, 0.3);
-        }
-
-        .custom-dropdown-item.selected.type-dep {
-            background-color: rgba(33, 150, 243, 0.25);
-            color: #90caf9;
-            border: 1px solid rgba(33, 150, 243, 0.3);
         }
 
         .flight-time {
             font-family: 'Microsoft YaHei UI', 'Segoe UI', sans-serif;
             color: #aaa;
-            flex: 0.8;
-            text-align: right;
-            min-width: 45px;
         }
 
         .flight-tag {
@@ -842,101 +752,31 @@
             justify-content: center;
             width: 32px;
             height: 32px;
-            border-radius: 50%;
-            box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2),
-                inset 1px 1px 2px rgba(255, 255, 255, 0.2);
-            cursor: pointer;
-            transition: all 0.1s ease;
-        }
-
-        .flight-tag.pressed {
-            box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.4),
-                inset -2px -2px 5px rgba(255, 255, 255, 0.1) !important;
-            filter: brightness(0.9);
+            border-radius: 6px;
         }
 
         .tag-arr {
-            border: 1px solid #2e7d32;
-            background: linear-gradient(135deg, #4caf50, #2e7d32);
+            border: 2px solid rgba(76, 175, 80, 0.5);
         }
 
         .tag-dep {
-            border: 1px solid #1565c0;
-            background: linear-gradient(135deg, #2196f3, #1565c0);
+            border: 2px solid rgba(33, 150, 243, 0.5);
         }
 
         /* Arrow icons for flight type */
         .arrow-icon {
-            width: 18px;
-            height: 18px;
+            width: 20px;
+            height: 20px;
             fill: none;
-            stroke-width: 5.5;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-            /* Stroke color defined by subclass */
+            stroke-width: 3.5;
         }
 
         .arrow-icon.arr {
-            stroke: #1b5e20;
+            stroke: #4CAF50;
         }
 
         .arrow-icon.dep {
-            stroke: #0d47a1;
-        }
-
-        /* ===== Drag & Drop Styles ===== */
-        .flight-item.dragging {
-            opacity: 0.3;
-            pointer-events: none;
-        }
-
-        .drag-ghost {
-            position: fixed;
-            pointer-events: none;
-            z-index: 9999;
-            opacity: 0.85;
-            transform: scale(1.02);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-            transition: transform 0.1s ease;
-        }
-
-        .stand-card.drag-over {
-            box-shadow: 0 0 20px rgba(0, 238, 255, 0.6),
-                8px 8px 16px var(--skeuo-dark-shadow),
-                -8px -8px 16px var(--skeuo-light-shadow);
-            border-color: var(--skeuo-text-glow) !important;
-        }
-
-        .stand-card.drag-over-invalid {
-            box-shadow: 0 0 20px rgba(244, 67, 54, 0.6),
-                8px 8px 16px var(--skeuo-dark-shadow),
-                -8px -8px 16px var(--skeuo-light-shadow);
-            border-color: #f44336 !important;
-        }
-
-        .stand-list-container {
-            /* transition properties are managed by .anim-expand and .anim-shrink classes via JS */
-            position: relative;
-            /* Ensure stacking context */
-        }
-
-        .anim-expand {
-            transition: height 0.4s cubic-bezier(0.34, 1.15, 0.64, 1);
-            /* Bounce */
-        }
-
-        .anim-shrink {
-            transition: height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-            /* Smooth */
-        }
-
-        body.is-dragging {
-            user-select: none;
-            cursor: grabbing !important;
-        }
-
-        body.is-dragging * {
-            cursor: grabbing !important;
+            stroke: #2196F3;
         }
 
         .empty-stand-msg {
@@ -951,6 +791,13 @@
 <body>
 
     <div class="toolbar">
+        <!-- GitHub Login Status Area -->
+        <div id="githubAuthArea" class="input-group" style="background-color: rgba(0,0,0,0.2); border-radius: 20px; padding: 4px 12px;">
+            <img id="ghAvatar" src="" style="width:24px; height:24px; border-radius:50%; display:none;">
+            <span id="ghUsername" style="font-size: 0.85em; color: #ccc;">未登录</span>
+            <button id="btnGHAuth" class="secondary" onclick="handleGHLogin()" style="padding: 2px 8px; font-size: 0.8em; border-radius: 10px;">🔑 GitHub 登录</button>
+        </div>
+
         <div class="title">✈️ Ground ATC Editor</div>
 
         <button onclick="newFile()" class="secondary">新建 (清空)</button>
@@ -961,8 +808,8 @@
         </div>
 
         <div class="file-input-wrapper">
-            <button class="secondary">⚙️ 上传配置 (CFG)</button>
-            <input type="file" id="cfgInput" accept=".cfg,.txt" multiple onchange="loadConfigs(this)">
+            <button id="btnUploadConfig" class="secondary" onclick="handleConfigUploadClick()">⚙️ 上传配置 (CFG)</button>
+            <input type="file" id="cfgInput" accept=".cfg,.txt" multiple onchange="loadConfigs(this)" style="display:none;">
         </div>
 
         <div class="file-input-wrapper">
@@ -1036,11 +883,28 @@
                 <!-- Stand Cards Injected Here -->
             </div>
         </div>
+
+        <!-- GitHub Central Panel (New) -->
+        <div id="ghCentralPanel" class="modal-overlay" style="display: none;">
+            <div class="modal-content" style="width: 500px; max-width: 90%; background: rgba(30, 30, 36, 0.95); backdrop-filter: blur(10px); border: 1px solid var(--accent-color); box-shadow: 0 0 30px rgba(0,0,0,0.5);">
+                <div id="ghPanelHeader" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 id="ghPanelTitle" style="margin: 0; color: var(--accent-color);">GitHub 远程助手</h3>
+                    <button class="secondary" onclick="hideGHPanel()" style="background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
+                </div>
+                
+                <div id="ghPanelContent" style="min-height: 200px;">
+                    <!-- Content injected by JS -->
+                </div>
+
+                <div id="ghPanelFooter" class="modal-actions" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #333;">
+                    <!-- Actions injected by JS -->
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="status-bar" id="statusBar">
         <span id="statusMsg">就绪</span>
-        <span id="selectionInfo" style="color: #00e5ff;"></span>
         <span id="statsInfo">航班数: 0</span>
     </div>
 
@@ -1060,24 +924,13 @@
                 <input type="number" id="autoInterval" value="5" min="1" max="120">
             </div>
 
-            <hr style="border-color: #444; margin: 16px 0;">
-
-            <div class="modal-field">
-                <label for="autoTimeOffset">时间偏移 (分钟):</label>
-                <div style="display: flex; gap: 8px; align-items: center;">
-                    <input type="number" id="autoTimeOffset" value="0" style="flex: 1;">
-                    <span style="color: #888; font-size: 0.85em;">正数=延后，负数=提前</span>
-                </div>
-            </div>
-
             <div class="modal-info" id="autoSchedulePreview">
                 <!-- 预览信息动态生成 -->
             </div>
 
             <div class="modal-actions">
                 <button class="secondary" onclick="closeAutoScheduleModal()">取消</button>
-                <button class="secondary" onclick="applyTimeOffset()" style="background-color: #1565C0;">⏳ 仅偏移</button>
-                <button onclick="applyAutoSchedule()">✓ 应用配表</button>
+                <button onclick="applyAutoSchedule()">✓ 应用</button>
             </div>
         </div>
     </div>
@@ -1112,17 +965,6 @@
             <div class="modal-actions">
                 <button class="secondary" id="btnConfirmCancel">取消</button>
                 <button id="btnConfirmOk" style="background-color: #c62828;">确定</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 通用提示对话框 -->
-    <div id="alertModal" class="modal-overlay" style="display: none; z-index: 2000;">
-        <div class="modal-content" style="max-width: 360px;">
-            <h3 id="alertTitle">ℹ️ 提示</h3>
-            <p id="alertMessage" style="color: #ddd; line-height: 1.5; margin-bottom: 20px;"></p>
-            <div class="modal-actions">
-                <button id="btnAlertOk">确定</button>
             </div>
         </div>
     </div>
@@ -1309,13 +1151,11 @@ UEA7323,UEA`;
                 standData[s] = { arrivals: [], departures: [] };
             });
 
-            allFlights.forEach((f, idx) => {
+            allFlights.forEach(f => {
                 if (f.stand && standData[f.stand]) {
                     const type = getFlightType(f);
-                    // 保留原始索引用于拖拽
-                    const flightWithIndex = { ...f, _index: idx };
-                    if (type === 'arrival') standData[f.stand].arrivals.push(flightWithIndex);
-                    else standData[f.stand].departures.push(flightWithIndex);
+                    if (type === 'arrival') standData[f.stand].arrivals.push(f);
+                    else standData[f.stand].departures.push(f);
                 }
             });
 
@@ -1388,33 +1228,18 @@ UEA7323,UEA`;
 
                     allStandFlights.forEach(f => {
                         const isArr = f._type === 'arr';
-                        // 时间格式改为 HH:mm
-                        const fullTime = f._time || '--:--:--';
-                        const shortTime = fullTime.substring(0, 5); // 只取 HH:mm
+                        const time = f._time || '--:--';
                         const tagClass = isArr ? 'tag-arr' : 'tag-dep';
                         // 箭头图标：进港绿色向下，出港蓝色向上
-                        // 修正：垂直居中 (Y轴偏移调整)
                         const arrowIcon = isArr
-                            ? '<svg viewBox="0 0 24 24" class="arrow-icon arr"><path d="M12 6v12m0 0l-5-5m5 5l5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
-                            : '<svg viewBox="0 0 24 24" class="arrow-icon dep"><path d="M12 18V6m0 0l5 5m-5-5l-5 5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-
-                        const itemTypeClass = isArr ? 'type-arr' : 'type-dep';
-
-                        // 机型显示 (简化显示)
-                        const shortAcType = f.aircraftType ? f.aircraftType.replace(/AIRBUS |BOEING |COMAC /g, '') : '--';
-                        const airlineCode = f.airline || 'CSN';
-                        const currentAcType = f.aircraftType || '';
+                            ? '<svg viewBox="0 0 24 24" class="arrow-icon arr"><path d="M12 4v12m0 0l-5-5m5 5l5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+                            : '<svg viewBox="0 0 24 24" class="arrow-icon dep"><path d="M12 20V8m0 0l5 5m-5-5l-5 5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
                         flightListHtml += `
-                            <div class="flight-item ${itemTypeClass}" data-index="${f._index}" data-stand="${stand}">
-                                <div class="flight-tag ${tagClass}" onmousedown="DragManager.init(this, event)" onmouseup="handleIconUp(this)" onmouseleave="handleIconUp(this)">${arrowIcon}</div>
+                            <div class="flight-item">
+                                <div class="flight-tag ${tagClass}">${arrowIcon}</div>
                                 <div class="flight-callsign">${f.callSign || '???'}</div>
-                                <div class="flight-actype-trigger ${itemTypeClass}" 
-                                     onclick="openAcDropdown(event, ${f._index}, '${airlineCode}', '${currentAcType}')"
-                                     onmousedown="event.stopPropagation()">
-                                    ${shortAcType}
-                                </div>
-                                <div class="flight-time">${shortTime}</div>
+                                <div class="flight-time">${time}</div>
                             </div>
                         `;
                     });
@@ -1532,450 +1357,11 @@ UEA7323,UEA`;
                 renderTable(); // 重新渲染以更新冲突检测
             }
         }
-
-        // ===== 拖拽管理器 (DragManager) =====
-        const DragManager = {
-            isDragging: false,
-            dragThreshold: 5,
-            startX: 0,
-            startY: 0,
-            sourceEl: null,
-            ghostEl: null,
-            flightItemEl: null,
-            sourceIndex: -1,
-            sourceStand: null,
-            currentOverCard: null,
-
-            init(tagEl, e) {
-                if (e.button !== 0) return; // 只响应左键
-
-                // 获取 flight-item 父元素
-                this.flightItemEl = tagEl.closest('.flight-item');
-                if (!this.flightItemEl) return;
-
-                this.sourceIndex = parseInt(this.flightItemEl.dataset.index);
-                this.sourceStand = this.flightItemEl.dataset.stand;
-                this.startX = e.clientX;
-                this.startY = e.clientY;
-
-                // 添加按下效果
-                tagEl.classList.add('pressed');
-
-                // 绑定全局事件
-                document.addEventListener('mousemove', this._onMouseMove);
-                document.addEventListener('mouseup', this._onMouseUp);
-            },
-
-            _onMouseMove: (e) => {
-                const dm = DragManager;
-                const dx = e.clientX - dm.startX;
-                const dy = e.clientY - dm.startY;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-
-                if (!dm.isDragging && dist > dm.dragThreshold) {
-                    dm._startDrag(e);
-                }
-
-                if (dm.isDragging) {
-                    dm._updateGhostPosition(e);
-                    dm._updateDropTarget(e);
-                }
-            },
-
-            _onMouseUp: (e) => {
-                const dm = DragManager;
-
-                if (dm.isDragging) {
-                    dm._endDrag(e);
-                }
-
-                dm._cleanup();
-            },
-
-            _startDrag(e) {
-                this.isDragging = true;
-                document.body.classList.add('is-dragging');
-
-                // 创建 Ghost 元素
-                const rect = this.flightItemEl.getBoundingClientRect();
-                this.ghostEl = this.flightItemEl.cloneNode(true);
-                this.ghostEl.classList.add('drag-ghost');
-                this.ghostEl.classList.remove('dragging');
-                this.ghostEl.style.width = rect.width + 'px';
-                this.ghostEl.style.left = (e.clientX - rect.width / 2) + 'px';
-                this.ghostEl.style.top = (e.clientY - 20) + 'px';
-                document.body.appendChild(this.ghostEl);
-
-                // 获取源停机位的列表容器
-                const sourceCard = document.getElementById(`stand-card-${this.sourceStand}`);
-                this.sourceListContainer = sourceCard?.querySelector('.stand-list-container');
-
-                if (this.sourceListContainer) {
-                    // 保存下一个兄弟节点，用于恢复位置
-                    this.sourceNextSibling = this.flightItemEl.nextElementSibling;
-
-                    // 锁定当前高度
-                    const currentHeight = this.sourceListContainer.offsetHeight;
-                    this.sourceListContainer.style.height = currentHeight + 'px';
-                    this.sourceListContainer.style.overflow = 'hidden';
-
-                    // 移除源元素（从 DOM 中）
-                    this.flightItemEl.remove();
-
-                    // 计算移除后的新高度并触发动画（收缩 - 平滑无回弹）
-                    requestAnimationFrame(() => {
-                        this.sourceListContainer.classList.add('anim-shrink'); // 添加收缩动画类
-                        const newHeight = this.sourceListContainer.scrollHeight;
-                        this.sourceListContainer.style.height = newHeight + 'px';
-
-                        // 动画结束后清理
-                        setTimeout(() => {
-                            if (this.sourceListContainer) {
-                                this.sourceListContainer.classList.remove('anim-shrink');
-                                this.sourceListContainer.style.height = '';
-                                this.sourceListContainer.style.overflow = '';
-                            }
-                        }, 400);
-                    });
-                } else {
-                    // 备选方案：标记为拖拽中
-                    this.flightItemEl.classList.add('dragging');
-                }
-            },
-
-            _updateGhostPosition(e) {
-                if (!this.ghostEl) return;
-                const rect = this.ghostEl.getBoundingClientRect();
-                this.ghostEl.style.left = (e.clientX - rect.width / 2) + 'px';
-                this.ghostEl.style.top = (e.clientY - 20) + 'px';
-            },
-
-            // 检测将航班放置到目标停机位是否会造成冲突
-            _wouldCauseConflict(targetStand) {
-                const flight = allFlights[this.sourceIndex];
-                if (!flight) return false;
-
-                const flightType = getFlightType(flight);
-
-                // 获取目标停机位现有航班（排除正在拖拽的航班）
-                const flightsInTarget = allFlights.filter(f =>
-                    f.stand === targetStand && allFlights.indexOf(f) !== this.sourceIndex
-                );
-
-                const arrivalsInTarget = flightsInTarget.filter(f => getFlightType(f) === 'arrival');
-                const departuresInTarget = flightsInTarget.filter(f => getFlightType(f) === 'departure');
-
-                // 规则1: 多到达冲突 - 如果我是到达航班，且目标已有到达航班
-                if (flightType === 'arrival' && arrivalsInTarget.length >= 1) {
-                    return true;
-                }
-
-                // 规则2: 时间交叉冲突
-                if (flightType === 'arrival') {
-                    // 我是到达航班，检查与现有出发航班的时间关系
-                    const myInBlock = flight.inBlockTime || flight.landingTime;
-                    for (const dep of departuresInTarget) {
-                        const depTakeOff = dep.takeOffTime || dep.offBlockTime;
-                        if (myInBlock && depTakeOff && compareTime(myInBlock, depTakeOff) <= 0) {
-                            return true;
-                        }
-                    }
-                } else {
-                    // 我是出发航班，检查与现有到达航班的时间关系
-                    const myTakeOff = flight.takeOffTime || flight.offBlockTime;
-                    for (const arr of arrivalsInTarget) {
-                        const arrInBlock = arr.inBlockTime || arr.landingTime;
-                        if (arrInBlock && myTakeOff && compareTime(arrInBlock, myTakeOff) <= 0) {
-                            return true;
-                        }
-                    }
-                }
-
-                return false;
-            },
-
-            _updateDropTarget(e) {
-                // 临时隐藏 ghost 以检测下方元素
-                if (this.ghostEl) this.ghostEl.style.display = 'none';
-                const elBelow = document.elementFromPoint(e.clientX, e.clientY);
-                if (this.ghostEl) this.ghostEl.style.display = '';
-
-                const standCard = elBelow?.closest('.stand-card');
-
-                // 移除旧高亮
-                if (this.currentOverCard && this.currentOverCard !== standCard) {
-                    this.currentOverCard.classList.remove('drag-over', 'drag-over-invalid');
-                }
-
-                // 添加新高亮
-                if (standCard && standCard.id !== `stand-card-${this.sourceStand}`) {
-                    const targetStand = standCard.id.replace('stand-card-', '');
-                    const isInvalid = this._wouldCauseConflict(targetStand);
-
-                    standCard.classList.remove('drag-over', 'drag-over-invalid');
-                    standCard.classList.add(isInvalid ? 'drag-over-invalid' : 'drag-over');
-                    this.currentOverCard = standCard;
-                } else {
-                    this.currentOverCard = null;
-                }
-            },
-
-            _endDrag(e) {
-                // 临时隐藏 ghost 以检测下方元素
-                if (this.ghostEl) this.ghostEl.style.display = 'none';
-                const elBelow = document.elementFromPoint(e.clientX, e.clientY);
-                if (this.ghostEl) this.ghostEl.style.display = '';
-
-                const targetCard = elBelow?.closest('.stand-card');
-
-                if (targetCard && targetCard.id !== `stand-card-${this.sourceStand}`) {
-                    // 提取目标停机位
-                    const targetStand = targetCard.id.replace('stand-card-', '');
-
-                    // 更新数据
-                    if (this.sourceIndex >= 0 && this.sourceIndex < allFlights.length) {
-                        allFlights[this.sourceIndex].stand = targetStand;
-
-                        // 获取目标卡片容器用于扩张动画 - 记录旧高度
-                        const targetListContainer = targetCard.querySelector('.stand-list-container');
-                        const oldHeight = targetListContainer ? targetListContainer.offsetHeight : 0;
-
-                        // 刷新视图
-                        renderTable();
-
-                        // 触发目标卡片扩张动画（回弹）
-                        const newTargetCard = document.getElementById(`stand-card-${targetStand}`);
-                        const newTargetContainer = newTargetCard?.querySelector('.stand-list-container');
-                        if (newTargetContainer) {
-                            // 立即锁定为旧高度（动画起点）
-                            const targetHeight = newTargetContainer.scrollHeight;
-                            newTargetContainer.style.height = oldHeight + 'px';
-                            newTargetContainer.style.overflow = 'hidden';
-
-                            // 下一帧过渡到新高度
-                            requestAnimationFrame(() => {
-                                newTargetContainer.classList.add('anim-expand'); // 添加扩张动画类
-                                newTargetContainer.style.height = targetHeight + 'px';
-                                setTimeout(() => {
-                                    newTargetContainer.classList.remove('anim-expand');
-                                    newTargetContainer.style.height = '';
-                                    newTargetContainer.style.overflow = '';
-                                }, 450); // 时间略长于 0.4s
-                            });
-                        }
-
-                        showStatus(`已将航班移动到停机位 ${targetStand}`);
-                    }
-                } else {
-                    // 取消拖拽，恢复源卡片
-                    this._revertToSource();
-                }
-            },
-
-            _revertToSource() {
-                // 恢复源卡片：重新添加元素并动画
-                const sourceCard = document.getElementById(`stand-card-${this.sourceStand}`);
-                const sourceListContainer = sourceCard?.querySelector('.stand-list-container');
-
-                if (sourceListContainer && this.ghostEl) {
-                    // 锁定当前高度
-                    const currentHeight = sourceListContainer.offsetHeight;
-                    sourceListContainer.style.height = currentHeight + 'px';
-                    sourceListContainer.style.overflow = 'hidden';
-
-                    // 创建恢复的元素
-                    const restoredEl = this.ghostEl.cloneNode(true);
-                    restoredEl.classList.remove('drag-ghost');
-                    restoredEl.style = ''; // 清除 fixed 定位样式
-
-                    // 添加到容器（恢复到原位置）
-                    if (this.sourceNextSibling) {
-                        sourceListContainer.insertBefore(restoredEl, this.sourceNextSibling);
-                    } else {
-                        sourceListContainer.appendChild(restoredEl);
-                    }
-
-                    // 触发扩张动画（恢复 - 回弹）
-                    requestAnimationFrame(() => {
-                        sourceListContainer.classList.add('anim-expand'); // 添加扩张动画类
-                        const newHeight = sourceListContainer.scrollHeight;
-                        sourceListContainer.style.height = newHeight + 'px';
-
-                        setTimeout(() => {
-                            sourceListContainer.classList.remove('anim-expand');
-                            sourceListContainer.style.height = '';
-                            sourceListContainer.style.overflow = '';
-                            // 完成后刷新视图确保数据一致
-                            renderTable();
-                        }, 450);
-                    });
-                } else {
-                    // 备选：直接刷新
-                    renderTable();
-                }
-            },
-
-            _cleanup() {
-                // 移除 Ghost
-                if (this.ghostEl) {
-                    this.ghostEl.remove();
-                    this.ghostEl = null;
-                }
-
-                // 移除高亮
-                if (this.currentOverCard) {
-                    this.currentOverCard.classList.remove('drag-over', 'drag-over-invalid');
-                    this.currentOverCard = null;
-                }
-
-                // 移除源元素拖拽状态
-                if (this.flightItemEl) {
-                    this.flightItemEl.querySelector('.flight-tag')?.classList.remove('pressed');
-                    this.flightItemEl = null;
-                }
-
-                // 移除 body 样式
-                document.body.classList.remove('is-dragging');
-
-                // 解绑事件
-                document.removeEventListener('mousemove', this._onMouseMove);
-                document.removeEventListener('mouseup', this._onMouseUp);
-
-                // 重置状态
-                this.isDragging = false;
-                this.sourceIndex = -1;
-                this.sourceStand = null;
-            }
-        };
-
-        // === Custom Dropdown Manager ===
-        const CustomDropdownManager = {
-            activeDropdown: null,
-            activeTrigger: null,
-
-            init() {
-                // Close on click outside
-                document.addEventListener('mousedown', (e) => {
-                    if (this.activeDropdown &&
-                        !this.activeDropdown.contains(e.target) &&
-                        !this.activeTrigger.contains(e.target)) {
-                        this.close();
-                    }
-                });
-                // Close on resize/scroll to prevent drift
-                window.addEventListener('resize', () => this.close());
-                window.addEventListener('scroll', () => this.close(), true);
-            },
-
-            open(triggerEl, options, callback, typeClass) {
-                if (this.activeDropdown) this.close();
-
-                this.activeTrigger = triggerEl;
-                const rect = triggerEl.getBoundingClientRect();
-
-                // Create container
-                const dropdown = document.createElement('div');
-                dropdown.className = `custom-dropdown ${typeClass}`;
-
-                // Populate options
-                options.forEach(opt => {
-                    const item = document.createElement('div');
-                    item.className = `custom-dropdown-item ${opt.selected ? 'selected' : ''} ${typeClass}`;
-                    item.textContent = opt.label;
-                    item.onclick = (e) => {
-                        e.stopPropagation(); // Stop propagation to avoid document click closing it immediately
-                        callback(opt.value);
-                        this.close();
-                    };
-                    dropdown.appendChild(item);
-                });
-
-                document.body.appendChild(dropdown);
-                this.activeDropdown = dropdown;
-
-                // Positioning logic
-                // Default: below, left aligned
-                let top = rect.bottom + 4;
-                let left = rect.left;
-
-                // If overflowing bottom, flip to above
-                if (top + dropdown.offsetHeight > window.innerHeight - 10) {
-                    top = rect.top - dropdown.offsetHeight - 4;
-                }
-
-                // If overflowing right
-                if (left + dropdown.offsetWidth > window.innerWidth) {
-                    left = window.innerWidth - dropdown.offsetWidth - 10;
-                }
-
-                dropdown.style.top = top + 'px';
-                dropdown.style.left = left + 'px';
-                dropdown.style.minWidth = Math.max(120, rect.width) + 'px';
-
-                // Scroll selected into view
-                const selected = dropdown.querySelector('.selected');
-                if (selected) {
-                    selected.scrollIntoView({ block: 'center', behavior: 'auto' });
-                }
-            },
-
-            close() {
-                if (this.activeDropdown) {
-                    this.activeDropdown.remove();
-                    this.activeDropdown = null;
-                    this.activeTrigger = null;
-                }
-            }
-        };
-
-        // Helper to open dropdown from flight item
-        function openAcDropdown(event, index, airline, currentType) {
-            event.preventDefault();
-            event.stopPropagation();
-
-            const trigger = event.currentTarget; // Use currentTarget to get the div
-
-            // Get available types
-            let availableTypes = config.mapping.airlineToAircrafts[airline] || config.aircraftTypes;
-            if (currentType && !availableTypes.includes(currentType)) {
-                availableTypes = [...availableTypes, currentType];
-            }
-
-            // Map to options
-            const options = availableTypes.map(t => ({
-                label: t.replace(/AIRBUS |BOEING |COMAC /g, ''),
-                value: t,
-                selected: t === currentType
-            }));
-
-            const typeClass = trigger.classList.contains('type-arr') ? 'type-arr' : 'type-dep';
-
-            CustomDropdownManager.open(trigger, options, (val) => {
-                updateFlightAircraft(index, val);
-            }, typeClass);
-        }
-
-        // Initialize on load
-        window.addEventListener('load', () => CustomDropdownManager.init());
-
-        // 处理图标按下（非拖拽场景，保留兼容）
-        function handleIconDown(el, event) {
-            // 仅响应鼠标左键 (button 0)
-            if (event.button === 0) {
-                el.classList.add('pressed');
-            }
-        }
-
-        // 处理图标释放（松开或离开）
-        function handleIconUp(el) {
-            el.classList.remove('pressed');
-        }
-
         function handleTimeBlur(e, originalValue, index, key) {
             const val = e.target.value.trim();
             if (val === "") return;
             if (!isValidTimeFormat(val)) {
-                showAlertModal("请输入正确的24小时制时间格式！(HH:mm:ss)", 'warning');
+                alert("请输入正确的24小时制时间格式！(HH:mm:ss)");
                 e.target.value = originalValue;
             } else {
                 updateFlight(index, key, val);
@@ -2086,7 +1472,6 @@ UEA7323,UEA`;
                 if (selectedIndices.has(idx)) tr.classList.add('selected-row');
                 else tr.classList.remove('selected-row');
             });
-            updateSelectionInfo(); // 更新状态栏选中数
         }
 
         function updateBatchButtons() {
@@ -2107,10 +1492,10 @@ UEA7323,UEA`;
         }
 
         // === Fixed Logic: Force Overwrite & Robust Swap ===
-        async function batchSetAsArrival() {
+        function batchSetAsArrival() {
             const freshCode = document.getElementById('airportCode').value.trim().toUpperCase();
             if (!isAirportLocked || !freshCode) return;
-            if (selectedIndices.size === 0) { await showAlertModal("请先选择至少一行", 'warning'); return; }
+            if (selectedIndices.size === 0) { alert("请先选择至少一行"); return; }
 
             let count = 0;
             selectedIndices.forEach(idx => {
@@ -2146,10 +1531,10 @@ UEA7323,UEA`;
             showStatus(`已将 ${count} 条记录转换为到达航班`);
         }
 
-        async function batchSetAsDeparture() {
+        function batchSetAsDeparture() {
             const freshCode = document.getElementById('airportCode').value.trim().toUpperCase();
             if (!isAirportLocked || !freshCode) return;
-            if (selectedIndices.size === 0) { await showAlertModal("请先选择至少一行", 'warning'); return; }
+            if (selectedIndices.size === 0) { alert("请先选择至少一行"); return; }
 
             let count = 0;
             selectedIndices.forEach(idx => {
@@ -2185,12 +1570,12 @@ UEA7323,UEA`;
             showStatus(`已将 ${count} 条记录转换为出发航班`);
         }
 
-        async function toggleAirportLock() {
+        function toggleAirportLock() {
             const input = document.getElementById('airportCode');
             const btn = document.getElementById('btnLock');
             if (!isAirportLocked) {
                 const code = input.value.trim().toUpperCase();
-                if (!code) { await showAlertModal("请输入机场代号", 'warning'); return; }
+                if (!code) { alert("请输入机场代号"); return; }
                 currentAirportCode = code;
                 isAirportLocked = true;
                 input.value = code;
@@ -2207,7 +1592,7 @@ UEA7323,UEA`;
             renderTable();
         }
 
-        async function deduplicateCallsigns() {
+        function deduplicateCallsigns() {
             const usedCallsigns = new Set(allFlights.map(f => f.callSign).filter(c => c));
             const seenThisRun = new Set();
             let changes = 0;
@@ -2229,9 +1614,9 @@ UEA7323,UEA`;
             if (changes > 0) {
                 renderTable();
                 updateStats();
-                await showAlertModal(`已自动修复 ${changes} 个重复呼号`, 'success');
+                alert(`已自动修复 ${changes} 个重复呼号`);
             } else {
-                await showAlertModal("未发现可修复的重复呼号 (或无可用替代)", 'info');
+                alert("未发现可修复的重复呼号 (或无可用替代)");
             }
         }
 
@@ -2327,12 +1712,6 @@ UEA7323,UEA`;
             });
             document.getElementById('statsInfo').innerText = `总计: ${allFlights.length} | 到达: ${arrCount} | 出发: ${depCount}`;
         }
-
-        function updateSelectionInfo() {
-            const count = selectedIndices.size;
-            const el = document.getElementById('selectionInfo');
-            el.textContent = count > 0 ? `已选中 ${count} 条航班记录` : '';
-        }
         function showStatus(msg) {
             document.getElementById('statusMsg').innerText = msg;
             setTimeout(() => document.getElementById('statusMsg').innerText = '就绪', 3000);
@@ -2397,9 +1776,9 @@ UEA7323,UEA`;
         }
 
         // 随机排列当前视图的航班
-        async function shuffleFlights() {
+        function shuffleFlights() {
             if (currentTab === 'all') {
-                await showAlertModal('请先切换到「到达航班」或「出发航班」标签页', 'warning');
+                alert('请先切换到「到达航班」或「出发航班」标签页');
                 return;
             }
 
@@ -2429,7 +1808,7 @@ UEA7323,UEA`;
         async function clearStands() {
             const filtered = getFilteredFlights();
             if (filtered.length === 0) {
-                await showAlertModal('当前视图没有航班数据', 'warning');
+                alert('当前视图没有航班数据');
                 return;
             }
 
@@ -2469,33 +1848,6 @@ UEA7323,UEA`;
                 btnCancel.onclick = () => {
                     cleanup();
                     resolve(false);
-                };
-            });
-        }
-
-        // 自定义提示对话框
-        function showAlertModal(message, type = 'info') {
-            return new Promise((resolve) => {
-                const modal = document.getElementById('alertModal');
-                const titleEl = document.getElementById('alertTitle');
-                const msgEl = document.getElementById('alertMessage');
-                const btnOk = document.getElementById('btnAlertOk');
-
-                // 设置图标和标题
-                const titles = {
-                    info: 'ℹ️ 提示',
-                    success: '✅ 成功',
-                    warning: '⚠️ 警告'
-                };
-                titleEl.textContent = titles[type] || titles.info;
-
-                msgEl.textContent = message;
-                modal.style.display = 'flex';
-
-                btnOk.onclick = () => {
-                    modal.style.display = 'none';
-                    btnOk.onclick = null;
-                    resolve();
                 };
             });
         }
@@ -2602,12 +1954,12 @@ UEA7323,UEA`;
                             if (options.length === 0 && f[h.key]) {
                                 options = [f[h.key]];
                             }
-                            // 始终添加空选项，允许清除已分配的停机位
-                            if (options.length > 0) {
+                            // 添加空选项作为占位符
+                            if (options.length > 0 && !f[h.key]) {
                                 const emptyOpt = document.createElement('option');
                                 emptyOpt.value = '';
-                                emptyOpt.text = '-- 未分配 --';
-                                emptyOpt.selected = !f[h.key];
+                                emptyOpt.text = '-- 选择停机位 --';
+                                emptyOpt.selected = true;
                                 select.appendChild(emptyOpt);
                             }
                         }
@@ -2683,18 +2035,6 @@ UEA7323,UEA`;
             allFlights[index][key] = value;
         }
 
-        function updateFlightAircraft(dataIndex, newType) {
-            // 类型转换防止字符串索引问题
-            const idx = parseInt(dataIndex);
-            if (allFlights[idx]) {
-                allFlights[idx].aircraftType = newType;
-                // 数据更新后立即刷新视图
-                renderTable();
-                updateStats();
-                // console.log(`Flight ${idx} updated to ${newType}`);
-            }
-        }
-
         function addRow() {
             let defDeparture = 'ZBAA';
             let defArrival = 'ZSJN';
@@ -2762,8 +2102,8 @@ UEA7323,UEA`;
             container.scrollTop = container.scrollHeight;
         }
 
-        async function deleteFlightRecord(index) {
-            if (await showConfirmModal("确定删除该航班吗?")) {
+        function deleteFlightRecord(index) {
+            if (confirm("确定删除该航班吗?")) {
                 allFlights.splice(index, 1);
                 selectedIndices.delete(index);
                 selectedIndices.clear();
@@ -2771,8 +2111,8 @@ UEA7323,UEA`;
                 updateStats();
             }
         }
-        async function newFile() {
-            if (await showConfirmModal("确定新建吗? 未保存的数据将丢失。")) {
+        function newFile() {
+            if (confirm("确定新建吗? 未保存的数据将丢失。")) {
                 allFlights = [];
                 selectedIndices.clear();
                 const csvInput = document.getElementById('csvInput');
@@ -2785,11 +2125,6 @@ UEA7323,UEA`;
         function loadCSV(input) {
             const file = input.files[0];
             if (!file) return;
-
-            // 自动设置导出文件名（去掉 .csv 扩展名）
-            const baseName = file.name.replace(/\.csv$/i, '');
-            document.getElementById('exportFilename').value = baseName;
-
             const reader = new FileReader();
             reader.onload = function (e) {
                 const text = e.target.result;
@@ -2837,40 +2172,6 @@ UEA7323,UEA`;
                 showStatus(`已加载 ${allFlights.length} 条航班数据，自动检测并锁定机场: ${detectedAirport}`);
             } else {
                 showStatus(`已加载 ${allFlights.length} 条航班数据`);
-            }
-
-            // 自动检测并更新停机位数量
-            autoDetectStandCount(newFlights);
-        }
-
-        // 自动检测停机位数量：提取 stand 列最大值并更新配置
-        function autoDetectStandCount(flights) {
-            if (!flights || flights.length === 0) return;
-
-            // 提取所有 stand 值并找出最大数值
-            let maxStand = 0;
-            flights.forEach(f => {
-                if (f.stand) {
-                    const standNum = parseInt(f.stand);
-                    if (!isNaN(standNum) && standNum > maxStand) {
-                        maxStand = standNum;
-                    }
-                }
-            });
-
-            if (maxStand === 0) return; // 没有有效的停机位数据
-
-            const currentCount = config.stands.length;
-
-            // 如果是第一次（当前无停机位配置）或新数据的最大值更大，则更新
-            if (currentCount === 0 || maxStand > currentCount) {
-                config.stands = [];
-                for (let i = 1; i <= maxStand; i++) {
-                    config.stands.push(i.toString());
-                }
-
-                const action = currentCount === 0 ? '自动检测' : '自动扩展';
-                showStatus(`${action}停机位数量: ${maxStand} 个`);
             }
         }
 
@@ -3054,16 +2355,16 @@ UEA7323,UEA`;
         }
 
         // === 自动配表功能 ===
-        async function openAutoScheduleModal() {
-            // 检查是否有选中航班
-            if (selectedIndices.size === 0) {
-                await showAlertModal('请先选中要配置的航班', 'warning');
+        function openAutoScheduleModal() {
+            // 禁止在"全部"标签页使用
+            if (currentTab === 'all') {
+                alert('请先切换到「到达航班」或「出发航班」标签页');
                 return;
             }
 
-            // 禁止在"全部"标签页使用（因为无法区分到达/出发）
-            if (currentTab === 'all') {
-                await showAlertModal('请先切换到「到达航班」或「出发航班」标签页', 'warning');
+            const filtered = getFilteredFlights();
+            if (filtered.length === 0) {
+                alert('当前视图没有航班数据');
                 return;
             }
 
@@ -3079,39 +2380,38 @@ UEA7323,UEA`;
         }
 
         function updateAutoSchedulePreview() {
-            const selectedCount = selectedIndices.size;
+            const filtered = getFilteredFlights();
             const startTime = document.getElementById('autoStartTime').value;
             const interval = parseInt(document.getElementById('autoInterval').value) || 5;
 
             const tabLabel = currentTab === 'arrival' ? '到达航班' : '出发航班';
             const timeField = currentTab === 'arrival' ? '着陆时间' : '推出时间';
-            const lastTime = selectedCount > 0 ? addMinutes(startTime, interval * (selectedCount - 1)) : startTime;
+            const lastTime = filtered.length > 0 ? addMinutes(startTime, interval * (filtered.length - 1)) : startTime;
 
             const previewEl = document.getElementById('autoSchedulePreview');
             previewEl.innerHTML = `
                 <div><strong>当前视图:</strong> ${tabLabel}</div>
-                <div><strong>选中航班:</strong> ${selectedCount} 条</div>
+                <div><strong>航班数量:</strong> ${filtered.length} 条</div>
                 <div><strong>设置字段:</strong> ${timeField}</div>
                 <div><strong>时间范围:</strong> ${startTime} → ${lastTime}</div>
             `;
         }
 
-        async function applyAutoSchedule() {
+        function applyAutoSchedule() {
             const startTimeStr = document.getElementById('autoStartTime').value.trim();
             const interval = parseInt(document.getElementById('autoInterval').value);
 
             // 验证输入
             if (!isValidTimeFormat(startTimeStr)) {
-                await showAlertModal('请输入正确的时间格式 (HH:mm:ss)', 'warning');
+                alert('请输入正确的时间格式 (HH:mm:ss)');
                 return;
             }
             if (isNaN(interval) || interval < 1) {
-                await showAlertModal('间隔时间必须为正整数', 'warning');
+                alert('间隔时间必须为正整数');
                 return;
             }
 
-            // 获取选中航班的索引并排序
-            const selectedFlightIndices = [...selectedIndices].sort((a, b) => a - b);
+            const filtered = getFilteredFlights();
             const offset = timeOffsets[currentTab] || 10;
 
             // 确定要设置的字段
@@ -3119,8 +2419,8 @@ UEA7323,UEA`;
             const secondaryKey = currentTab === 'arrival' ? 'inBlockTime' : 'takeOffTime';
 
             // 按顺序设置时间
-            selectedFlightIndices.forEach((index, i) => {
-                const flight = allFlights[index];
+            filtered.forEach((item, i) => {
+                const flight = allFlights[item.index];
                 const calculatedTime = addMinutes(startTimeStr, interval * i);
 
                 flight[primaryKey] = calculatedTime;
@@ -3131,50 +2431,7 @@ UEA7323,UEA`;
             closeAutoScheduleModal();
             renderTable();
             updateStats();
-            showStatus(`已为 ${selectedFlightIndices.length} 条选中航班自动配置时间`);
-        }
-
-        // 仅应用时间偏移
-        async function applyTimeOffset() {
-            const offsetMinutes = parseInt(document.getElementById('autoTimeOffset').value);
-
-            if (isNaN(offsetMinutes) || offsetMinutes === 0) {
-                await showAlertModal('请输入有效的偏移分钟数（非零整数）', 'warning');
-                return;
-            }
-
-            const filtered = getFilteredFlights();
-            if (filtered.length === 0) {
-                await showAlertModal('当前视图没有航班数据', 'warning');
-                return;
-            }
-
-            // 确定要偏移的字段
-            const primaryKey = currentTab === 'arrival' ? 'landingTime' : 'offBlockTime';
-            const secondaryKey = currentTab === 'arrival' ? 'inBlockTime' : 'takeOffTime';
-
-            let modifiedCount = 0;
-            filtered.forEach(item => {
-                const flight = allFlights[item.index];
-
-                // 偏移主时间字段
-                if (flight[primaryKey] && isValidTimeFormat(flight[primaryKey])) {
-                    flight[primaryKey] = addMinutes(flight[primaryKey], offsetMinutes);
-                    modifiedCount++;
-                }
-
-                // 偏移次时间字段
-                if (flight[secondaryKey] && isValidTimeFormat(flight[secondaryKey])) {
-                    flight[secondaryKey] = addMinutes(flight[secondaryKey], offsetMinutes);
-                }
-            });
-
-            closeAutoScheduleModal();
-            renderTable();
-            updateStats();
-
-            const direction = offsetMinutes > 0 ? '延后' : '提前';
-            showStatus(`已将 ${modifiedCount} 条航班时间${direction} ${Math.abs(offsetMinutes)} 分钟`);
+            showStatus(`已为 ${filtered.length} 条航班自动配置时间`);
         }
 
         // === 机场信息功能 ===
@@ -3322,11 +2579,11 @@ UEA7323,UEA`;
             });
         }
 
-        async function applyAirportInfo() {
+        function applyAirportInfo() {
             const count = parseInt(document.getElementById('standCount').value);
 
             if (isNaN(count) || count < 1 || count > 99) {
-                await showAlertModal('请输入有效的停机位数量 (1-99)', 'warning');
+                alert('请输入有效的停机位数量 (1-99)');
                 return;
             }
 
@@ -3339,6 +2596,256 @@ UEA7323,UEA`;
             closeAirportInfoModal();
             renderTable();
             showStatus(`已生成 ${count} 个停机位 (01 ~ ${count.toString().padStart(2, '0')})`);
+        }
+        // === GitHub Auth & Remote Config Logic (Refactored) ===
+        let ghState = {
+            token: localStorage.getItem('gh_token') || '',
+            user: null,
+            repo: 'contextcross/ground-atc'
+        };
+
+        function hideGHPanel() {
+            document.getElementById('ghCentralPanel').style.display = 'none';
+        }
+
+        function showGHPanel() {
+            document.getElementById('ghCentralPanel').style.display = 'flex';
+        }
+
+        async function handleGHLogin() {
+            if (ghState.token && ghState.user) {
+                // 显示注销确认界面
+                const content = document.getElementById('ghPanelContent');
+                const footer = document.getElementById('ghPanelFooter');
+                document.getElementById('ghPanelTitle').innerText = "GitHub 账号信息";
+                
+                content.innerHTML = `
+                    <div style="text-align: center; padding: 20px;">
+                        <img src="${ghState.user.avatar_url}" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid var(--accent-color); margin-bottom: 15px;">
+                        <h2 style="margin: 0; color: #fff;">${ghState.user.login}</h2>
+                        <p style="color: #888;">已授权访问仓库: ${ghState.repo}</p>
+                    </div>
+                `;
+                
+                footer.innerHTML = `
+                    <button class="secondary" onclick="hideGHPanel()">关闭</button>
+                    <button class="danger" onclick="logoutGH()">退出登录</button>
+                `;
+                showGHPanel();
+                return;
+            }
+
+            // 显示登录界面
+            showLoginView();
+        }
+
+        function showLoginView() {
+            const content = document.getElementById('ghPanelContent');
+            const footer = document.getElementById('ghPanelFooter');
+            document.getElementById('ghPanelTitle').innerText = "GitHub 授权登录";
+            
+            content.innerHTML = `
+                <div class="modal-field">
+                    <label>Personal Access Token (PAT)</label>
+                    <input type="password" id="ghTokenInput" placeholder="在此粘贴您的 ghp_ 或 github_pat_ 开头的 Token" style="margin-bottom: 10px;">
+                    <p class="modal-desc" style="font-size: 0.8em;">需要权限: <strong>repo (Full access)</strong> 或 <strong>Contents (Read-only)</strong></p>
+                </div>
+                <div class="modal-info">
+                    Token 仅保存在您的本地浏览器缓存中，不会上传至任何服务器。
+                </div>
+            `;
+            
+            footer.innerHTML = `
+                <button class="secondary" onclick="hideGHPanel()">取消</button>
+                <button onclick="performGHLogin()">验证并登录</button>
+            `;
+            showGHPanel();
+        }
+
+        async function performGHLogin() {
+            const token = document.getElementById('ghTokenInput').value.trim();
+            if (!token) {
+                showErrorInPanel("请输入有效的 Token");
+                return;
+            }
+
+            ghState.token = token;
+            showStatus("正在验证 Token...");
+            
+            const success = await fetchGHUser();
+            if (success) {
+                localStorage.setItem('gh_token', ghState.token);
+                updateGHUI();
+                hideGHPanel();
+                showStatus("GitHub 登录成功");
+            } else {
+                ghState.token = '';
+                showErrorInPanel("登录失败：Token 无效或网络请求被拦截。请检查 Token 权限。");
+            }
+        }
+
+        function logoutGH() {
+            ghState.token = '';
+            ghState.user = null;
+            localStorage.removeItem('gh_token');
+            updateGHUI();
+            hideGHPanel();
+            showStatus("已退出 GitHub 登录");
+        }
+
+        function showErrorInPanel(msg) {
+            const content = document.getElementById('ghPanelContent');
+            const footer = document.getElementById('ghPanelFooter');
+            document.getElementById('ghPanelTitle').innerText = "提示";
+            
+            content.innerHTML = `
+                <div style="text-align: center; padding: 20px;">
+                    <div style="font-size: 40px; margin-bottom: 10px;">⚠️</div>
+                    <p style="color: #f44336; line-height: 1.5;">${msg}</p>
+                </div>
+            `;
+            
+            footer.innerHTML = `
+                <button class="secondary" onclick="showLoginView()">返回重试</button>
+                <button class="secondary" onclick="hideGHPanel()">关闭</button>
+            `;
+            showGHPanel();
+        }
+
+        function handleConfigUploadClick() {
+            if (ghState.token && ghState.user) {
+                openGHFileSelector();
+            } else {
+                document.getElementById('cfgInput').click();
+            }
+        }
+
+        async function openGHFileSelector(path = '') {
+            document.getElementById('ghPanelTitle').innerText = "选择远程配置";
+            const content = document.getElementById('ghPanelContent');
+            const footer = document.getElementById('ghPanelFooter');
+            
+            content.innerHTML = `<div style="text-align: center; padding: 40px; color: #888;">正在读取目录: ${path || '根目录'}...</div>`;
+            footer.innerHTML = `<button class="secondary" onclick="hideGHPanel()">取消</button>`;
+            showGHPanel();
+
+            try {
+                const res = await fetch(`https://api.github.com/repos/${ghState.repo}/contents/${path}`, {
+                    headers: { 'Authorization': `token ${ghState.token}` }
+                });
+                
+                if (!res.ok) throw new Error(`无法访问路径 (${res.status})`);
+                const items = await res.json();
+                items.sort((a, b) => (b.type === 'dir' ? 1 : -1) - (a.type === 'dir' ? 1 : -1));
+
+                let backHtml = '';
+                if (path) {
+                    const parentPath = path.substring(0, path.lastIndexOf('/'));
+                    backHtml = `<div class="gh-file-item" style="color: var(--accent-color);" onclick="openGHFileSelector('${parentPath}')"><span>🔙</span> .. (返回上一级)</div>`;
+                }
+
+                let itemsHtml = items.map(item => {
+                    if (item.type === 'dir') {
+                        return `<div class="gh-file-item folder" onclick="openGHFileSelector('${item.path}')"><span>📁</span> <strong>${item.name}</strong></div>`;
+                    } else if (item.name.endsWith('.cfg') || item.name.endsWith('.txt')) {
+                        return `<div class="gh-file-item" onclick="this.classList.toggle('selected')"><input type="hidden" class="file-url" value="${item.download_url}"><input type="hidden" class="file-name" value="${item.name}"><span>📄</span> ${item.name}</div>`;
+                    }
+                    return '';
+                }).join('');
+
+                content.innerHTML = `
+                    <p class="modal-desc" style="word-break: break-all; margin-top:0;">路径: <strong>${ghState.repo}/${path || ''}</strong></p>
+                    <div class="gh-file-list" style="max-height: 350px;">
+                        ${backHtml}
+                        ${itemsHtml || '<div style="padding:20px; text-align:center; color:#666;">此目录下没有匹配的文件</div>'}
+                    </div>
+                `;
+                
+                footer.innerHTML = `
+                    <button class="secondary" onclick="hideGHPanel()">取消</button>
+                    <button onclick="loadGHSelectedFiles()">加载选中文件</button>
+                `;
+
+            } catch (e) {
+                showErrorInPanel("读取 GitHub 目录失败: " + e.message);
+            }
+        }
+
+        async function loadGHSelectedFiles() {
+            const selectedItems = document.querySelectorAll('.gh-file-item.selected');
+            if (selectedItems.length === 0) {
+                alert("请先选择至少一个文件。");
+                return;
+            }
+
+            const filesToLoad = Array.from(selectedItems).map(item => ({
+                url: item.querySelector('.file-url').value,
+                name: item.querySelector('.file-name').value
+            }));
+
+            hideGHPanel();
+            showStatus(`正在下载 ${filesToLoad.length} 个配置文件...`);
+            
+            let loadedCount = 0;
+            config.mapping.aircraftToAirlines = {};
+            config.mapping.airlineToAircrafts = {};
+
+            for (const file of filesToLoad) {
+                try {
+                    const res = await fetch(file.url, {
+                        headers: { 'Authorization': `token ${ghState.token}` }
+                    });
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    const text = await res.text();
+                    if (file.name.includes("ModelPath")) parseModelConfig(text);
+                    else if (file.name.includes("LiveryPath")) parseLiveryConfig(text);
+                    loadedCount++;
+                } catch (e) {
+                    console.error(`下载失败: ${file.name}`, e);
+                }
+            }
+
+            if (loadedCount > 0) {
+                showStatus(`已从 GitHub 加载 ${loadedCount} 个配置`);
+                buildReverseMapping();
+                renderTable();
+            }
+        }
+
+        async function fetchGHUser() {
+            try {
+                const res = await fetch('https://api.github.com/user', {
+                    headers: { 'Authorization': `token ${ghState.token}` }
+                });
+                if (res.ok) {
+                    ghState.user = await res.json();
+                    return true;
+                }
+            } catch (e) { console.error(e); }
+            return false;
+        }
+
+        function updateGHUI() {
+            const btn = document.getElementById('btnGHAuth');
+            const username = document.getElementById('ghUsername');
+            const avatar = document.getElementById('ghAvatar');
+            
+            if (ghState.token && ghState.user) {
+                btn.innerHTML = "👤 账号";
+                username.innerText = ghState.user.login;
+                avatar.src = ghState.user.avatar_url;
+                avatar.style.display = 'block';
+                username.style.color = 'var(--accent-color)';
+            } else {
+                btn.innerHTML = "🔑 GitHub 登录";
+                username.innerText = "未登录";
+                avatar.style.display = 'none';
+                username.style.color = '#ccc';
+            }
+        }
+
+        if (ghState.token) {
+            fetchGHUser().then(success => { if (success) updateGHUI(); });
         }
     </script>
 </body>
