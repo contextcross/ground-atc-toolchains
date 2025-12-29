@@ -2285,12 +2285,12 @@ UEA7323,UEA`;
                 // 规则1: 到达-出发冲突
                 data.arrivals.forEach(arr => {
                     data.departures.forEach(dep => {
-                        // 使用 inBlockTime，如果没有则用 landingTime 作为近似
-                        const arrInBlock = arr.flight.inBlockTime || arr.flight.landingTime;
-                        // 使用 takeOffTime，如果没有则用 offBlockTime 作为近似
-                        const depTakeOff = dep.flight.takeOffTime || dep.flight.offBlockTime;
-                        // 冲突条件：到达入位时间 <= 出发起飞时间（先进后出：到达先入位，出发还没起飞）
-                        if (arrInBlock && depTakeOff && compareTime(arrInBlock, depTakeOff) <= 0) {
+                        // 使用 landingTime (主数据)，如果没有则用 inBlockTime 作为备选
+                        const arrTime = arr.flight.landingTime || arr.flight.inBlockTime;
+                        // 使用 offBlockTime (主数据)，如果没有则用 takeOffTime 作为备选
+                        const depTime = dep.flight.offBlockTime || dep.flight.takeOffTime;
+                        // 冲突条件：到达着陆时间 >= 出发推出时间（先出后进：出发还没离开，到达已着陆）
+                        if (arrTime && depTime && compareTime(arrTime, depTime) <= 0) {
                             conflictIndices.add(arr.index);
                             conflictIndices.add(dep.index);
                         }
@@ -2447,6 +2447,10 @@ UEA7323,UEA`;
             const temp = allFlights[idx1][key];
             allFlights[idx1][key] = allFlights[idx2][key];
             allFlights[idx2][key] = temp;
+
+            // 立即更新衍生时间字段
+            triggerAutoCalc(idx1, key, allFlights[idx1][key]);
+            triggerAutoCalc(idx2, key, allFlights[idx2][key]);
 
             // 按时间升序排列当前视图的航班
             const filtered = getFilteredFlights();
