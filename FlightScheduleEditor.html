@@ -1246,9 +1246,9 @@ UEA7323,UEA`;
             { key: 'arrival', label: '到达机场', width: '80px', required: true },
             { key: 'stand', label: '停机位', type: 'select', source: 'stands', width: '70px', required: true },
             { key: 'runway', label: '跑道', width: '60px', required: true },
-            { key: 'offBlockTime', label: '推出时间', type: 'time', tab: 'departure' },
+            { key: 'offBlockTime', label: '推出时间', type: 'time', tab: 'departure', hasSwapBtn: true },
             { key: 'takeOffTime', label: '起飞时间', type: 'time', tab: 'departure', hasOffset: true },
-            { key: 'landingTime', label: '着陆时间', type: 'time', tab: 'arrival' },
+            { key: 'landingTime', label: '着陆时间', type: 'time', tab: 'arrival', hasSwapBtn: true },
             { key: 'inBlockTime', label: '入位时间', type: 'time', tab: 'arrival', hasOffset: true },
             { key: 'airline', label: '航司', type: 'select', source: 'airlines', width: '80px' },
             { key: 'aircraftType', label: '机型', type: 'select', source: 'aircraftTypes', width: '150px' },
@@ -2386,6 +2386,18 @@ UEA7323,UEA`;
                     offsetInput.title = "输入增加的分钟数，自动计算该列时间";
                     container.appendChild(offsetInput);
                 }
+
+                // 时间列添加交换按钮
+                if (h.hasSwapBtn && currentTab !== 'all') {
+                    const swapBtn = document.createElement('button');
+                    swapBtn.innerHTML = '🔄';
+                    swapBtn.className = 'header-btn swap-time-btn';
+                    swapBtn.style.cssText = 'margin-left: 6px; padding: 2px 6px; font-size: 0.9em; cursor: pointer; background: transparent; border: 1px solid #555; border-radius: 4px;';
+                    swapBtn.title = '交换选中两个航班的时间';
+                    swapBtn.onclick = () => swapSelectedFlightTimes(h.key);
+                    container.appendChild(swapBtn);
+                }
+
                 th.appendChild(container);
                 th.style.width = h.width || 'auto';
                 tr.appendChild(th);
@@ -2423,6 +2435,37 @@ UEA7323,UEA`;
 
             renderTable();
             showStatus(`已随机排列 ${flights.length} 条航班`);
+        }
+
+        // 交换选中两个航班的时间
+        function swapSelectedFlightTimes(key) {
+            if (selectedIndices.size !== 2) {
+                showAlertModal('仅选中2个航班才能交换', 'warning');
+                return;
+            }
+            const [idx1, idx2] = [...selectedIndices];
+            const temp = allFlights[idx1][key];
+            allFlights[idx1][key] = allFlights[idx2][key];
+            allFlights[idx2][key] = temp;
+
+            // 按时间升序排列当前视图的航班
+            const filtered = getFilteredFlights();
+            const indices = filtered.map(item => item.index);
+            const flights = indices.map(idx => allFlights[idx]);
+
+            // 根据当前 tab 决定排序字段
+            const sortKey = currentTab === 'departure' ? 'offBlockTime' : 'landingTime';
+            flights.sort((a, b) => (a[sortKey] || '').localeCompare(b[sortKey] || ''));
+
+            // 写回原位置
+            indices.forEach((originalIdx, newIdx) => {
+                allFlights[originalIdx] = flights[newIdx];
+            });
+
+            selectedIndices.clear(); // 清除选择以避免索引混乱
+            renderTable();
+            const labelMap = { offBlockTime: '推出时间', landingTime: '着陆时间' };
+            showStatus(`已交换时间并按${labelMap[sortKey]}升序排列`);
         }
 
         // 清空当前视图航班的停机位

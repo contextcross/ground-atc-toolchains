@@ -591,7 +591,7 @@
             "CSC": { zh: "四川", en: "Sichuan" },
             "CXA": { zh: "白鹭", en: "Xiamen Air" },
             "CQH": { zh: "春秋", en: "Spring Air" },
-            "CSZ": { zh: "深圳", en: "Shenzhen Air" }, 
+            "CSZ": { zh: "深圳", en: "Shenzhen Air" },
             "CJX": { zh: "仙鹤", en: "Xian He Air" },
             "UEA": { zh: "锦绣", en: "United Eagle" }
         };
@@ -751,6 +751,8 @@
                 // Simple CSV parsing, assuming header might exist
                 // Finding columns
                 let callSignIdx = 0;
+                let typeIdx = 1;
+
                 let airlineIdx = -1; // Optional if we extract from callsign, but prompt says "Parsing logic: identify callSign and airline columns"
 
                 const header = lines[0].toLowerCase().split(',');
@@ -758,9 +760,14 @@
                 if (callSignIdx === -1) callSignIdx = 0; // Fallback to first col
 
                 for (let i = 1; i < lines.length; i++) {
+
                     const line = lines[i].trim();
                     if (!line) continue;
                     const cols = line.split(',');
+                    const type = cols[typeIdx]?.trim();
+                    if (type != 'AircraftCallSign') {
+                        continue;
+                    }
                     const cs = cols[callSignIdx]?.trim();
 
                     if (cs) {
