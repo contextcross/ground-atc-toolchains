@@ -312,6 +312,25 @@
             position: relative;
         }
 
+        /* 修复：选中状态覆盖普通高亮 */
+        tr.highlight-group.selected-row {
+            background-color: rgba(0, 120, 215, 0.5) !important;
+            /* 蓝色加深 */
+            outline: 2px solid var(--duplicate-border);
+            /* 保持橙色边框 */
+            box-shadow: inset 4px 0 0 var(--duplicate-border);
+            /* 内阴影指示 */
+        }
+
+        tr.highlight-turnaround.selected-row {
+            background-color: rgba(0, 120, 215, 0.5) !important;
+            /* 蓝色加深 */
+            outline: 2px solid #ffc107;
+            /* 保持黄色边框 */
+            box-shadow: inset 4px 0 0 #ffc107;
+            /* 内阴影指示 */
+        }
+
         /* Clickable turnaround badge in modal */
         .turnaround-badge {
             display: inline-block;
@@ -1227,7 +1246,49 @@ UEA7323,UEA`;
 
             // 绑定机场信息输入事件
             document.getElementById('standCount').addEventListener('input', updateAirportInfoPreview);
+
+            // 绑定键盘快捷键
+            document.addEventListener('keydown', handleKeyboardShortcuts);
         };
+
+        function handleKeyboardShortcuts(e) {
+            // 如果焦点在输入框内，不处理快捷键
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+                return;
+            }
+            // 如果当前是停机坪视图，不处理
+            if (currentTab === 'standView') return;
+
+            if (e.ctrlKey || e.metaKey) {
+                if (e.key === 'a' || e.key === 'A') {
+                    e.preventDefault();
+                    selectAllFlights();
+                } else if (e.key === 'i' || e.key === 'I') {
+                    e.preventDefault();
+                    invertSelection();
+                }
+            }
+        }
+
+        function selectAllFlights() {
+            const filtered = getFilteredFlights();
+            filtered.forEach(item => selectedIndices.add(item.index));
+            updateSelectionVisuals();
+            showStatus(`已全选 ${filtered.length} 条航班`);
+        }
+
+        function invertSelection() {
+            const filtered = getFilteredFlights();
+            filtered.forEach(item => {
+                if (selectedIndices.has(item.index)) {
+                    selectedIndices.delete(item.index);
+                } else {
+                    selectedIndices.add(item.index);
+                }
+            });
+            updateSelectionVisuals();
+            showStatus(`已反选，当前选中 ${selectedIndices.size} 条航班`);
+        }
 
         function buildReverseMapping() {
             config.mapping.airlineToAircrafts = {};
