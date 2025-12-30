@@ -354,11 +354,11 @@
             </div>
 
             <div class="flex flex-col gap-2 flex-1">
-                <label class="text-sm text-sec">CSV 文件导入</label>
+                <label class="text-sm text-sec">数据文件导入</label>
                 <div id="dropArea" class="drop-area"
                     style="padding: 4px 12px; display: flex; align-items: center; justify-content: center;">
-                    <span id="fileLabel">点击或拖拽 CSV 文件至此</span>
-                    <input type="file" id="csvInput" accept=".csv" hidden>
+                    <span id="fileLabel">点击或拖拽 CSV/JSON 文件至此</span>
+                    <input type="file" id="csvInput" accept=".csv,.json" hidden>
                 </div>
             </div>
         </div>
@@ -745,39 +745,13 @@
             const reader = new FileReader();
             reader.onload = (e) => {
                 const text = e.target.result;
-                const lines = text.split(/\r?\n/);
-                const newTasks = [];
+                let newTasks = [];
 
-                // Simple CSV parsing, assuming header might exist
-                // Finding columns
-                let callSignIdx = 0;
-                let typeIdx = 1;
-
-                let airlineIdx = -1; // Optional if we extract from callsign, but prompt says "Parsing logic: identify callSign and airline columns"
-
-                const header = lines[0].toLowerCase().split(',');
-                callSignIdx = header.findIndex(h => h.includes('callsign'));
-                if (callSignIdx === -1) callSignIdx = 0; // Fallback to first col
-
-                for (let i = 1; i < lines.length; i++) {
-
-                    const line = lines[i].trim();
-                    if (!line) continue;
-                    const cols = line.split(',');
-                    const type = cols[typeIdx]?.trim();
-                    if (type != 'AircraftCallSign') {
-                        continue;
-                    }
-                    const cs = cols[callSignIdx]?.trim();
-
-                    if (cs) {
-                        const newTask = {
-                            id: Date.now() + i,
-                            callSign: cs.toUpperCase(),
-                            results: {} // Map: presetId -> { status, text, blob, exported, error }
-                        };
-                        newTasks.push(newTask);
-                    }
+                // 根据文件扩展名选择解析方式
+                if (file.name.toLowerCase().endsWith('.json')) {
+                    newTasks = parseJsonFile(text);
+                } else {
+                    newTasks = parseCsvFile(text);
                 }
 
                 appState.tasks = [...appState.tasks, ...newTasks];
@@ -786,6 +760,63 @@
                 updateStatus();
             };
             reader.readAsText(file);
+        }
+
+        // JSON 解析函数
+        function parseJsonFile(text) {
+            const newTasks = [];
+            try {
+                const data = JSON.parse(text);
+                const clips = data.audioClips || [];
+
+                clips.forEach((clip, i) => {
+                    // 筛选 types 包含 "AircraftCallSign" 的条目
+                    if (clip.types && clip.types.includes('AircraftCallSign')) {
+                        newTasks.push({
+                            id: Date.now() + i,
+                            callSign: clip.name.toUpperCase(),
+                            results: {}
+                        });
+                    }
+                });
+            } catch (err) {
+                showToast('JSON 解析失败: ' + err.message, 'error');
+            }
+            return newTasks;
+        }
+
+        // CSV 解析函数
+        function parseCsvFile(text) {
+            const newTasks = [];
+            const lines = text.split(/\r?\n/);
+
+            // Simple CSV parsing, assuming header might exist
+            let callSignIdx = 0;
+            let typeIdx = 1;
+
+            const header = lines[0].toLowerCase().split(',');
+            callSignIdx = header.findIndex(h => h.includes('callsign'));
+            if (callSignIdx === -1) callSignIdx = 0; // Fallback to first col
+
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                const cols = line.split(',');
+                const type = cols[typeIdx]?.trim();
+                if (type != 'AircraftCallSign') {
+                    continue;
+                }
+                const cs = cols[callSignIdx]?.trim();
+
+                if (cs) {
+                    newTasks.push({
+                        id: Date.now() + i,
+                        callSign: cs.toUpperCase(),
+                        results: {}
+                    });
+                }
+            }
+            return newTasks;
         }
 
         function translateCallSign(callSign, lang) {
