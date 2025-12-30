@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ATC CallSign Voice Generator</title>
+    <script src="translation_rules.js"></script>
     <style>
         /* CSS Variables - WinUI 3 Dark Theme Palette */
         :root {
@@ -327,6 +328,41 @@
             border-color: var(--accent-color);
             background: rgba(0, 120, 212, 0.1);
         }
+
+        /* Tab Bar */
+        .tab-bar {
+            display: flex;
+            gap: 4px;
+            padding: 8px 12px;
+            background: #252525;
+            border-radius: var(--radius-std) var(--radius-std) 0 0;
+            overflow-x: auto;
+        }
+
+        .tab-item {
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            white-space: nowrap;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+        }
+
+        .tab-item:hover {
+            background: #3a3a3a;
+        }
+
+        .tab-item.active {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .tab-count {
+            margin-left: 4px;
+            font-size: 11px;
+            opacity: 0.7;
+        }
     </style>
 </head>
 
@@ -370,6 +406,9 @@
         </div>
     </div>
 
+    <!-- Type Tabs -->
+    <div class="tab-bar" id="typeTabBar"></div>
+
     <!-- Status Bar -->
     <div class="flex justify-between items-center" style="margin-bottom: 8px; padding: 0 4px;">
         <span class="text-sec text-sm" id="statusText">等待导入任务...</span>
@@ -383,8 +422,8 @@
                 <thead>
                     <tr>
                         <th width="80">序号</th>
-                        <th width="150">呼号 (CallSign)</th>
-                        <th>翻译文本预览 (Text)</th>
+                        <th width="150">名称 (Name)</th>
+                        <th>文本预览 (Text)</th>
                         <th width="120">状态</th>
                         <th width="150">操作</th>
                     </tr>
@@ -570,37 +609,15 @@
             { id: "Aaron", name: "Aaron", lang: "en", voiceId: "Aaron", speed: 1, vol: 1, pitch: 0, emotion: "neutral" },
             { id: "Christopher", name: "Christopher", lang: "en", voiceId: "male-qn-domineering", speed: 1, vol: 1, pitch: 0, emotion: "neutral" },
             { id: "Fairy", name: "Fairy", lang: "en", voiceId: "female-shaonv", speed: 1.2, vol: 1, pitch: 0, emotion: "neutral" },
+            { id: "CN-Captain-Young-EN", name: "CN-Captain-Young-EN", lang: "en", voiceId: "Chinese (Mandarin)_Radio_Host", speed: 1.2, vol: 0.5, pitch: 0, emotion: "neutral" },
+            { id: "Hanser-EN", name: "Hanser-EN", lang: "en", voiceId: "Chinese (Mandarin)_Crisp_Girl", speed: 1.35, vol: 1, pitch: 0, emotion: "neutral" },
 
             // Chinese Presets (Specified)
             { id: "Hanser", name: "Hanser", lang: "zh", voiceId: "Chinese (Mandarin)_Crisp_Girl", speed: 1.35, vol: 1, pitch: 0, emotion: "neutral" },
             { id: "CN-Captain-Young", name: "CN-Captain-Young", lang: "zh", voiceId: "Chinese (Mandarin)_Radio_Host", speed: 1.2, vol: 0.5, pitch: 0, emotion: "neutral" },
             { id: "CN-Captain-Middle-Aged", name: "CN-Captain-Middle-Aged", lang: "zh", voiceId: "Chinese (Mandarin)_Reliable_Executive", speed: 1.2, vol: 0.5, pitch: -1, emotion: "neutral" },
 
-            // Cross-Language / Variants (Inferred/Mapped)
-            { id: "CN-Captain-Young-EN", name: "CN-Captain-Young-EN", lang: "en", voiceId: "Chinese (Mandarin)_Radio_Host", speed: 1.2, vol: 0.5, pitch: 0, emotion: "neutral" },
-            { id: "Hanser-EN", name: "Hanser-EN", lang: "en", voiceId: "Chinese (Mandarin)_Crisp_Girl", speed: 1.35, vol: 1, pitch: 0, emotion: "neutral" }
         ];
-
-        // Airline Data
-        const AIRLINES = {
-            "CCA": { zh: "国航", en: "Air China" },
-            "CES": { zh: "东方", en: "China Eastern" },
-            "CSN": { zh: "南方", en: "China Southern" },
-            "CHH": { zh: "海南", en: "Hainan" },
-            "CDG": { zh: "山东", en: "Shandong" },
-            "CSC": { zh: "四川", en: "Sichuan" },
-            "CXA": { zh: "白鹭", en: "Xiamen Air" },
-            "CQH": { zh: "春秋", en: "Spring Air" },
-            "CSZ": { zh: "深圳", en: "Shenzhen Air" },
-            "CJX": { zh: "仙鹤", en: "Xian He Air" },
-            "UEA": { zh: "锦绣", en: "United Eagle" }
-        };
-
-        const DIGIT_MAP_ZH = { '0': '洞', '1': '幺', '2': '两', '3': '三', '4': '四', '5': '五', '6': '六', '7': '拐', '8': '八', '9': '九' };
-
-        // English digits are standard numbers, but prompt says "One", "Two" etc. 
-        // We will just let TTS handle single digits, but "0" -> "Zero".
-        const DIGIT_MAP_EN = { '0': 'Zero', '1': 'One', '2': 'Two', '3': 'Three', '4': 'Four', '5': 'Five', '6': 'Six', '7': 'Seven', '8': 'Eight', '9': 'Nine' };
 
         // --- State Management ---
         let appState = {
@@ -608,12 +625,16 @@
             groupId: localStorage.getItem('minimax_group_id') || '',
             apiEndpoint: localStorage.getItem('minimax_api_endpoint') || 'https://api.minimax.chat/v1/t2a_v2',
             apiModel: localStorage.getItem('minimax_api_model') || 'speech-01-turbo',
-            tasks: [], // { id, callSign, text, status, blob, error, presetId }
+            tasks: [], // { id, name, types, results }
             processingCount: 0,
             queue: [], // IDs waiting
             currentPreset: PRESETS[2], // Default CN-Captain-Young
             selectedIds: new Set(),
-            lastRequestTime: 0 // New: Track last API call time for rate limiting
+            lastRequestTime: 0, // Track last API call time for rate limiting
+            currentTypeFilter: 'all', // Current type tab filter
+            availableTypes: [], // Dynamically extracted from JSON
+            currentLangFilter: null, // 'zh', 'en', or null for all
+            translationRules: {} // Loaded from translation_rules.json
         };
 
         const MAX_CONCURRENCY = 2; // Lowered from 3 to 2
@@ -644,6 +665,14 @@
 
         // --- Initialization ---
         function init() {
+            // Load translation rules from external JS file
+            appState.translationRules = typeof TRANSLATION_RULES !== 'undefined' ? TRANSLATION_RULES : {};
+            if (Object.keys(appState.translationRules).length > 0) {
+                console.log('Translation rules loaded:', Object.keys(appState.translationRules));
+            } else {
+                console.warn('No translation rules found');
+            }
+
             // Populate Presets
             PRESETS.forEach(p => {
                 const opt = document.createElement('option');
@@ -670,6 +699,33 @@
                     e.returnValue = '';
                 }
             });
+        }
+
+        // 更新预设下拉列表（根据语言筛选）
+        function updatePresetSelect(lang = null) {
+            els.presetSelect.innerHTML = '';
+            const filteredPresets = lang
+                ? PRESETS.filter(p => p.lang === lang)
+                : PRESETS;
+
+            filteredPresets.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = `${p.name} (${p.lang.toUpperCase()})`;
+                els.presetSelect.appendChild(opt);
+            });
+
+            // 如果当前预设不在筛选列表中，选择第一个
+            if (!filteredPresets.find(p => p.id === appState.currentPreset.id)) {
+                if (filteredPresets.length > 0) {
+                    appState.currentPreset = filteredPresets[0];
+                    els.presetSelect.value = filteredPresets[0].id;
+                }
+            } else {
+                els.presetSelect.value = appState.currentPreset.id;
+            }
+
+            appState.currentLangFilter = lang;
         }
 
         function setupEventListeners() {
@@ -742,6 +798,21 @@
             if (!file) return;
             els.fileLabel.textContent = file.name;
 
+            // 检测文件名语言后缀
+            const fileName = file.name.toLowerCase();
+            let detectedLang = null;
+            if (fileName.includes('_zh') || fileName.includes('_cn')) {
+                detectedLang = 'zh';
+            } else if (fileName.includes('_en')) {
+                detectedLang = 'en';
+            }
+
+            // 根据检测到的语言更新预设下拉列表
+            if (detectedLang) {
+                updatePresetSelect(detectedLang);
+                showToast(`检测到 ${detectedLang.toUpperCase()} 语言文件，已自动筛选预设`);
+            }
+
             const reader = new FileReader();
             reader.onload = (e) => {
                 const text = e.target.result;
@@ -762,23 +833,32 @@
             reader.readAsText(file);
         }
 
-        // JSON 解析函数
+        // JSON 解析函数 - 动态提取所有 types
         function parseJsonFile(text) {
             const newTasks = [];
+            const typeSet = new Set(); // 收集所有 type
+
             try {
                 const data = JSON.parse(text);
                 const clips = data.audioClips || [];
 
                 clips.forEach((clip, i) => {
-                    // 筛选 types 包含 "AircraftCallSign" 的条目
-                    if (clip.types && clip.types.includes('AircraftCallSign')) {
+                    if (clip.types && clip.types.length > 0) {
+                        // 收集 types
+                        clip.types.forEach(t => typeSet.add(t));
+
                         newTasks.push({
                             id: Date.now() + i,
-                            callSign: clip.name.toUpperCase(),
+                            name: clip.name,
+                            types: clip.types,
                             results: {}
                         });
                     }
                 });
+
+                // 更新可用类型列表（按字母排序）
+                appState.availableTypes = Array.from(typeSet).sort();
+
             } catch (err) {
                 showToast('JSON 解析失败: ' + err.message, 'error');
             }
@@ -788,63 +868,72 @@
         // CSV 解析函数
         function parseCsvFile(text) {
             const newTasks = [];
+            const typeSet = new Set();
             const lines = text.split(/\r?\n/);
 
             // Simple CSV parsing, assuming header might exist
-            let callSignIdx = 0;
+            let nameIdx = 0;
             let typeIdx = 1;
 
             const header = lines[0].toLowerCase().split(',');
-            callSignIdx = header.findIndex(h => h.includes('callsign'));
-            if (callSignIdx === -1) callSignIdx = 0; // Fallback to first col
+            nameIdx = header.findIndex(h => h.includes('callsign') || h.includes('name'));
+            if (nameIdx === -1) nameIdx = 0; // Fallback to first col
 
             for (let i = 1; i < lines.length; i++) {
                 const line = lines[i].trim();
                 if (!line) continue;
                 const cols = line.split(',');
                 const type = cols[typeIdx]?.trim();
-                if (type != 'AircraftCallSign') {
-                    continue;
-                }
-                const cs = cols[callSignIdx]?.trim();
+                if (!type) continue;
 
-                if (cs) {
+                const name = cols[nameIdx]?.trim();
+                if (name) {
+                    typeSet.add(type);
                     newTasks.push({
                         id: Date.now() + i,
-                        callSign: cs.toUpperCase(),
+                        name: name,
+                        types: [type],
                         results: {}
                     });
                 }
             }
+
+            // Merge with existing types
+            typeSet.forEach(t => {
+                if (!appState.availableTypes.includes(t)) {
+                    appState.availableTypes.push(t);
+                }
+            });
+            appState.availableTypes.sort();
+
             return newTasks;
         }
 
         function translateCallSign(callSign, lang) {
-            // Regex to separate Letters and Numbers
-            // e.g. CSN8733 -> CSN, 8733
-            const match = callSign.match(/^([A-Z]+)(\d+.*)$/);
-            if (!match) return callSign; // Fallback
+            const rules = appState.translationRules.AircraftCallSign;
+            if (!rules) return callSign; // No rules loaded, return raw
+
+            const pattern = new RegExp(rules.pattern || '^([A-Z]+)(\\d+.*)$');
+            const match = callSign.match(pattern);
+            if (!match) return callSign;
 
             const code = match[1];
             const numberPart = match[2];
 
-            const airline = AIRLINES[code];
-            // If airline unknown, read letters directly? Or spell out?
-            // Prompt doesn't specify unknown behavior. We'll spell letters.
-
-            let airlineName = "";
+            const airlines = rules.airlines || {};
+            const digits = rules.digits || {};
+            const airline = airlines[code];
 
             if (lang === 'zh') {
-                airlineName = airline ? airline.zh : code;
-                // Digits
-                const digits = numberPart.split('').map(d => DIGIT_MAP_ZH[d] || d).join('');
-                return `${airlineName}${digits}`;
+                const airlineName = airline ? airline.zh : code;
+                const digitMap = digits.zh || {};
+                const translatedDigits = numberPart.split('').map(d => digitMap[d] || d).join('');
+                return `${airlineName}${translatedDigits}`;
             } else {
-                // English
-                airlineName = airline ? airline.en : code; // Or spell check? Code usually ok.
-                // Digits with space
-                const digits = numberPart.split('').map(d => DIGIT_MAP_EN[d] || d).join(' ');
-                return `${airlineName} ${digits}`;
+                const airlineName = airline ? airline.en : code;
+                const digitMap = digits.en || {};
+                const translatedDigits = numberPart.split('').map(d => digitMap[d] || d).join(' ');
+                return `${airlineName} ${translatedDigits}`;
             }
         }
 
@@ -852,32 +941,59 @@
 
         // --- Rendering ---
 
-        // --- Rendering ---
+        // Tab Rendering
+        function renderTypeTabs() {
+            const tabBar = document.getElementById('typeTabBar');
+            tabBar.innerHTML = '';
+            tabBar.appendChild(createTabItem('all', '全部', appState.tasks.length));
+            appState.availableTypes.forEach(typeId => {
+                const count = appState.tasks.filter(t => t.types && t.types.includes(typeId)).length;
+                if (count > 0) {
+                    tabBar.appendChild(createTabItem(typeId, typeId, count));
+                }
+            });
+        }
+
+        function createTabItem(id, name, count) {
+            const tab = document.createElement('div');
+            tab.className = `tab-item ${appState.currentTypeFilter === id ? 'active' : ''}`;
+            tab.innerHTML = `${name}<span class="tab-count">(${count})</span>`;
+            tab.onclick = () => {
+                appState.currentTypeFilter = id;
+                appState.selectedIds.clear();
+                renderTypeTabs();
+                renderTable();
+            };
+            return tab;
+        }
+
+        function getDisplayText(task, lang) {
+            if (task.types && task.types.includes('AircraftCallSign')) {
+                return translateCallSign(task.name.toUpperCase(), lang);
+            }
+            return task.name;
+        }
 
         function renderTable() {
             els.tableBody.innerHTML = '';
-
-            // Show ALL tasks, but state is derived from currentPreset matches
             const currentPid = appState.currentPreset.id;
 
-            appState.tasks.forEach((task, index) => {
-                // Get or Init Result for this preset
+            const filteredTasks = appState.currentTypeFilter === 'all'
+                ? appState.tasks
+                : appState.tasks.filter(t => t.types && t.types.includes(appState.currentTypeFilter));
+
+            filteredTasks.forEach((task, index) => {
                 let result = task.results[currentPid];
                 if (!result) {
-                    // Virtual pending state
                     result = {
                         status: 'pending',
-                        text: translateCallSign(task.callSign, appState.currentPreset.lang),
+                        text: getDisplayText(task, appState.currentPreset.lang),
                         blob: null
                     };
-                    // We don't save it to 'results' yet to keep memory clean? 
-                    // Or we should just for caching text. 
-                    // Let's compute text on fly for display if missing.
                 }
 
                 const tr = document.createElement('tr');
 
-                // Status Badge logic
                 let badgeClass = 'badge-pending';
                 let statusLabel = '等待中';
                 if (result.status === 'processing') { badgeClass = 'badge-processing'; statusLabel = '生成中...'; }
@@ -885,18 +1001,14 @@
                 else if (result.status === 'edited') { badgeClass = 'badge-edited'; statusLabel = '已编辑'; }
                 else if (result.status === 'failed') { badgeClass = 'badge-failed'; statusLabel = '失败'; }
 
-                // Actions logic: Need to pass Preset ID context? Or just Task ID.
-                // Action handles finding the task and then looking up current preset.
                 let actionsHtml = '';
                 if (result.status === 'completed' || result.status === 'edited') {
-                    // Play, Regenerate & Edit
                     actionsHtml = `
                         <button class="text-sm" onmousedown="event.stopPropagation()" onclick="playAudio('${task.id}')">▶️</button>
                         <button class="text-sm" onmousedown="event.stopPropagation()" onclick="retryTask('${task.id}')">↻</button>
                         <button class="text-sm" onmousedown="event.stopPropagation()" onclick="openAudioEditor('${task.id}')">🛠️</button>
                     `;
                 } else if (result.status === 'failed' || result.status === 'pending') {
-                    // Retry or Remove
                     actionsHtml = `
                         <button class="text-sm" onmousedown="event.stopPropagation()" onclick="retryTask('${task.id}')">↻</button>
                         <button class="text-sm" onmousedown="event.stopPropagation()" onclick="removeTask('${task.id}')">✖</button>
@@ -905,28 +1017,27 @@
 
                 tr.innerHTML = `
                     <td>${index + 1}</td>
-                    <td style="font-family: monospace; font-weight: bold;">${task.callSign}</td>
-                    <td>${result.text || translateCallSign(task.callSign, appState.currentPreset.lang)}</td>
+                    <td style="font-family: monospace; font-weight: bold;">${task.name}</td>
+                    <td>${result.text || getDisplayText(task, appState.currentPreset.lang)}</td>
                     <td><span class="badge ${badgeClass}">${statusLabel}</span></td>
                     <td>${actionsHtml}</td>
                 `;
 
-                // Selection Logic
                 if (appState.selectedIds.has(task.id)) {
                     tr.classList.add('selected');
                 }
 
-                // Click Handlers
                 tr.onmousedown = (e) => handleRowClick(e, task.id);
                 tr.oncontextmenu = (e) => {
                     if (e.shiftKey) {
-                        e.preventDefault(); // Prevent context menu on Shift+Right
+                        e.preventDefault();
                     }
                 };
 
                 els.tableBody.appendChild(tr);
             });
 
+            renderTypeTabs();
             updateStatus();
         }
 
@@ -1099,7 +1210,7 @@
             if (!task.results[presetId]) {
                 task.results[presetId] = {
                     blob: null,
-                    text: translateCallSign(task.callSign, PRESETS.find(p => p.id === presetId)?.lang || 'en')
+                    text: getDisplayText(task, PRESETS.find(p => p.id === presetId)?.lang || 'en')
                 };
             }
             task.results[presetId].status = 'processing';
@@ -1124,7 +1235,7 @@
             // Construct Payload
             const payload = {
                 "model": appState.apiModel,
-                "text": (resObject.text || translateCallSign(task.callSign, preset.lang)) + (preset.lang === 'zh' ? '。' : ''),
+                "text": (resObject.text || getDisplayText(task, preset.lang)) + (preset.lang === 'zh' ? '。' : ''),
                 "stream": false,
                 "voice_setting": {
                     "voice_id": preset.voiceId,
@@ -1196,7 +1307,7 @@
             } catch (e) {
                 console.error(e);
                 resObject.status = 'failed';
-                showToast(`Task ${task.callSign} Failed: ${e.message}`, 'error');
+                showToast(`Task ${task.name} Failed: ${e.message}`, 'error');
             } finally {
                 renderTable();
             }
@@ -1215,10 +1326,10 @@
                 const res = t.results[currentPid];
                 if (res && res.blob) {
                     if (res.status === 'edited') {
-                        validItems.push({ callSign: t.callSign, blob: res.blob, task: t, status: 'edited' });
+                        validItems.push({ name: t.name, blob: res.blob, task: t, status: 'edited' });
                     } else if (res.status === 'completed') {
-                        validItems.push({ callSign: t.callSign, blob: res.blob, task: t, status: 'completed' });
-                        uncalibratedItems.push(`${t.callSign}-${currentPresetName}`);
+                        validItems.push({ name: t.name, blob: res.blob, task: t, status: 'completed' });
+                        uncalibratedItems.push(`${t.name}-${currentPresetName}`);
                     }
                 }
             });
@@ -1253,7 +1364,7 @@
                 let savedCount = 0;
                 for (const item of validItems) {
                     try {
-                        const fileHandle = await presetDir.getFileHandle(`${item.callSign}.wav`, { create: true });
+                        const fileHandle = await presetDir.getFileHandle(`${item.name}.wav`, { create: true });
                         const writable = await fileHandle.createWritable();
                         await writable.write(item.blob);
                         await writable.close();
@@ -1262,7 +1373,7 @@
                         item.task.results[currentPid].exported = true;
                         savedCount++;
                     } catch (e) {
-                        console.error(`Failed to write ${item.callSign}`, e);
+                        console.error(`Failed to write ${item.name}`, e);
                         // Continue others
                     }
                 }
@@ -1440,7 +1551,7 @@
             editorState.presetId = currentPid;
             editorState.originalBlob = res.blob;
 
-            editorEls.fileName.textContent = `${task.callSign} (${appState.currentPreset.name})`;
+            editorEls.fileName.textContent = `${task.name} (${appState.currentPreset.name})`;
             editorEls.modal.classList.remove('hidden');
 
             // Init Wavesurfer if not exists
