@@ -909,35 +909,56 @@
             return newTasks;
         }
 
-        function translateCallSign(callSign, lang) {
-            const rules = appState.translationRules.AircraftCallSign;
-            if (!rules) return callSign; // No rules loaded, return raw
+        // --- 通用翻译器 ---
 
-            const pattern = new RegExp(rules.pattern || '^([A-Z]+)(\\d+.*)$');
-            const match = callSign.match(pattern);
-            if (!match) return callSign;
+        /**
+         * 通用翻译函数：遍历类型定义的字典依次进行替换
+         * @param {string} text - 原始文本
+         * @param {object} typeRule - 类型规则 (包含 useDictionaries 数组)
+         * @param {string} lang - 语言 ('zh' 或 'en')
+         * @returns {string} 翻译后的文本
+         */
+        function applyTranslation(text, typeRule, lang) {
+            const dictionaries = appState.translationRules.dictionaries || {};
+            const useDicts = typeRule.useDictionaries || [];
 
-            const code = match[1];
-            const numberPart = match[2];
+            let result = text;
 
-            const airlines = rules.airlines || {};
-            const digits = rules.digits || {};
-            const airline = airlines[code];
+            // 依次应用每个字典
+            for (const dictName of useDicts) {
+                const dict = dictionaries[dictName];
+                if (!dict || !dict[lang]) continue;
 
-            if (lang === 'zh') {
-                const airlineName = airline ? airline.zh : code;
-                const digitMap = digits.zh || {};
-                const translatedDigits = numberPart.split('').map(d => digitMap[d] || d).join('');
-                return `${airlineName}${translatedDigits}`;
-            } else {
-                const airlineName = airline ? airline.en : code;
-                const digitMap = digits.en || {};
-                const translatedDigits = numberPart.split('').map(d => digitMap[d] || d).join(' ');
-                return `${airlineName} ${translatedDigits}`;
+                const langDict = dict[lang];
+                // 对每个字典项进行替换
+                for (const [key, value] of Object.entries(langDict)) {
+                    result = result.split(key).join(value);
+                }
             }
+
+            return result;
         }
 
-        // updateTablePreviews removed - no longer re-translating on switch
+        /**
+         * 获取任务的显示文本 (通用调度入口)
+         */
+        function getDisplayText(task, lang) {
+            if (!task.types || task.types.length === 0) {
+                return task.name;
+            }
+
+            const types = appState.translationRules.types || {};
+
+            // 遍历任务类型，找到第一个有规则的类型
+            for (const type of task.types) {
+                const typeRule = types[type];
+                if (typeRule) {
+                    return applyTranslation(task.name.toUpperCase(), typeRule, lang);
+                }
+            }
+
+            return task.name;
+        }
 
         // --- Rendering ---
 
@@ -965,13 +986,6 @@
                 renderTable();
             };
             return tab;
-        }
-
-        function getDisplayText(task, lang) {
-            if (task.types && task.types.includes('AircraftCallSign')) {
-                return translateCallSign(task.name.toUpperCase(), lang);
-            }
-            return task.name;
         }
 
         function renderTable() {
