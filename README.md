@@ -10,7 +10,7 @@
 
 ### 1. 📡 [ATC Call Sign Generator (ATC 呼号生成器)](https://contextcross.github.io/ground-atc-toolchains/ATCCallSignGenerator.html)
 > **功能描述**：  
-> 用于快速生成符合游戏内航空管制语音规范的航班呼号。适用于游戏内航班呼号资产的快速批量生成，确保通信术语的真实性与多样性。
+> > 支持游戏内所有无线电语音文本的批量生成，确保通信术语的真实性与多样性。生成列表通过每个关卡的无线电语音文本模板枚举获取。
 > 
 > 使用MiniMax T2A作为TTS模型，支持双语自动翻译、批量生成、基础的音频编辑、导入参考音频进行对齐测试。
 > 
@@ -18,7 +18,8 @@
 >
 > **TODO**
 >
-> 支持游戏内所有无线电语音文本的批量生成，生成列表通过无线电语音文本模板枚举获取。
+> 支持设置导出目录，自动计算需要补充的无线电语音
+
 
 ### 2. 🗓️ [Flight Schedule Editor (航班时刻表编辑器)](https://contextcross.github.io/ground-atc-toolchains/FlightScheduleEditor.html)
 > **功能描述**：  
