@@ -1,365 +1,192 @@
 {
   "metadata": {
-    "generatedAt": "2025-12-31T04:00:12Z",
-    "totalFiles": 255
+    "generatedAt": "2026-01-04T12:18:18Z",
+    "totalFiles": 266
   },
   "audioClips": [
     {
-      "name": "CSN8733",
+      "name": "KennedyGround",
+      "types": [
+        "Constant",
+        "GroundName"
+      ]
+    },
+    {
+      "name": "AAL683",
       "types": [
         "AircraftCallSign"
       ]
     },
     {
-      "name": "CDG8001",
+      "name": "AFR4",
       "types": [
         "AircraftCallSign"
       ]
     },
     {
-      "name": "CJX8923",
+      "name": "DAL9966",
       "types": [
         "AircraftCallSign"
       ]
     },
     {
-      "name": "CSC3612",
+      "name": "ASA30",
       "types": [
         "AircraftCallSign"
       ]
     },
     {
-      "name": "CXA8069",
+      "name": "DAL3401",
       "types": [
         "AircraftCallSign"
       ]
     },
     {
-      "name": "CCA3115",
+      "name": "JBU2039",
       "types": [
         "AircraftCallSign"
       ]
     },
     {
-      "name": "CSN8545",
+      "name": "BAW7NY",
       "types": [
         "AircraftCallSign"
       ]
     },
     {
-      "name": "CCA9191",
+      "name": "AAL799",
       "types": [
         "AircraftCallSign"
       ]
     },
     {
-      "name": "CES1111",
+      "name": "ASA18",
       "types": [
         "AircraftCallSign"
       ]
     },
     {
-      "name": "CQH6596",
+      "name": "AVA232",
       "types": [
         "AircraftCallSign"
       ]
     },
     {
-      "name": "UEA1889",
+      "name": "JBU2023",
       "types": [
         "AircraftCallSign"
       ]
     },
     {
-      "name": "CDG2701",
+      "name": "AFR6",
       "types": [
         "AircraftCallSign"
       ]
     },
     {
-      "name": "CSC8056",
+      "name": "AAL525",
       "types": [
         "AircraftCallSign"
       ]
     },
     {
-      "name": "CES5751",
+      "name": "DAL2165",
       "types": [
         "AircraftCallSign"
       ]
     },
     {
-      "name": "CSN3711",
+      "name": "JBU1550",
       "types": [
         "AircraftCallSign"
       ]
     },
     {
-      "name": "CSC8957",
+      "name": "BAW17R",
       "types": [
         "AircraftCallSign"
       ]
     },
     {
-      "name": "CSZ9977",
+      "name": "DAL2420",
       "types": [
         "AircraftCallSign"
       ]
     },
     {
-      "name": "CHH7789",
+      "name": "JBU1320",
       "types": [
         "AircraftCallSign"
       ]
     },
     {
-      "name": "CDG8862",
+      "name": "ASA24",
       "types": [
         "AircraftCallSign"
       ]
     },
     {
-      "name": "CES6500",
+      "name": "BAW1225",
       "types": [
         "AircraftCallSign"
       ]
     },
     {
-      "name": "CDG1188",
+      "name": "AAL493",
       "types": [
         "AircraftCallSign"
       ]
     },
     {
-      "name": "CXA8083",
+      "name": "ASA22",
       "types": [
         "AircraftCallSign"
       ]
     },
     {
-      "name": "CHH7041",
+      "name": "AVA210",
       "types": [
         "AircraftCallSign"
       ]
     },
     {
-      "name": "CSC8247",
+      "name": "VIR3",
       "types": [
         "AircraftCallSign"
       ]
     },
     {
-      "name": "CHH7306",
-      "types": [
-        "AircraftCallSign"
-      ]
-    },
-    {
-      "name": "CDG8085",
-      "types": [
-        "AircraftCallSign"
-      ]
-    },
-    {
-      "name": "CDG8031",
-      "types": [
-        "AircraftCallSign"
-      ]
-    },
-    {
-      "name": "CDG8416",
-      "types": [
-        "AircraftCallSign"
-      ]
-    },
-    {
-      "name": "CSN3712",
-      "types": [
-        "AircraftCallSign"
-      ]
-    },
-    {
-      "name": "CSN9190",
-      "types": [
-        "AircraftCallSign"
-      ]
-    },
-    {
-      "name": "CSC6918",
-      "types": [
-        "AircraftCallSign"
-      ]
-    },
-    {
-      "name": "CES5657",
-      "types": [
-        "AircraftCallSign"
-      ]
-    },
-    {
-      "name": "CSZ2861",
-      "types": [
-        "AircraftCallSign"
-      ]
-    },
-    {
-      "name": "CES9197",
-      "types": [
-        "AircraftCallSign"
-      ]
-    },
-    {
-      "name": "UEA7323",
-      "types": [
-        "AircraftCallSign"
-      ]
-    },
-    {
-      "name": "CSN3664",
-      "types": [
-        "AircraftCallSign"
-      ]
-    },
-    {
-      "name": "CSC8958",
-      "types": [
-        "AircraftCallSign"
-      ]
-    },
-    {
-      "name": "CQH7171",
-      "types": [
-        "AircraftCallSign"
-      ]
-    },
-    {
-      "name": "CSN8798",
-      "types": [
-        "AircraftCallSign"
-      ]
-    },
-    {
-      "name": "CSZ9978",
-      "types": [
-        "AircraftCallSign"
-      ]
-    },
-    {
-      "name": "CES2642",
-      "types": [
-        "AircraftCallSign"
-      ]
-    },
-    {
-      "name": "CDG8044",
-      "types": [
-        "AircraftCallSign"
-      ]
-    },
-    {
-      "name": "CDG8809",
-      "types": [
-        "AircraftCallSign"
-      ]
-    },
-    {
-      "name": "CSC3248",
-      "types": [
-        "AircraftCallSign"
-      ]
-    },
-    {
-      "name": "CSN6691",
-      "types": [
-        "AircraftCallSign"
-      ]
-    },
-    {
-      "name": "CSC8951",
-      "types": [
-        "AircraftCallSign"
-      ]
-    },
-    {
-      "name": "CHH7042",
-      "types": [
-        "AircraftCallSign"
-      ]
-    },
-    {
-      "name": "CSZ3690",
-      "types": [
-        "AircraftCallSign"
-      ]
-    },
-    {
-      "name": "申请滑出",
+      "name": "RequestTaxi",
       "types": [
         "Constant"
       ]
     },
     {
-      "name": "可以滑出",
+      "name": "TaxiVia",
       "types": [
         "Constant"
       ]
     },
     {
-      "name": "沿",
-      "types": [
-        "Constant"
-      ]
-    },
-    {
-      "name": "P",
+      "name": "EE",
       "types": [
         "TaxiRoute"
       ]
     },
     {
-      "name": "E",
+      "name": "Q1",
       "types": [
         "TaxiRoute"
       ]
     },
     {
-      "name": "01/19",
+      "name": "PB",
       "types": [
         "TaxiRoute"
       ]
     },
     {
-      "name": "T6",
-      "types": [
-        "TaxiRoute"
-      ]
-    },
-    {
-      "name": "D",
-      "types": [
-        "TaxiRoute"
-      ]
-    },
-    {
-      "name": "L",
-      "types": [
-        "TaxiRoute"
-      ]
-    },
-    {
-      "name": "C",
-      "types": [
-        "TaxiRoute"
-      ]
-    },
-    {
-      "name": "Y4",
-      "types": [
-        "TaxiRoute"
-      ]
-    },
-    {
-      "name": "B",
+      "name": "Q",
       "types": [
         "TaxiRoute"
       ]
@@ -371,44 +198,175 @@
       ]
     },
     {
-      "name": "L2",
+      "name": "MB",
       "types": [
         "TaxiRoute"
       ]
     },
     {
-      "name": "F",
+      "name": "KE",
       "types": [
         "TaxiRoute"
       ]
     },
     {
-      "name": "G",
+      "name": "FB",
       "types": [
         "TaxiRoute"
       ]
     },
     {
-      "name": "A",
-      "types": [
-        "TaxiRoute",
-        "NavigationPoint"
-      ]
-    },
-    {
-      "name": "A14",
+      "name": "U",
       "types": [
         "TaxiRoute"
       ]
     },
     {
-      "name": "L1",
+      "name": "TA",
       "types": [
         "TaxiRoute"
       ]
     },
     {
-      "name": "K",
+      "name": "NC",
+      "types": [
+        "TaxiRoute"
+      ]
+    },
+    {
+      "name": "Q4",
+      "types": [
+        "TaxiRoute"
+      ]
+    },
+    {
+      "name": "T",
+      "types": [
+        "TaxiRoute"
+      ]
+    },
+    {
+      "name": "S",
+      "types": [
+        "TaxiRoute"
+      ]
+    },
+    {
+      "name": "KF",
+      "types": [
+        "TaxiRoute"
+      ]
+    },
+    {
+      "name": "VV",
+      "types": [
+        "TaxiRoute"
+      ]
+    },
+    {
+      "name": "NA",
+      "types": [
+        "TaxiRoute"
+      ]
+    },
+    {
+      "name": "MC",
+      "types": [
+        "TaxiRoute"
+      ]
+    },
+    {
+      "name": "MA",
+      "types": [
+        "TaxiRoute"
+      ]
+    },
+    {
+      "name": "VA",
+      "types": [
+        "TaxiRoute"
+      ]
+    },
+    {
+      "name": "TB",
+      "types": [
+        "TaxiRoute"
+      ]
+    },
+    {
+      "name": "Q5",
+      "types": [
+        "TaxiRoute"
+      ]
+    },
+    {
+      "name": "V",
+      "types": [
+        "TaxiRoute"
+      ]
+    },
+    {
+      "name": "M",
+      "types": [
+        "TaxiRoute"
+      ]
+    },
+    {
+      "name": "LA",
+      "types": [
+        "TaxiRoute"
+      ]
+    },
+    {
+      "name": "Q6",
+      "types": [
+        "TaxiRoute"
+      ]
+    },
+    {
+      "name": "DB",
+      "types": [
+        "TaxiRoute"
+      ]
+    },
+    {
+      "name": "DA",
+      "types": [
+        "TaxiRoute"
+      ]
+    },
+    {
+      "name": "A4",
+      "types": [
+        "TaxiRoute"
+      ]
+    },
+    {
+      "name": "YA",
+      "types": [
+        "TaxiRoute"
+      ]
+    },
+    {
+      "name": "EA",
+      "types": [
+        "TaxiRoute"
+      ]
+    },
+    {
+      "name": "H",
+      "types": [
+        "TaxiRoute"
+      ]
+    },
+    {
+      "name": "W",
+      "types": [
+        "TaxiRoute"
+      ]
+    },
+    {
+      "name": "BB",
       "types": [
         "TaxiRoute"
       ]
@@ -420,1117 +378,1226 @@
       ]
     },
     {
-      "name": "A1",
+      "name": "SD",
       "types": [
         "TaxiRoute"
       ]
     },
     {
-      "name": "RWY19",
+      "name": "C2",
       "types": [
         "TaxiRoute"
       ]
     },
     {
-      "name": "RWY01",
+      "name": "C6",
       "types": [
         "TaxiRoute"
       ]
     },
     {
-      "name": "稍等",
+      "name": "K4",
       "types": [
-        "Constant"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "联系塔台118_55再见",
+      "name": "PD",
       "types": [
-        "Constant"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "118_55再见",
+      "name": "PF",
       "types": [
-        "Constant"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面静风",
+      "name": "Q2",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风005",
+      "name": "PE",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风010",
+      "name": "D",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风015",
+      "name": "G",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风020",
+      "name": "AA",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风025",
+      "name": "HB",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风030",
+      "name": "Y",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风035",
+      "name": "FA",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风040",
+      "name": "E",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风045",
+      "name": "ZA",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风050",
+      "name": "F",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风055",
+      "name": "JB",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风060",
+      "name": "JA",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风065",
+      "name": "Z",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风070",
+      "name": "B",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风075",
+      "name": "C5",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风080",
+      "name": "A",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风085",
+      "name": "NB",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风090",
+      "name": "PA",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风095",
+      "name": "PC",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风100",
+      "name": "U3",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风105",
+      "name": "KG",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风110",
+      "name": "K3",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风115",
+      "name": "SB",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风120",
+      "name": "L",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风125",
+      "name": "MD",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风130",
+      "name": "C1",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风135",
+      "name": "R",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风140",
+      "name": "C3",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风145",
+      "name": "U2",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风150",
+      "name": "U1",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风155",
+      "name": "P",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风160",
+      "name": "K",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风165",
+      "name": "WW",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风170",
+      "name": "KD",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风175",
+      "name": "K2",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风180",
+      "name": "C",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风185",
+      "name": "K1",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风190",
+      "name": "SC",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风195",
+      "name": "RWY4L",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风200",
+      "name": "RWY22R",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风205",
+      "name": "RWY31L",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风210",
+      "name": "RWY13R",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风215",
+      "name": "RWY4R",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风220",
+      "name": "RWY22L",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风225",
+      "name": "RWY13L",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风230",
+      "name": "RWY31R",
       "types": [
-        "WindDynamic"
+        "TaxiRoute"
       ]
     },
     {
-      "name": "地面风235",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "地面风240",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "地面风245",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "地面风250",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "地面风255",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "地面风260",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "地面风265",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "地面风270",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "地面风275",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "地面风280",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "地面风285",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "地面风290",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "地面风295",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "地面风300",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "地面风305",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "地面风310",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "地面风315",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "地面风320",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "地面风325",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "地面风330",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "地面风335",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "地面风340",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "地面风345",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "地面风350",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "地面风355",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "地面风360",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "1米秒",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "2米秒",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "3米秒",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "4米秒",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "5米秒",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "6米秒",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "7米秒",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "8米秒",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "9米秒",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "10米秒",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "11米秒",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "12米秒",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "13米秒",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "14米秒",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "15米秒",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "16米秒",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "17米秒",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "18米秒",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "19米秒",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "20米秒",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "21米秒",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "22米秒",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "23米秒",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "24米秒",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "25米秒",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "26米秒",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "27米秒",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "28米秒",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "29米秒",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "30米秒",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "31米秒",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "32米秒",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "33米秒",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "34米秒",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "35米秒",
-      "types": [
-        "WindDynamic"
-      ]
-    },
-    {
-      "name": "跑道19",
+      "name": "Runway4L",
       "types": [
         "Runway"
       ]
     },
     {
-      "name": "跑道01",
+      "name": "Runway22R",
       "types": [
         "Runway"
       ]
     },
     {
-      "name": "可以起飞",
-      "types": [
-        "Constant"
-      ]
-    },
-    {
-      "name": "拒绝",
-      "types": [
-        "Constant"
-      ]
-    },
-    {
-      "name": "跑道19外等待",
+      "name": "Runway31L",
       "types": [
         "Runway"
       ]
     },
     {
-      "name": "跑道01外等待",
+      "name": "Runway13R",
       "types": [
         "Runway"
       ]
     },
     {
-      "name": "进跑道19等待",
+      "name": "Runway4R",
       "types": [
         "Runway"
       ]
     },
     {
-      "name": "进跑道01等待",
+      "name": "Runway22L",
       "types": [
         "Runway"
       ]
     },
     {
-      "name": "可以落地",
+      "name": "Runway13L",
+      "types": [
+        "Runway"
+      ]
+    },
+    {
+      "name": "Runway31R",
+      "types": [
+        "Runway"
+      ]
+    },
+    {
+      "name": "StandByTaxi",
       "types": [
         "Constant"
       ]
     },
     {
-      "name": "联系进近119_05再见",
+      "name": "StandingBy",
       "types": [
         "Constant"
       ]
     },
     {
-      "name": "119_05再见",
+      "name": "HoldPosition",
       "types": [
         "Constant"
       ]
     },
     {
-      "name": "继续进近",
+      "name": "Holding",
       "types": [
         "Constant"
       ]
     },
     {
-      "name": "正在复飞",
+      "name": "ContactTower",
       "types": [
         "Constant"
       ]
     },
     {
-      "name": "执行复飞",
+      "name": "123_9",
       "types": [
         "Constant"
       ]
     },
     {
-      "name": "联系地面121_85再见",
+      "name": "Wind",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Calm",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind005",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind010",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind015",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind020",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind025",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind030",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind035",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind040",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind045",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind050",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind055",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind060",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind065",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind070",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind075",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind080",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind085",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind090",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind095",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind100",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind105",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind110",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind115",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind120",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind125",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind130",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind135",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind140",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind145",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind150",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind155",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind160",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind165",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind170",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind175",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind180",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind185",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind190",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind195",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind200",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind205",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind210",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind215",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind220",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind225",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind230",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind235",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind240",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind245",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind250",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind255",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind260",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind265",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind270",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind275",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind280",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind285",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind290",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind295",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind300",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind305",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind310",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind315",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind320",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind325",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind330",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind335",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind340",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind345",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind350",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind355",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "Wind360",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "At1",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "At2",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "At3",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "At4",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "At5",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "At6",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "At7",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "At8",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "At9",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "At10",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "At11",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "At12",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "At13",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "At14",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "At15",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "At16",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "At17",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "At18",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "At19",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "At20",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "At21",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "At22",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "At23",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "At24",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "At25",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "At26",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "At27",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "At28",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "At29",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "At30",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "At31",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "At32",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "At33",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "At34",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "At35",
+      "types": [
+        "WindDynamic"
+      ]
+    },
+    {
+      "name": "ClearedForTakeoff",
       "types": [
         "Constant"
       ]
     },
     {
-      "name": "121_85再见",
+      "name": "TakingOff",
       "types": [
         "Constant"
       ]
     },
     {
-      "name": "滑行沿",
+      "name": "Rejected",
       "types": [
         "Constant"
       ]
     },
     {
-      "name": "见引导",
+      "name": "HoldShortOfRunway",
       "types": [
         "Constant"
       ]
     },
     {
-      "name": "停机位",
+      "name": "LineUpAndWait",
       "types": [
         "Constant"
       ]
     },
     {
-      "name": "1",
-      "types": [
-        "Spot"
-      ]
-    },
-    {
-      "name": "2",
-      "types": [
-        "Spot"
-      ]
-    },
-    {
-      "name": "3",
-      "types": [
-        "Spot"
-      ]
-    },
-    {
-      "name": "4",
-      "types": [
-        "Spot"
-      ]
-    },
-    {
-      "name": "5",
-      "types": [
-        "Spot"
-      ]
-    },
-    {
-      "name": "6",
-      "types": [
-        "Spot"
-      ]
-    },
-    {
-      "name": "7",
-      "types": [
-        "Spot"
-      ]
-    },
-    {
-      "name": "8",
-      "types": [
-        "Spot"
-      ]
-    },
-    {
-      "name": "9",
-      "types": [
-        "Spot"
-      ]
-    },
-    {
-      "name": "10",
-      "types": [
-        "Spot"
-      ]
-    },
-    {
-      "name": "11",
-      "types": [
-        "Spot"
-      ]
-    },
-    {
-      "name": "12",
-      "types": [
-        "Spot"
-      ]
-    },
-    {
-      "name": "13",
-      "types": [
-        "Spot"
-      ]
-    },
-    {
-      "name": "14",
-      "types": [
-        "Spot"
-      ]
-    },
-    {
-      "name": "15",
-      "types": [
-        "Spot"
-      ]
-    },
-    {
-      "name": "16",
-      "types": [
-        "Spot"
-      ]
-    },
-    {
-      "name": "17",
-      "types": [
-        "Spot"
-      ]
-    },
-    {
-      "name": "18",
-      "types": [
-        "Spot"
-      ]
-    },
-    {
-      "name": "19",
-      "types": [
-        "Spot"
-      ]
-    },
-    {
-      "name": "20",
-      "types": [
-        "Spot"
-      ]
-    },
-    {
-      "name": "21",
-      "types": [
-        "Spot"
-      ]
-    },
-    {
-      "name": "22",
-      "types": [
-        "Spot"
-      ]
-    },
-    {
-      "name": "23",
-      "types": [
-        "Spot"
-      ]
-    },
-    {
-      "name": "24",
-      "types": [
-        "Spot"
-      ]
-    },
-    {
-      "name": "25",
-      "types": [
-        "Spot"
-      ]
-    },
-    {
-      "name": "26",
-      "types": [
-        "Spot"
-      ]
-    },
-    {
-      "name": "27",
-      "types": [
-        "Spot"
-      ]
-    },
-    {
-      "name": "28",
-      "types": [
-        "Spot"
-      ]
-    },
-    {
-      "name": "29",
-      "types": [
-        "Spot"
-      ]
-    },
-    {
-      "name": "30",
-      "types": [
-        "Spot"
-      ]
-    },
-    {
-      "name": "31",
-      "types": [
-        "Spot"
-      ]
-    },
-    {
-      "name": "32",
-      "types": [
-        "Spot"
-      ]
-    },
-    {
-      "name": "33",
-      "types": [
-        "Spot"
-      ]
-    },
-    {
-      "name": "34",
-      "types": [
-        "Spot"
-      ]
-    },
-    {
-      "name": "35",
-      "types": [
-        "Spot"
-      ]
-    },
-    {
-      "name": "36",
-      "types": [
-        "Spot"
-      ]
-    },
-    {
-      "name": "继续滑",
+      "name": "ClearedToLand",
       "types": [
         "Constant"
       ]
     },
     {
-      "name": "左转",
+      "name": "ContactNewYorkDeparture",
+      "types": [
+        "Constant",
+        "DepartureName"
+      ]
+    },
+    {
+      "name": "118_175",
+      "types": [
+        "Constant"
+      ]
+    },
+    {
+      "name": "KennedyTower",
+      "types": [
+        "TowerName"
+      ]
+    },
+    {
+      "name": "ContinueApproach",
+      "types": [
+        "Constant"
+      ]
+    },
+    {
+      "name": "WeAreGoingAround",
+      "types": [
+        "Constant"
+      ]
+    },
+    {
+      "name": "GoAround",
+      "types": [
+        "Constant"
+      ]
+    },
+    {
+      "name": "ExecuteMissedApproach",
+      "types": [
+        "Constant"
+      ]
+    },
+    {
+      "name": "GoingAround",
+      "types": [
+        "Constant"
+      ]
+    },
+    {
+      "name": "ContactGround",
+      "types": [
+        "Constant"
+      ]
+    },
+    {
+      "name": "121_9",
+      "types": [
+        "Constant"
+      ]
+    },
+    {
+      "name": "ExitLeft",
       "types": [
         "TurnDirection"
       ]
     },
     {
-      "name": "右转",
+      "name": "ExitRight",
       "types": [
         "TurnDirection"
       ]
     },
     {
-      "name": "脱离",
+      "name": "OnYourFrequency",
       "types": [
         "Constant"
       ]
     },
     {
-      "name": "塔台你好",
+      "name": "RequestPushback",
       "types": [
         "Constant"
       ]
     },
     {
-      "name": "地面你好",
+      "name": "PushbackApproved",
       "types": [
         "Constant"
       ]
     },
     {
-      "name": "现在脱离跑道",
-      "types": [
-        "Constant"
-      ]
-    },
-    {
-      "name": "滑行",
-      "types": [
-        "Constant"
-      ]
-    },
-    {
-      "name": "准备好",
-      "types": [
-        "Constant"
-      ]
-    },
-    {
-      "name": "可以推出开车",
-      "types": [
-        "Constant"
-      ]
-    },
-    {
-      "name": "头朝北",
+      "name": "HeadingNorth",
       "types": [
         "PushbackHeading"
       ]
     },
     {
-      "name": "头朝西",
+      "name": "HeadingWest",
       "types": [
         "PushbackHeading"
       ]
     },
     {
-      "name": "头朝东",
+      "name": "HeadingEast",
       "types": [
         "PushbackHeading"
       ]
     },
     {
-      "name": "头朝南",
+      "name": "HeadingSouth",
       "types": [
         "PushbackHeading"
       ]
     },
     {
-      "name": "可以穿越",
+      "name": "StandByPushback",
       "types": [
         "Constant"
       ]
     },
     {
-      "name": "跑道外等待",
+      "name": "CrossRunway",
       "types": [
         "Constant"
       ]
     },
     {
-      "name": "变更为",
+      "name": "ChangeTo",
       "types": [
         "Constant"
       ]

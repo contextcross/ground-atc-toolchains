@@ -1097,7 +1097,11 @@
             // const canGenerate = total > 0 && appState.apiKey && appState.selectedIds.size > 0; 
             // Actually button is bound to selection, which we cleared on mode switch.
 
-            els.btnGenerateSelected.disabled = total === 0 || !appState.apiKey || appState.selectedIds.size === 0;
+            // Check API Key based on current preset's provider
+            const hasApiKey = appState.currentPreset.provider === 'elevenlabs'
+                ? !!appState.elevenlabsApiKey
+                : !!appState.apiKey;
+            els.btnGenerateSelected.disabled = total === 0 || !hasApiKey || appState.selectedIds.size === 0;
             els.btnGenerateSelected.textContent = `🔊 生成选中 (${appState.selectedIds.size})`;
             els.btnExportAll.disabled = (completed + failed) === 0; // Or just completed? 
             // In the previous code, completed was counted. Let's update count to include edited.
@@ -1138,7 +1142,20 @@
         window.retryTask = (id) => {
             const t = appState.tasks.find(x => x.id == id);
             if (!t) return;
-            if (!appState.apiKey) { showToast('请先设置 API Key', 'error'); return; }
+
+            // Check API Key based on current preset's provider
+            const provider = appState.currentPreset.provider;
+            if (provider === 'elevenlabs') {
+                if (!appState.elevenlabsApiKey) {
+                    showToast('请先设置 ElevenLabs API Key', 'error');
+                    return;
+                }
+            } else {
+                if (!appState.apiKey) {
+                    showToast('请先设置 MiniMax API Key', 'error');
+                    return;
+                }
+            }
 
             // Reset status for current preset
             const currentPid = appState.currentPreset.id;
