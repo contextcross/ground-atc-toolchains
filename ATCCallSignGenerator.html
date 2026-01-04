@@ -1184,10 +1184,20 @@
         }
 
         function startSelectedGeneration() {
-            if (!appState.apiKey) {
-                showToast('请先设置 API Key', 'error');
-                els.settingsModal.classList.remove('hidden');
-                return;
+            // Check API Key based on current preset's provider
+            const provider = appState.currentPreset.provider;
+            if (provider === 'elevenlabs') {
+                if (!appState.elevenlabsApiKey) {
+                    showToast('请先设置 ElevenLabs API Key', 'error');
+                    els.settingsModal.classList.remove('hidden');
+                    return;
+                }
+            } else {
+                if (!appState.apiKey) {
+                    showToast('请先设置 MiniMax API Key', 'error');
+                    els.settingsModal.classList.remove('hidden');
+                    return;
+                }
             }
 
             const currentPid = appState.currentPreset.id;
