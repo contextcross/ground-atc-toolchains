@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ATC CallSign Voice Generator</title>
     <script src="translation_rules.js"></script>
+    <script src="voicename.js"></script>
     <style>
         /* CSS Variables - WinUI 3 Dark Theme Palette */
         :root {
@@ -440,31 +441,52 @@
         <div class="modal">
             <div class="modal-header">设置</div>
             <div class="flex flex-col gap-4">
-                <div class="flex flex-col gap-2">
-                    <label class="text-sm">MiniMax API Key</label>
-                    <input type="password" id="apiKeyInput" placeholder="输入 API Key...">
+                <!-- MiniMax Settings -->
+                <div style="border-bottom: 1px solid #444; padding-bottom: 12px;">
+                    <h4 style="margin: 0 0 12px 0; color: #0078d4;">MiniMax TTS</h4>
+                    <div class="flex flex-col gap-2 mb-3">
+                        <label class="text-sm">API Key</label>
+                        <input type="password" id="apiKeyInput" placeholder="输入 API Key...">
+                    </div>
+                    <div class="flex flex-col gap-2 mb-3">
+                        <label class="text-sm">Group ID</label>
+                        <input type="text" id="groupIdInput" placeholder="输入 Group ID (可选)">
+                    </div>
+                    <div class="flex flex-col gap-2 mb-3">
+                        <label class="text-sm">API Endpoint (服务器区域)</label>
+                        <select id="apiEndpointSelect">
+                            <option value="https://api.minimax.chat/v1/t2a_v2">国内版 (minimax.chat)</option>
+                            <option value="https://api.minimaxi.com/v1/t2a_v2">国际版 (minimaxi.com)</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <label class="text-sm">Model (模型版本)</label>
+                        <select id="modelSelect">
+                            <option value="speech-01-turbo">speech-01-turbo (默认)</option>
+                            <option value="speech-01-hd">speech-01-hd</option>
+                            <option value="speech-02-turbo">speech-02-turbo</option>
+                            <option value="speech-02-hd">speech-02-hd</option>
+                            <option value="speech-2.6-turbo">speech-2.6-turbo</option>
+                            <option value="speech-2.6-hd">speech-2.6-hd</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="flex flex-col gap-2">
-                    <label class="text-sm">MiniMax Group ID</label>
-                    <input type="text" id="groupIdInput" placeholder="输入 Group ID (可选)">
-                </div>
-                <div class="flex flex-col gap-2">
-                    <label class="text-sm">API Endpoint (服务器区域)</label>
-                    <select id="apiEndpointSelect">
-                        <option value="https://api.minimax.chat/v1/t2a_v2">国内版 (minimax.chat)</option>
-                        <option value="https://api.minimaxi.com/v1/t2a_v2">国际版 (minimaxi.com)</option>
-                    </select>
-                </div>
-                <div class="flex flex-col gap-2">
-                    <label class="text-sm">MiniMax Model (模型版本)</label>
-                    <select id="modelSelect">
-                        <option value="speech-01-turbo">speech-01-turbo (默认)</option>
-                        <option value="speech-01-hd">speech-01-hd</option>
-                        <option value="speech-02-turbo">speech-02-turbo</option>
-                        <option value="speech-02-hd">speech-02-hd</option>
-                        <option value="speech-2.6-turbo">speech-2.6-turbo</option>
-                        <option value="speech-2.6-hd">speech-2.6-hd</option>
-                    </select>
+
+                <!-- ElevenLabs Settings -->
+                <div>
+                    <h4 style="margin: 0 0 12px 0; color: #10a37f;">ElevenLabs TTS</h4>
+                    <div class="flex flex-col gap-2 mb-3">
+                        <label class="text-sm">API Key</label>
+                        <input type="password" id="elevenlabsApiKeyInput" placeholder="sk_...">
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <label class="text-sm">Model</label>
+                        <select id="elevenlabsModelSelect">
+                            <option value="eleven_multilingual_v2">Multilingual v2 (29语言，高质量)</option>
+                            <option value="eleven_turbo_v2_5">Turbo v2.5 (32语言，低延迟)</option>
+                            <option value="eleven_turbo_v2">Turbo v2 (英语优化)</option>
+                        </select>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer flex gap-2 justify-between">
@@ -603,21 +625,7 @@
 
 
         // --- Configuration & Constants ---
-
-        const PRESETS = [
-            // English Presets (Inferred)
-            { id: "Aaron", name: "Aaron", lang: "en", voiceId: "Aaron", speed: 1, vol: 1, pitch: 0, emotion: "neutral" },
-            { id: "Christopher", name: "Christopher", lang: "en", voiceId: "male-qn-domineering", speed: 1, vol: 1, pitch: 0, emotion: "neutral" },
-            { id: "Fairy", name: "Fairy", lang: "en", voiceId: "female-shaonv", speed: 1.2, vol: 1, pitch: 0, emotion: "neutral" },
-            { id: "CN-Captain-Young-EN", name: "CN-Captain-Young-EN", lang: "en", voiceId: "Chinese (Mandarin)_Radio_Host", speed: 1.2, vol: 0.5, pitch: 0, emotion: "neutral" },
-            { id: "Hanser-EN", name: "Hanser-EN", lang: "en", voiceId: "Chinese (Mandarin)_Crisp_Girl", speed: 1.35, vol: 1, pitch: 0, emotion: "neutral" },
-
-            // Chinese Presets (Specified)
-            { id: "Hanser", name: "Hanser", lang: "zh", voiceId: "Chinese (Mandarin)_Crisp_Girl", speed: 1.35, vol: 1, pitch: 0, emotion: "neutral" },
-            { id: "CN-Captain-Young", name: "CN-Captain-Young", lang: "zh", voiceId: "Chinese (Mandarin)_Radio_Host", speed: 1.2, vol: 0.5, pitch: 0, emotion: "neutral" },
-            { id: "CN-Captain-Middle-Aged", name: "CN-Captain-Middle-Aged", lang: "zh", voiceId: "Chinese (Mandarin)_Reliable_Executive", speed: 1.2, vol: 0.5, pitch: -1, emotion: "neutral" },
-
-        ];
+        // VOICE_PRESETS loaded from voicename.js
 
         // --- State Management ---
         let appState = {
@@ -625,10 +633,12 @@
             groupId: localStorage.getItem('minimax_group_id') || '',
             apiEndpoint: localStorage.getItem('minimax_api_endpoint') || 'https://api.minimax.chat/v1/t2a_v2',
             apiModel: localStorage.getItem('minimax_api_model') || 'speech-01-turbo',
+            elevenlabsApiKey: localStorage.getItem('elevenlabs_api_key') || '',
+            elevenlabsModel: localStorage.getItem('elevenlabs_model') || 'eleven_multilingual_v2',
             tasks: [], // { id, name, types, results }
             processingCount: 0,
             queue: [], // IDs waiting
-            currentPreset: PRESETS[2], // Default CN-Captain-Young
+            currentPreset: VOICE_PRESETS[5], // Default Hanser (zh)
             selectedIds: new Set(),
             lastRequestTime: 0, // Track last API call time for rate limiting
             currentTypeFilter: 'all', // Current type tab filter
@@ -660,6 +670,8 @@
             groupIdInput: document.getElementById('groupIdInput'),
             apiEndpointSelect: document.getElementById('apiEndpointSelect'),
             modelSelect: document.getElementById('modelSelect'),
+            elevenlabsApiKeyInput: document.getElementById('elevenlabsApiKeyInput'),
+            elevenlabsModelSelect: document.getElementById('elevenlabsModelSelect'),
             toastContainer: document.getElementById('toastContainer')
         };
 
@@ -674,7 +686,7 @@
             }
 
             // Populate Presets
-            PRESETS.forEach(p => {
+            VOICE_PRESETS.forEach(p => {
                 const opt = document.createElement('option');
                 opt.value = p.id;
                 opt.textContent = p.name;
@@ -687,6 +699,8 @@
             els.groupIdInput.value = appState.groupId;
             els.apiEndpointSelect.value = appState.apiEndpoint;
             els.modelSelect.value = appState.apiModel;
+            els.elevenlabsApiKeyInput.value = appState.elevenlabsApiKey;
+            els.elevenlabsModelSelect.value = appState.elevenlabsModel;
 
             // Event Listeners
             setupEventListeners();
@@ -705,8 +719,8 @@
         function updatePresetSelect(lang = null) {
             els.presetSelect.innerHTML = '';
             const filteredPresets = lang
-                ? PRESETS.filter(p => p.lang === lang)
-                : PRESETS;
+                ? VOICE_PRESETS.filter(p => p.lang === lang)
+                : VOICE_PRESETS;
 
             filteredPresets.forEach(p => {
                 const opt = document.createElement('option');
@@ -737,29 +751,33 @@
                 const groupId = els.groupIdInput.value.trim();
                 const endpoint = els.apiEndpointSelect.value;
                 const model = els.modelSelect.value;
+                const elevenlabsKey = els.elevenlabsApiKeyInput.value.trim();
+                const elevenlabsModel = els.elevenlabsModelSelect.value;
 
-                if (key) {
-                    appState.apiKey = key;
-                    appState.groupId = groupId;
-                    appState.apiEndpoint = endpoint;
-                    appState.apiModel = model;
+                // Save MiniMax settings
+                appState.apiKey = key;
+                appState.groupId = groupId;
+                appState.apiEndpoint = endpoint;
+                appState.apiModel = model;
+                localStorage.setItem('minimax_api_key', key);
+                localStorage.setItem('minimax_group_id', groupId);
+                localStorage.setItem('minimax_api_endpoint', endpoint);
+                localStorage.setItem('minimax_api_model', model);
 
-                    localStorage.setItem('minimax_api_key', key);
-                    localStorage.setItem('minimax_group_id', groupId);
-                    localStorage.setItem('minimax_api_endpoint', endpoint);
-                    localStorage.setItem('minimax_api_model', model);
+                // Save ElevenLabs settings
+                appState.elevenlabsApiKey = elevenlabsKey;
+                appState.elevenlabsModel = elevenlabsModel;
+                localStorage.setItem('elevenlabs_api_key', elevenlabsKey);
+                localStorage.setItem('elevenlabs_model', elevenlabsModel);
 
-                    showToast('设置已保存', 'success');
-                    els.settingsModal.classList.add('hidden');
-                } else {
-                    showToast('API Key 不能为空', 'error');
-                }
+                showToast('设置已保存', 'success');
+                els.settingsModal.classList.add('hidden');
             };
 
             // Preset Change
             els.presetSelect.onchange = () => {
                 const pid = els.presetSelect.value;
-                appState.currentPreset = PRESETS.find(p => p.id === pid);
+                appState.currentPreset = VOICE_PRESETS.find(p => p.id === pid);
                 appState.selectedIds.clear();
                 renderTable(); // Re-render with new preset view
             };
@@ -1224,7 +1242,7 @@
             if (!task.results[presetId]) {
                 task.results[presetId] = {
                     blob: null,
-                    text: getDisplayText(task, PRESETS.find(p => p.id === presetId)?.lang || 'en')
+                    text: getDisplayText(task, VOICE_PRESETS.find(p => p.id === presetId)?.lang || 'en')
                 };
             }
             task.results[presetId].status = 'processing';
@@ -1243,38 +1261,41 @@
         // --- API Integration ---
 
         async function generateAudio(task, presetId) {
-            const preset = PRESETS.find(p => p.id === presetId) || appState.currentPreset;
-            const resObject = task.results[presetId];
+            const preset = VOICE_PRESETS.find(p => p.id === presetId) || appState.currentPreset;
 
-            // Construct Payload
+            // Route to appropriate provider
+            if (preset.provider === 'elevenlabs') {
+                return generateAudioElevenLabs(task, preset);
+            } else {
+                return generateAudioMiniMax(task, preset);
+            }
+        }
+
+        // --- MiniMax TTS ---
+        async function generateAudioMiniMax(task, preset) {
+            const resObject = task.results[preset.id];
+            const config = preset.config || {};
+
             const payload = {
                 "model": appState.apiModel,
                 "text": (resObject.text || getDisplayText(task, preset.lang)) + (preset.lang === 'zh' ? '。' : ''),
                 "stream": false,
                 "voice_setting": {
-                    "voice_id": preset.voiceId,
-                    "speed": preset.speed || 1,
-                    "vol": preset.vol || 1,
-                    "pitch": preset.pitch || 0,
-                    "emotion": preset.emotion || "neutral"
+                    "voice_id": config.voiceId,
+                    "speed": config.speed || 1,
+                    "vol": config.vol || 1,
+                    "pitch": config.pitch || 0,
+                    "emotion": config.emotion || "neutral"
                 },
                 "audio_setting": {
                     "sample_rate": 44100,
                     "bitrate": 128000,
                     "format": "wav",
-                    "channel": 2 // Dual channel safe ? usually 1 or 2. User asked for 2.
+                    "channel": 2
                 }
             };
 
-            // Correction: The prompt model key might be for a specific endpoint. 
-            // https://api.minimaxi.com/v1/t2a_v2 usually matches "speech-01-..." models.
-            // I will use `speech-01-turbo` as it is faster and reliable for tools, 
-            // but I will allow user to changing it in code easily if needed.
-            // Actually, if I use the exact example from prompt:
-            payload.model = "speech-01-turbo";
-
             try {
-                // Use configured endpoint
                 const url = new URL(appState.apiEndpoint);
                 if (appState.groupId) {
                     url.searchParams.append("GroupId", appState.groupId);
@@ -1291,31 +1312,24 @@
 
                 if (!response.ok) {
                     const err = await response.text();
-                    throw new Error(`API Error: ${response.status} - ${err}`);
+                    throw new Error(`MiniMax API Error: ${response.status} - ${err}`);
                 }
 
                 const data = await response.json();
 
-                // MiniMax V2 Response format check
-                // Usually { base_resp: { status_code: 0 }, data: { audio: "hex..." } } or similar?
-                // Or might be binary if steam? But stream=false.
-                // NOTE: MiniMax T2A V2 usually returns JSON with "data": { "audio": "hex string" } or similar.
-
                 if (data.base_resp && data.base_resp.status_code !== 0) {
-                    throw new Error(`API Logic Error: ${data.base_resp.status_msg}`);
+                    throw new Error(`MiniMax API Error: ${data.base_resp.status_msg}`);
                 }
 
-                // Assuming data.data.audio is the hex string
                 if (data.data && data.data.audio) {
                     const hex = data.data.audio;
-                    // Convert Hex to Blob
                     const buffer = new Uint8Array(hex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
                     const blob = new Blob([buffer], { type: 'audio/wav' });
 
                     resObject.blob = blob;
                     resObject.status = 'completed';
                 } else {
-                    throw new Error("Invalid API Response Structure");
+                    throw new Error("Invalid MiniMax API Response");
                 }
 
             } catch (e) {
@@ -1325,6 +1339,95 @@
             } finally {
                 renderTable();
             }
+        }
+
+        // --- ElevenLabs TTS ---
+        async function generateAudioElevenLabs(task, preset) {
+            const resObject = task.results[preset.id];
+            const config = preset.config || {};
+            const text = resObject.text || getDisplayText(task, preset.lang);
+
+            if (!appState.elevenlabsApiKey) {
+                resObject.status = 'failed';
+                showToast(`请先设置 ElevenLabs API Key`, 'error');
+                renderTable();
+                return;
+            }
+
+            try {
+                // Use mp3_44100_128 format (available for all tiers)
+                // pcm_44100 requires Pro tier
+                const response = await fetch(
+                    `https://api.elevenlabs.io/v1/text-to-speech/${config.voiceId}/stream?output_format=mp3_44100_128`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'xi-api-key': appState.elevenlabsApiKey
+                        },
+                        body: JSON.stringify({
+                            text: text,
+                            model_id: appState.elevenlabsModel,
+                            voice_settings: {
+                                stability: config.stability ?? 0.5,
+                                similarity_boost: config.similarity_boost ?? 0.75,
+                                use_speaker_boost: config.use_speaker_boost ?? true
+                            }
+                        })
+                    }
+                );
+
+                if (!response.ok) {
+                    const err = await response.text();
+                    throw new Error(`ElevenLabs API Error: ${response.status} - ${err}`);
+                }
+
+                // Get MP3 blob directly
+                const mp3Blob = await response.blob();
+                resObject.blob = new Blob([mp3Blob], { type: 'audio/mpeg' });
+                resObject.status = 'completed';
+
+            } catch (e) {
+                console.error(e);
+                resObject.status = 'failed';
+                showToast(`Task ${task.name} Failed: ${e.message}`, 'error');
+            } finally {
+                renderTable();
+            }
+        }
+
+        // --- PCM to WAV Conversion ---
+        function pcmToWav(pcmBuffer, sampleRate, numChannels, bitsPerSample) {
+            const dataLength = pcmBuffer.byteLength;
+            const buffer = new ArrayBuffer(44 + dataLength);
+            const view = new DataView(buffer);
+
+            // Helper to write string
+            const writeString = (offset, string) => {
+                for (let i = 0; i < string.length; i++) {
+                    view.setUint8(offset + i, string.charCodeAt(i));
+                }
+            };
+
+            // WAV Header
+            writeString(0, 'RIFF');
+            view.setUint32(4, 36 + dataLength, true);
+            writeString(8, 'WAVE');
+            writeString(12, 'fmt ');
+            view.setUint32(16, 16, true); // Subchunk1Size (PCM)
+            view.setUint16(20, 1, true);  // AudioFormat (PCM = 1)
+            view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * numChannels * bitsPerSample / 8, true); // ByteRate
+            view.setUint16(32, numChannels * bitsPerSample / 8, true); // BlockAlign
+            view.setUint16(34, bitsPerSample, true);
+            writeString(36, 'data');
+            view.setUint32(40, dataLength, true);
+
+            // Copy PCM data
+            new Uint8Array(buffer, 44).set(new Uint8Array(pcmBuffer));
+
+            return new Blob([buffer], { type: 'audio/wav' });
         }
 
         // --- Export ---
