@@ -27,9 +27,9 @@ const VOICE_CONFIG = {
         "CN-Captain-Middle-Aged": { name: "CN-Captain-Middle-Aged", group: "minimax_zh", config: { voiceId: "Chinese (Mandarin)_Reliable_Executive", speed: 1.2, vol: 0.5, pitch: -1, emotion: "neutral" } },
 
         // English - ElevenLabs
-        "Aaron": { name: "Aaron", group: "elevenlabs_en", config: { voiceId: "eAAUCMkBhe6SAIBSsIUN", stability: 0.5, similarity_boost: 0.75, use_speaker_boost: true } },
-        "Yeager": { name: "Yeager", group: "elevenlabs_en", config: { voiceId: "G52gexP68W6oFZYn60ew", stability: 0.5, similarity_boost: 0.75, use_speaker_boost: true } },
-        "KJFK-Male-ATC": { name: "KJFK-Male-ATC", group: "elevenlabs_en", config: { voiceId: "9NxA4p7VLrObJCLfsXnm", stability: 0.5, similarity_boost: 0.75, use_speaker_boost: true } }
+        "Aaron": { name: "Aaron", group: "elevenlabs_en", config: { voiceId: "eAAUCMkBhe6SAIBSsIUN", stability: 0.5, similarity_boost: 0.75, use_speaker_boost: false, style: 0.75, textPrompt: "[understated][professional][monotone][quietly]" } },
+        "Yeager": { name: "Yeager", group: "elevenlabs_en", config: { voiceId: "G52gexP68W6oFZYn60ew", stability: 0.5, similarity_boost: 0.75, use_speaker_boost: false, style: 0.75, textPrompt: "[understated][professional][monotone][quietly]" } },
+        "KJFK-Male-ATC": { name: "KJFK-Male-ATC", group: "elevenlabs_en", config: { voiceId: "9NxA4p7VLrObJCLfsXnm", stability: 0.5, similarity_boost: 0.75, use_speaker_boost: false, style: 0.75, textPrompt: "[understated][professional][monotone][quietly]" } }
     }
 };
 

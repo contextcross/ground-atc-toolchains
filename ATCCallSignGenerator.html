@@ -402,7 +402,8 @@
 
         <div class="flex items-center gap-2" style="margin-top: 20px;">
             <button id="btnGenerateSelected" class="primary" disabled>🔊 生成选中</button>
-            <button id="btnExportAll" disabled>📥 导出全部</button>
+            <button id="btnExportAll" disabled>📥 导出目录</button>
+            <button id="btnCleanup" disabled title="删除已存在的任务，仅保留缺失任务">🧹 清理</button>
             <button id="btnClear">🗑️ 清空</button>
         </div>
     </div>
@@ -482,9 +483,10 @@
                     <div class="flex flex-col gap-2">
                         <label class="text-sm">Model</label>
                         <select id="elevenlabsModelSelect">
-                            <option value="eleven_multilingual_v2">Multilingual v2 (29语言，高质量)</option>
-                            <option value="eleven_turbo_v2_5">Turbo v2.5 (32语言，低延迟)</option>
-                            <option value="eleven_turbo_v2">Turbo v2 (英语优化)</option>
+                            <option value="eleven_v3">v3</option>
+                            <option value="eleven_multilingual_v2">Multilingual v2</option>
+                            <option value="eleven_turbo_v2_5">Turbo v2.5</option>
+                            <option value="eleven_turbo_v2">Turbo v2</option>
                         </select>
                     </div>
                 </div>
@@ -509,6 +511,35 @@
         </div>
     </div>
 
+    <!-- Export Modal -->
+    <div id="exportModal" class="modal-overlay hidden" style="z-index: 1500;">
+        <div class="modal" style="width: 450px; max-width: 90vw;">
+            <div class="modal-header">📥 导出音频</div>
+
+            <!-- Directory Picker -->
+            <div id="exportDirDropzone" class="dropzone"
+                style="background: #1a1a1a; border: 2px dashed #555; border-radius: 8px; min-height: 100px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #888; transition: all 0.2s; margin-bottom: 16px;">
+                <span id="exportDirLabel">📁 点击选择导出目录</span>
+            </div>
+
+            <!-- Integrity Check Results -->
+            <div id="integrityCheckResults" style="display: none; margin-bottom: 16px;">
+                <div class="text-sm" style="color: #888; margin-bottom: 8px;">📊 资产完整性检查</div>
+                <div id="integrityStats" class="text-sm"
+                    style="background: #2a2a2a; padding: 12px; border-radius: 4px; max-height: 200px; overflow-y: auto;">
+                    <!-- 动态填充 -->
+                </div>
+            </div>
+
+            <!-- Export Options -->
+            <div class="modal-footer flex gap-2 justify-end">
+                <button id="btnExportCancel">取消</button>
+                <button id="btnExportCurrentPreset" class="primary" disabled>导出当前预设</button>
+                <button id="btnExportAllPresets" class="secondary" disabled>导出全部预设</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Audio Editor Modal -->
     <div id="audioEditorModal" class="modal-overlay hidden">
         <div class="modal" style="width: 700px; max-width: 95vw;">
@@ -517,9 +548,15 @@
                     <span>音频编辑器 - </span>
                     <span id="editorFileName"></span>
                 </div>
-                <div class="flex gap-2">
-                    <button id="btnPrevTask" class="text-sm" title="上一条">◀</button>
-                    <button id="btnNextTask" class="text-sm" title="下一条">▶</button>
+                <div class="flex gap-4 items-center">
+                    <label class="flex items-center gap-1 text-sm" style="cursor: pointer;">
+                        <input type="checkbox" id="checkAutoSaveParams" style="width: 14px; height: 14px;">
+                        自动应用参数
+                    </label>
+                    <div class="flex gap-2">
+                        <button id="btnPrevTask" class="text-sm" title="上一条">◀</button>
+                        <button id="btnNextTask" class="text-sm" title="下一条">▶</button>
+                    </div>
                 </div>
             </div>
 
@@ -599,7 +636,12 @@
                     <button id="btnEditorReset">重置</button>
                     <button id="btnDeleteRegion" disabled style="color: #ff6b6b;">✂ 删除选中</button>
                 </div>
-                <div class="flex gap-2">
+                <div class="flex gap-2 items-center">
+                    <select id="editorExportFormat"
+                        class="p-2 border rounded bg-[var(--card-bg)] text-[var(--text-color)] border-[var(--border-color)] text-sm">
+                        <option value="16">16-bit PCM (默认)</option>
+                        <option value="32f">32-bit Float (推荐)</option>
+                    </select>
                     <button id="btnEditorCancel">取消</button>
                     <button id="btnEditorSave" class="primary">💾 保存更改</button>
                 </div>
@@ -644,11 +686,25 @@
             currentTypeFilter: 'all', // Current type tab filter
             availableTypes: [], // Dynamically extracted from JSON
             currentLangFilter: null, // 'zh', 'en', or null for all
-            translationRules: {} // Loaded from translation_rules.json
+            translationRules: {}, // Loaded from translation_rules.json
+            hiddenTasksByPreset: {}, // { [presetId]: Set<taskName> }
+            savedEditorParams: null // { vol, rate, pitch, hpf, lpf, dist, radioEnabled }
         };
 
         const MAX_CONCURRENCY = 2; // Lowered from 3 to 2
         const REQUEST_INTERVAL = 300; // New: 300ms minimum interval between requests
+
+        // Export State
+        let exportState = {
+            directoryHandle: null,
+            directoryName: '',
+            integrityResults: null, // { [presetName]: { missing: [], extra: [], total: number } }
+            // Cache keys
+            cachedTaskCount: 0,
+            cachedTaskHash: '',
+            cachedDirName: '',
+            cachedLangFilter: null
+        };
 
         // --- DOM Elements ---
         const els = {
@@ -659,6 +715,7 @@
             tableBody: document.getElementById('tableBody'),
             btnGenerateSelected: document.getElementById('btnGenerateSelected'),
             btnExportAll: document.getElementById('btnExportAll'),
+            btnCleanup: document.getElementById('btnCleanup'),
             btnClear: document.getElementById('btnClear'),
             statusText: document.getElementById('statusText'),
             progressText: document.getElementById('progressText'),
@@ -672,7 +729,17 @@
             modelSelect: document.getElementById('modelSelect'),
             elevenlabsApiKeyInput: document.getElementById('elevenlabsApiKeyInput'),
             elevenlabsModelSelect: document.getElementById('elevenlabsModelSelect'),
-            toastContainer: document.getElementById('toastContainer')
+            toastContainer: document.getElementById('toastContainer'),
+            // Export Modal
+            exportModal: document.getElementById('exportModal'),
+            exportDirDropzone: document.getElementById('exportDirDropzone'),
+            exportDirLabel: document.getElementById('exportDirLabel'),
+            btnExportCurrentPreset: document.getElementById('btnExportCurrentPreset'),
+            btnExportAllPresets: document.getElementById('btnExportAllPresets'),
+            btnExportCancel: document.getElementById('btnExportCancel'),
+            // Integrity Check
+            integrityCheckResults: document.getElementById('integrityCheckResults'),
+            integrityStats: document.getElementById('integrityStats')
         };
 
         // --- Initialization ---
@@ -797,7 +864,7 @@
 
             // Actions
             els.btnGenerateSelected.onclick = startSelectedGeneration;
-            els.btnExportAll.onclick = exportAll;
+            els.btnExportAll.onclick = openExportModal;
             els.btnClear.onclick = async () => {
                 if (await showConfirmModal('确定清空所有任务吗？(这将影响所有预设)')) {
                     appState.tasks = []; // Clear all 
@@ -808,6 +875,15 @@
                     updateStatus();
                 }
             };
+
+            // Export Modal Listeners
+            els.exportDirDropzone.onclick = selectExportDirectory;
+            els.btnExportCancel.onclick = closeExportModal;
+            els.btnExportCurrentPreset.onclick = () => executeExport('current');
+            els.btnExportAllPresets.onclick = () => executeExport('all');
+
+            // Cleanup button
+            els.btnCleanup.onclick = cleanupExistingTasks;
         }
 
         // --- Core Logic: Parsing & Translation ---
@@ -843,9 +919,19 @@
                     newTasks = parseCsvFile(text);
                 }
 
-                appState.tasks = [...appState.tasks, ...newTasks];
+                // 去重：过滤掉已存在的任务
+                const existingNames = new Set(appState.tasks.map(t => t.name));
+                const uniqueNewTasks = newTasks.filter(t => !existingNames.has(t.name));
+                const skipped = newTasks.length - uniqueNewTasks.length;
+
+                appState.tasks = [...appState.tasks, ...uniqueNewTasks];
                 renderTable();
-                showToast(`已导入 ${newTasks.length} 条基础任务 (所有预设共享)`);
+
+                if (skipped > 0) {
+                    showToast(`已导入 ${uniqueNewTasks.length} 条新任务，跳过 ${skipped} 条重复任务`);
+                } else {
+                    showToast(`已导入 ${uniqueNewTasks.length} 条任务`);
+                }
                 updateStatus();
             };
             reader.readAsText(file);
@@ -971,7 +1057,11 @@
             for (const type of task.types) {
                 const typeRule = types[type];
                 if (typeRule) {
-                    return applyTranslation(task.name.toUpperCase(), typeRule, lang);
+                    // 如果没有字典，直接返回原文
+                    if (!typeRule.useDictionaries || typeRule.useDictionaries.length === 0) {
+                        return task.name;
+                    }
+                    return applyTranslation(task.name, typeRule, lang);
                 }
             }
 
@@ -1014,7 +1104,11 @@
                 ? appState.tasks
                 : appState.tasks.filter(t => t.types && t.types.includes(appState.currentTypeFilter));
 
-            filteredTasks.forEach((task, index) => {
+            // Filter out hidden tasks for current preset
+            const hiddenSet = appState.hiddenTasksByPreset[currentPid] || new Set();
+            const visibleTasks = filteredTasks.filter(t => !hiddenSet.has(t.name));
+
+            visibleTasks.forEach((task, index) => {
                 let result = task.results[currentPid];
                 if (!result) {
                     result = {
@@ -1057,6 +1151,14 @@
 
                 if (appState.selectedIds.has(task.id)) {
                     tr.classList.add('selected');
+                }
+
+                // Highlight missing tasks (based on integrity check)
+                const presetName = appState.currentPreset.name;
+                const integrityResult = exportState.integrityResults?.[presetName];
+                if (integrityResult && integrityResult.missing.includes(task.name)) {
+                    tr.style.background = 'rgba(255, 107, 107, 0.2)';
+                    tr.style.borderLeft = '3px solid #ff6b6b';
                 }
 
                 tr.onmousedown = (e) => handleRowClick(e, task.id);
@@ -1112,7 +1214,13 @@
                 const r = t.results[currentPid];
                 if (r && (r.status === 'completed' || r.status === 'edited')) totalSuccess++;
             });
-            els.btnExportAll.disabled = totalSuccess === 0;
+            // Export button enabled if there are any tasks (not just completed ones)
+            els.btnExportAll.disabled = appState.tasks.length === 0;
+
+            // Cleanup button: enabled only if integrity check has been performed for current preset
+            const currentPresetName = appState.currentPreset.name;
+            const hasIntegrityResult = exportState.integrityResults?.[currentPresetName];
+            els.btnCleanup.disabled = !hasIntegrityResult || appState.tasks.length === 0;
 
             if (appState.processingCount > 0) {
                 els.statusText.textContent += ` | 正在处理 ${appState.processingCount} 个任务...`;
@@ -1138,6 +1246,37 @@
             appState.tasks = appState.tasks.filter(x => x.id != id);
             renderTable();
         };
+
+        function cleanupExistingTasks() {
+            const presetId = appState.currentPreset.id;
+            const presetName = appState.currentPreset.name;
+            const integrityResult = exportState.integrityResults?.[presetName];
+
+            if (!integrityResult) {
+                showToast('请先选择导出目录进行完整性检查', 'info');
+                return;
+            }
+
+            const missingSet = new Set(integrityResult.missing);
+
+            // Initialize hidden set for this preset
+            if (!appState.hiddenTasksByPreset[presetId]) {
+                appState.hiddenTasksByPreset[presetId] = new Set();
+            }
+
+            let hiddenCount = 0;
+            appState.tasks.forEach(t => {
+                // Hide tasks that are NOT missing (i.e., already exist in directory)
+                if (!missingSet.has(t.name)) {
+                    appState.hiddenTasksByPreset[presetId].add(t.name);
+                    hiddenCount++;
+                }
+            });
+
+            renderTable();
+            updateStatus();
+            showToast(`已清理 ${hiddenCount} 个任务`, 'success');
+        }
 
         window.retryTask = (id) => {
             const t = appState.tasks.find(x => x.id == id);
@@ -1372,13 +1511,19 @@
         async function generateAudioElevenLabs(task, preset) {
             const resObject = task.results[preset.id];
             const config = preset.config || {};
-            const text = resObject.text || getDisplayText(task, preset.lang);
+            let text = resObject.text || getDisplayText(task, preset.lang);
 
             if (!appState.elevenlabsApiKey) {
                 resObject.status = 'failed';
                 showToast(`请先设置 ElevenLabs API Key`, 'error');
                 renderTable();
                 return;
+            }
+
+            // Apply Audio Tags only if using V3 model
+            const supportsAudioTags = appState.elevenlabsModel === 'eleven_v3';
+            if (supportsAudioTags && config.textPrompt) {
+                text = config.textPrompt + " " + text;
             }
 
             try {
@@ -1395,11 +1540,19 @@
                         body: JSON.stringify({
                             text: text,
                             model_id: appState.elevenlabsModel,
-                            voice_settings: {
-                                stability: config.stability ?? 0.5,
-                                similarity_boost: config.similarity_boost ?? 0.75,
-                                use_speaker_boost: config.use_speaker_boost ?? true
-                            }
+                            voice_settings: (() => {
+                                const settings = {
+                                    stability: config.stability ?? 0.5,
+                                    similarity_boost: config.similarity_boost ?? 1,
+                                    use_speaker_boost: config.use_speaker_boost ?? false
+                                };
+                                // style parameter only supported by v3 and multilingual_v2
+                                const supportsStyle = ['eleven_v3', 'eleven_multilingual_v2'].includes(appState.elevenlabsModel);
+                                if (supportsStyle && config.style !== undefined) {
+                                    settings.style = config.style;
+                                }
+                                return settings;
+                            })()
                         })
                     }
                 );
@@ -1459,76 +1612,222 @@
 
         // --- Export ---
 
-        async function exportAll() {
-            // Collect completed/edited results for CURRENT preset
-            const currentPid = appState.currentPreset.id;
-            const currentPresetName = appState.currentPreset.name;
-            const validItems = [];
-            const uncalibratedItems = [];
+        function openExportModal() {
+            // Preserve directory handle if already selected
+            if (exportState.directoryHandle) {
+                // Restore cached state
+                els.exportDirLabel.textContent = `📂 ${exportState.directoryName}`;
+                els.btnExportCurrentPreset.disabled = false;
+                els.btnExportAllPresets.disabled = false;
+                // Show cached integrity results if available
+                renderIntegrityResults();
+            } else {
+                // Fresh state
+                els.exportDirLabel.textContent = '📁 点击选择导出目录';
+                els.btnExportCurrentPreset.disabled = true;
+                els.btnExportAllPresets.disabled = true;
+                els.integrityCheckResults.style.display = 'none';
+            }
+            els.exportModal.classList.remove('hidden');
+        }
 
-            appState.tasks.forEach(t => {
-                const res = t.results[currentPid];
-                if (res && res.blob) {
-                    if (res.status === 'edited') {
-                        validItems.push({ name: t.name, blob: res.blob, task: t, status: 'edited' });
-                    } else if (res.status === 'completed') {
-                        validItems.push({ name: t.name, blob: res.blob, task: t, status: 'completed' });
-                        uncalibratedItems.push(`${t.name}-${currentPresetName}`);
-                    }
+        function closeExportModal() {
+            els.exportModal.classList.add('hidden');
+        }
+
+        async function selectExportDirectory() {
+            try {
+                const handle = await window.showDirectoryPicker();
+                exportState.directoryHandle = handle;
+                exportState.directoryName = handle.name;
+                els.exportDirLabel.textContent = `📂 ${handle.name}`;
+                els.btnExportCurrentPreset.disabled = false;
+                els.btnExportAllPresets.disabled = false;
+
+                // Auto-trigger integrity check
+                await checkAssetIntegrity();
+            } catch (e) {
+                if (e.name !== 'AbortError') {
+                    showToast('选择目录失败', 'error');
                 }
-            });
+            }
+        }
 
-            if (validItems.length === 0) {
-                showToast('当前预设没有可导出的任务', 'info');
+        async function checkAssetIntegrity() {
+            if (!exportState.directoryHandle || appState.tasks.length === 0) {
+                exportState.integrityResults = null;
+                renderIntegrityResults();
                 return;
             }
 
-            // Warning for uncalibrated items
-            if (uncalibratedItems.length > 0) {
-                const msg = "还有以下音频未校准 (仅已完成，未人工编辑):\n\n" +
-                    uncalibratedItems.slice(0, 10).join('\n') +
-                    (uncalibratedItems.length > 10 ? `\n...等 ${uncalibratedItems.length} 个` : "") +
-                    "\n\n是否继续导出?";
-                if (!await showConfirmModal(msg)) {
-                    return; // Abort
+            // Generate cache key based on task names
+            const taskHash = appState.tasks.map(t => t.name).sort().join(',');
+            const langFilter = appState.currentLangFilter;
+            const dirName = exportState.directoryHandle.name;
+
+            // Check cache - skip re-check if unchanged
+            if (exportState.integrityResults &&
+                exportState.cachedTaskHash === taskHash &&
+                exportState.cachedDirName === dirName &&
+                exportState.cachedLangFilter === langFilter) {
+                renderIntegrityResults();
+                return;
+            }
+
+            const results = {};
+
+            // Only check presets with the same language as imported file
+            const presetsToCheck = langFilter
+                ? VOICE_PRESETS.filter(p => p.lang === langFilter)
+                : VOICE_PRESETS;
+
+            for (const preset of presetsToCheck) {
+                try {
+                    const presetDir = await exportState.directoryHandle.getDirectoryHandle(preset.name);
+                    const existingFiles = new Set();
+
+                    // Collect WAV files in directory
+                    for await (const [name, handle] of presetDir.entries()) {
+                        if (handle.kind === 'file' && name.toLowerCase().endsWith('.wav')) {
+                            existingFiles.add(name.replace(/\.wav$/i, ''));
+                        }
+                    }
+
+                    // Compare with task list
+                    const requiredFiles = new Set(appState.tasks.map(t => t.name));
+                    const missing = [...requiredFiles].filter(f => !existingFiles.has(f));
+                    const extra = [...existingFiles].filter(f => !requiredFiles.has(f));
+
+                    results[preset.name] = { missing, extra, total: requiredFiles.size, exists: existingFiles.size };
+
+                } catch (e) {
+                    // Directory doesn't exist
+                    results[preset.name] = {
+                        missing: appState.tasks.map(t => t.name),
+                        extra: [],
+                        total: appState.tasks.length,
+                        exists: 0,
+                        notFound: true
+                    };
                 }
             }
 
-            try {
-                // 1. Open Directory Picker
-                const dirHandle = await window.showDirectoryPicker();
+            exportState.integrityResults = results;
+            // Update cache keys
+            exportState.cachedTaskHash = taskHash;
+            exportState.cachedDirName = dirName;
+            exportState.cachedLangFilter = langFilter;
+            renderIntegrityResults();
+            updateStatus(); // Update cleanup button state
+        }
 
-                // 2. Create/Get Subfolder for Preset Name (Strict Match)
-                const presetName = appState.currentPreset.name;
-                const presetDir = await dirHandle.getDirectoryHandle(presetName, { create: true });
+        function renderIntegrityResults() {
+            if (!exportState.integrityResults) {
+                els.integrityCheckResults.style.display = 'none';
+                return;
+            }
 
-                showToast(`正在导出 ${validItems.length} 个文件...`);
+            els.integrityCheckResults.style.display = 'block';
 
-                // 3. Write Files
-                let savedCount = 0;
-                for (const item of validItems) {
-                    try {
-                        const fileHandle = await presetDir.getFileHandle(`${item.name}.wav`, { create: true });
-                        const writable = await fileHandle.createWritable();
-                        await writable.write(item.blob);
-                        await writable.close();
+            let html = '';
+            for (const [presetName, result] of Object.entries(exportState.integrityResults)) {
+                const isComplete = result.missing.length === 0 && result.extra.length === 0;
+                const status = result.notFound ? '❓' : (isComplete ? '✅' : '⚠️');
 
-                        // Mark as exported
-                        item.task.results[currentPid].exported = true;
-                        savedCount++;
-                    } catch (e) {
-                        console.error(`Failed to write ${item.name}`, e);
-                        // Continue others
+                html += `<div style="margin-bottom: 8px; padding: 8px; background: #1a1a1a; border-radius: 4px;">
+                    <strong>${status} ${presetName}</strong>: 
+                    缺失 <span style="color: ${result.missing.length > 0 ? '#ff6b6b' : '#4caf50'};">${result.missing.length}</span> | 
+                    多余 <span style="color: ${result.extra.length > 0 ? '#ffa726' : '#4caf50'};">${result.extra.length}</span> | 
+                    已有 ${result.exists}/${result.total}
+                    ${result.notFound ? ' <span style="color: #888;">(目录不存在)</span>' : ''}
+                </div>`;
+            }
+
+            els.integrityStats.innerHTML = html;
+        }
+
+        async function executeExport(mode) {
+            if (!exportState.directoryHandle) {
+                showToast('请先选择导出目录', 'error');
+                return;
+            }
+
+            closeExportModal();
+
+            const presetsToExport = mode === 'all'
+                ? VOICE_PRESETS
+                : [appState.currentPreset];
+
+            let totalSaved = 0;
+            let totalItems = 0;
+
+            for (const preset of presetsToExport) {
+                const presetId = preset.id;
+                const presetName = preset.name;
+                const validItems = [];
+                const uncalibratedItems = [];
+
+                appState.tasks.forEach(t => {
+                    const res = t.results[presetId];
+                    if (res && res.blob) {
+                        if (res.status === 'edited') {
+                            validItems.push({ name: t.name, blob: res.blob, task: t, presetId, status: 'edited' });
+                        } else if (res.status === 'completed') {
+                            validItems.push({ name: t.name, blob: res.blob, task: t, presetId, status: 'completed' });
+                            uncalibratedItems.push(`${t.name}-${presetName}`);
+                        }
+                    }
+                });
+
+                if (validItems.length === 0) continue;
+
+                // Warning for uncalibrated items (only for single preset mode)
+                if (mode === 'current' && uncalibratedItems.length > 0) {
+                    const msg = "还有以下音频未校准 (仅已完成，未人工编辑):\n\n" +
+                        uncalibratedItems.slice(0, 10).join('\n') +
+                        (uncalibratedItems.length > 10 ? `\n...等 ${uncalibratedItems.length} 个` : "") +
+                        "\n\n是否继续导出?";
+                    if (!await showConfirmModal(msg)) {
+                        return; // Abort
                     }
                 }
 
-                showToast(`(✅ 导出完成: 成功 ${savedCount} / 总计 ${validItems.length}`);
+                try {
+                    // Create/Get Subfolder for Preset Name
+                    const presetDir = await exportState.directoryHandle.getDirectoryHandle(presetName, { create: true });
 
-            } catch (err) {
-                if (err.name !== 'AbortError') {
-                    console.error(err);
-                    showToast(`导出失败: ${err.message}`, 'error');
+                    showToast(`正在导出 ${presetName}: ${validItems.length} 个文件...`);
+
+                    // Write Files
+                    for (const item of validItems) {
+                        try {
+                            const fileHandle = await presetDir.getFileHandle(`${item.name}.wav`, { create: true });
+                            const writable = await fileHandle.createWritable();
+                            await writable.write(item.blob);
+                            await writable.close();
+
+                            // Mark as exported
+                            item.task.results[presetId].exported = true;
+                            totalSaved++;
+                        } catch (e) {
+                            console.error(`Failed to write ${item.name}`, e);
+                        }
+                    }
+
+                    totalItems += validItems.length;
+
+                } catch (err) {
+                    if (err.name !== 'AbortError') {
+                        console.error(err);
+                        showToast(`导出 ${presetName} 失败: ${err.message}`, 'error');
+                    }
                 }
+            }
+
+            if (totalItems > 0) {
+                showToast(`✅ 导出完成: 成功 ${totalSaved} / 总计 ${totalItems}`);
+            } else {
+                showToast('没有可导出的音频', 'info');
             }
         }
 
@@ -1600,7 +1899,9 @@
             valLPF: document.getElementById('valLPF'),
             valDist: document.getElementById('valDist'),
             btnPrevTask: document.getElementById('btnPrevTask'),
-            btnNextTask: document.getElementById('btnNextTask')
+            btnNextTask: document.getElementById('btnNextTask'),
+            exportFormat: document.getElementById('editorExportFormat'),
+            checkAutoSaveParams: document.getElementById('checkAutoSaveParams')
         };
 
         function initAudioEditor() {
@@ -1624,6 +1925,14 @@
             // Navigation Listeners
             editorEls.btnPrevTask.onclick = () => navigateTask(-1);
             editorEls.btnNextTask.onclick = () => navigateTask(1);
+
+            // Auto-save params checkbox listener
+            editorEls.checkAutoSaveParams.onchange = (e) => {
+                if (e.target.checked) {
+                    saveCurrentEditorParams();
+                    showToast('已保存当前参数，将自动应用到未编辑任务', 'info');
+                }
+            };
 
             // Close on overlay click
             editorEls.modal.onclick = (e) => {
@@ -1789,7 +2098,22 @@
             // Load Reference Audio for this preset if exists
             loadReferenceAudio(currentPid);
 
-            resetEditorParams();
+            // Auto-apply params logic
+            const autoSaveEnabled = editorEls.checkAutoSaveParams.checked;
+            const taskIsEdited = res.status === 'edited';
+
+            if (autoSaveEnabled && appState.savedEditorParams) {
+                if (taskIsEdited) {
+                    // Already edited task - reset to defaults
+                    resetEditorParams();
+                } else {
+                    // Completed but unedited - apply saved params
+                    applyEditorParams(appState.savedEditorParams);
+                }
+            } else {
+                // Auto-save disabled or no saved params - always reset
+                resetEditorParams();
+            }
         }
 
         // Reference Audio Functions
@@ -2021,7 +2345,36 @@
             editorEls.sliderVol.value = 0;
             editorEls.sliderRate.value = 1.0;
             editorEls.sliderPitch.value = 0;
+            editorEls.sliderHighpass.value = 300;
+            editorEls.sliderLowpass.value = 3500;
+            editorEls.sliderDistortion.value = 50;
             editorEls.checkRadio.checked = false;
+            updateEditorParams();
+        }
+
+        // Save current editor params for auto-apply feature
+        function saveCurrentEditorParams() {
+            appState.savedEditorParams = {
+                vol: parseFloat(editorEls.sliderVol.value),
+                rate: parseFloat(editorEls.sliderRate.value),
+                pitch: parseFloat(editorEls.sliderPitch.value),
+                hpf: parseFloat(editorEls.sliderHighpass.value),
+                lpf: parseFloat(editorEls.sliderLowpass.value),
+                dist: parseFloat(editorEls.sliderDistortion.value),
+                radioEnabled: editorEls.checkRadio.checked
+            };
+        }
+
+        // Apply saved editor params
+        function applyEditorParams(params) {
+            if (!params) return;
+            editorEls.sliderVol.value = params.vol;
+            editorEls.sliderRate.value = params.rate;
+            editorEls.sliderPitch.value = params.pitch;
+            editorEls.sliderHighpass.value = params.hpf;
+            editorEls.sliderLowpass.value = params.lpf;
+            editorEls.sliderDistortion.value = params.dist;
+            editorEls.checkRadio.checked = params.radioEnabled;
             updateEditorParams();
         }
 
@@ -2252,7 +2605,12 @@
                 const renderedBuffer = await offlineCtx.startRendering();
 
                 // 5. Encoded to WAV Blob
-                const wavBlob = bufferToWave(renderedBuffer, 0, renderedBuffer.length);
+                const fmt = editorEls.exportFormat ? editorEls.exportFormat.value : '16';
+                const options = fmt === '32f'
+                    ? { bitDepth: 32, float: true }
+                    : { bitDepth: 16, float: false };
+
+                const wavBlob = bufferToWave(renderedBuffer, 0, renderedBuffer.length, options);
 
                 // 6. Save back
                 const task = appState.tasks.find(t => t.id == editorState.taskId);
@@ -2263,7 +2621,14 @@
 
                 renderTable();
 
-                showToast("音频已保存!", "success");
+                // Custom Toast Message
+                let msg = "音频已保存!";
+                if (options.float) {
+                    msg += " (32-bit Float)";
+                } else if (editorState.originalBlob && editorState.originalBlob.type === 'audio/mpeg') {
+                    msg += " (已自动转换为 WAV)";
+                }
+                showToast(msg, "success");
 
                 // Visual Feedback: Change waveform color to Green (Edited)
                 if (editorState.wavesurfer) {
@@ -2322,13 +2687,21 @@
             });
         }
 
-        function bufferToWave(abuffer, offset, len) {
-            let numOfChan = abuffer.numberOfChannels;
-            let length = len * numOfChan * 2 + 44;
-            let buffer = new ArrayBuffer(length);
-            let view = new DataView(buffer);
+        function bufferToWave(abuffer, offset, len, options = { bitDepth: 16, float: false }) {
+            const numOfChan = abuffer.numberOfChannels;
+            // Bytes per sample: 16-bit = 2, 32-bit = 4
+            const bytesPerSample = options.bitDepth === 32 ? 4 : 2;
+            const formatTag = options.float ? 3 : 1; // 1 = PCM, 3 = IEEE Float
+
+            const length = len * numOfChan * bytesPerSample + 44;
+            const buffer = new ArrayBuffer(length);
+            const view = new DataView(buffer);
             let channels = [], i, sample;
             let pos = 0;
+
+            // Helpers
+            function setUint16(data) { view.setUint16(pos, data, true); pos += 2; }
+            function setUint32(data) { view.setUint32(pos, data, true); pos += 4; }
 
             // RIFF chunk descriptor
             setUint32(0x46464952); // "RIFF"
@@ -2338,12 +2711,12 @@
             // fmt sub-chunk
             setUint32(0x20746d66); // "fmt "
             setUint32(16); // length = 16
-            setUint16(1); // PCM (uncompressed)
+            setUint16(formatTag);
             setUint16(numOfChan);
             setUint32(abuffer.sampleRate);
-            setUint32(abuffer.sampleRate * 2 * numOfChan); // avg. bytes/sec
-            setUint16(numOfChan * 2); // block-align
-            setUint16(16); // 16-bit (hardcoded in this util)
+            setUint32(abuffer.sampleRate * numOfChan * bytesPerSample); // byte rate
+            setUint16(numOfChan * bytesPerSample); // block-align
+            setUint16(options.bitDepth); // bits per sample
 
             // data sub-chunk
             setUint32(0x61746164); // "data"
@@ -2355,19 +2728,24 @@
 
             while (pos < length) {
                 for (i = 0; i < numOfChan; i++) {
-                    // interleave channels
-                    sample = Math.max(-1, Math.min(1, channels[i][offset])); // clamp
-                    sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767) | 0; // scale to 16-bit signed int
-                    view.setInt16(pos, sample, true); // write 16-bit sample
-                    pos += 2;
+                    const s = channels[i][offset]; // Raw float sample (-1.0 to 1.0)
+
+                    if (options.float) {
+                        // 32-bit Float
+                        view.setFloat32(pos, s, true);
+                        pos += 4;
+                    } else {
+                        // 16-bit PCM (Clamped)
+                        sample = Math.max(-1, Math.min(1, s));
+                        sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767) | 0;
+                        view.setInt16(pos, sample, true);
+                        pos += 2;
+                    }
                 }
                 offset++;
             }
 
             return new Blob([buffer], { type: "audio/wav" });
-
-            function setUint16(data) { view.setUint16(pos, data, true); pos += 2; }
-            function setUint32(data) { view.setUint32(pos, data, true); pos += 4; }
         }
 
     </script>
