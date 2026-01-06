@@ -239,6 +239,12 @@
             color: #fff;
         }
 
+        .badge-exported {
+            background-color: #2196f3;
+            /* Blue */
+            color: #fff;
+        }
+
         .badge-failed {
             background-color: var(--error-color);
             color: #fff;
@@ -637,6 +643,7 @@
                 <div class="flex gap-2">
                     <button id="btnEditorPlay">▶ 预览</button>
                     <button id="btnEditorReset">重置</button>
+                    <button id="btnEditorRetry" style="background: #ff9800; color: #000;">🔄 重试</button>
                     <button id="btnDeleteRegion" disabled style="color: #ff6b6b;">✂ 删除选中</button>
                 </div>
                 <div class="flex gap-2 items-center">
@@ -1132,10 +1139,11 @@
                 if (result.status === 'processing') { badgeClass = 'badge-processing'; statusLabel = '生成中...'; }
                 else if (result.status === 'completed') { badgeClass = 'badge-completed'; statusLabel = '已完成'; }
                 else if (result.status === 'edited') { badgeClass = 'badge-edited'; statusLabel = '已编辑'; }
+                else if (result.status === 'exported') { badgeClass = 'badge-exported'; statusLabel = '已导出'; }
                 else if (result.status === 'failed') { badgeClass = 'badge-failed'; statusLabel = '失败'; }
 
                 let actionsHtml = '';
-                if (result.status === 'completed' || result.status === 'edited') {
+                if (result.status === 'completed' || result.status === 'edited' || result.status === 'exported') {
                     actionsHtml = `
                         <button class="text-sm" onmousedown="event.stopPropagation()" onclick="playAudio('${task.id}')">▶️</button>
                         <button class="text-sm" onmousedown="event.stopPropagation()" onclick="retryTask('${task.id}')">↻</button>
@@ -1862,8 +1870,9 @@
                             await writable.write(item.blob);
                             await writable.close();
 
-                            // Mark as exported
-                            item.task.results[presetId].exported = true;
+                            // Mark as exported and release memory
+                            item.task.results[presetId].status = 'exported';
+                            item.task.results[presetId].blob = null; // Release blob from memory
                             totalSaved++;
                         } catch (e) {
                             console.error(`Failed to write ${item.name}`, e);
@@ -1881,6 +1890,7 @@
             }
 
             if (totalItems > 0) {
+                renderTable(); // Update status badges
                 showToast(`✅ 导出完成: 成功 ${totalSaved} / 总计 ${totalItems}`);
             } else {
                 showToast('没有可导出的音频', 'info');
@@ -1943,6 +1953,7 @@
             btnSave: document.getElementById('btnEditorSave'),
             btnCancel: document.getElementById('btnEditorCancel'),
             btnDeleteRegion: document.getElementById('btnDeleteRegion'),
+            btnRetry: document.getElementById('btnEditorRetry'),
             // Reference Audio
             waveformRef: document.getElementById('waveformRef'),
             refFileInput: document.getElementById('refFileInput'),
@@ -1967,6 +1978,7 @@
             editorEls.btnSave.onclick = saveAudioEditor;
             editorEls.btnCancel.onclick = closeEditor;
             editorEls.btnDeleteRegion.onclick = deleteSelectedRegion;
+            editorEls.btnRetry.onclick = retryCurrentTask;
 
             editorEls.sliderVol.oninput = updateEditorParams;
             editorEls.sliderRate.oninput = updateEditorParams;
@@ -2192,7 +2204,7 @@
                         waveColor: '#ff9800',
                         progressColor: '#ffb74d',
                         cursorColor: '#ff9800',
-                        height: 90,
+                        height: 150,
                         barWidth: 2,
                         hideScrollbar: true,
                         cursorWidth: 0 // Hide cursor for reference
@@ -2397,6 +2409,44 @@
             }
         }
 
+        // Retry generating audio for current task
+        async function retryCurrentTask() {
+            if (!editorState.taskId || !editorState.presetId) {
+                showToast('无法重试：任务信息丢失', 'error');
+                return;
+            }
+
+            const task = appState.tasks.find(t => t.id == editorState.taskId);
+            if (!task) {
+                showToast('无法重试：任务不存在', 'error');
+                return;
+            }
+
+            const presetId = editorState.presetId;
+            showToast('正在重新生成音频...', 'info');
+
+            // Regenerate audio directly
+            await generateAudio(task, presetId);
+
+            // Reload waveform with new blob
+            const res = task.results[presetId];
+            if (res && res.blob && editorState.wavesurfer) {
+                editorState.originalBlob = res.blob;
+                const url = URL.createObjectURL(res.blob);
+                await editorState.wavesurfer.load(url);
+
+                // Update waveform color based on status
+                const isEdited = res.status === 'edited';
+                editorState.wavesurfer.setOptions({
+                    waveColor: isEdited ? '#4caf50' : '#0078d4',
+                    progressColor: isEdited ? '#81c784' : '#55aaff'
+                });
+
+                resetEditorParams();
+                showToast('音频已重新生成', 'success');
+            }
+        }
+
         function resetEditorParams() {
             editorEls.sliderVol.value = 0;
             editorEls.sliderRate.value = 1.0;
@@ -2458,25 +2508,6 @@
             // 2. Playback Rate
             const rate = parseFloat(editorEls.sliderRate.value);
             editorState.wavesurfer.setPlaybackRate(rate);
-
-            // 3. Pitch (preserves duration if browser supports, usually works with setPlaybackRate(1) + detune, but here we likely coupled them.
-            // Actually wavesurfer V7 preserves pitch by default if using MediaElement?
-            // Wait, MediaElement 'preservesPitch' property.
-            // If we want independent pitch shift, we need Detune on bufferSource?
-            // But we are using MediaElement backend.
-            // HTMLMediaElement has 'preservesPitch' (true by default) and 'playbackRate'.
-            // Changing playbackRate changes speed AND pitch if preservesPitch=false.
-            // With preservesPitch=true (default), it changes speed but keeps pitch.
-            // Our sliderPitch logic needs to be verified.
-            // Current code likely wasn't actually checking sliderPitch for real-time.
-            // Let's implement Detune if we can, or just use playbackRate for now if that's what we have.
-            // Wait, if backend is MediaElement, we can't easily detune without changing speed unless we use a PitchShifter node which we don't have.
-            // However, the user asked for Pitch slider.
-            // The previous logic for pitch was likely effectively doing nothing or using preservePitch.
-            // Let's look at how we use it. We export using OfflineAudioContext.
-            // In Offline context (buffer based), we CAN use 'detune'.
-            // For preview (MediaElement), we might be limited.
-            // But let's focus on the routing update first.
 
             // New: Update FX params
             const hpf = parseInt(editorEls.sliderHighpass.value);
@@ -2611,10 +2642,12 @@
                 // Adjust duration for speed
                 const newDuration = audioBuffer.duration / effectiveRate;
 
+                // Use 44100Hz sample rate for output
+                const outputSampleRate = 44100;
                 const offlineCtx = new OfflineAudioContext(
                     audioBuffer.numberOfChannels,
-                    Math.ceil(newDuration * audioBuffer.sampleRate) + 50,
-                    audioBuffer.sampleRate
+                    Math.ceil(newDuration * outputSampleRate) + 50,
+                    outputSampleRate
                 );
 
                 // 3. Build Offline Graph
@@ -2623,7 +2656,8 @@
 
                 // Params
                 source.playbackRate.value = rate;
-                source.detune.value = pitchCents;
+                const rateCompensationCents = -1200 * Math.log2(rate);
+                source.detune.value = rateCompensationCents + pitchCents;
 
                 let lastNode = source;
 
