@@ -533,6 +533,9 @@
 
             <!-- Export Options -->
             <div class="modal-footer flex gap-2 justify-end">
+                <button id="btnExportUnnecessary"
+                    style="background: #f9a825; color: #000; font-size: 13px; white-space: nowrap;" disabled>📋
+                    导出多余</button>
                 <button id="btnExportCancel">取消</button>
                 <button id="btnExportCurrentPreset" class="primary" disabled>导出当前预设</button>
                 <button id="btnExportAllPresets" class="secondary" disabled>导出全部预设</button>
@@ -737,6 +740,7 @@
             btnExportCurrentPreset: document.getElementById('btnExportCurrentPreset'),
             btnExportAllPresets: document.getElementById('btnExportAllPresets'),
             btnExportCancel: document.getElementById('btnExportCancel'),
+            btnExportUnnecessary: document.getElementById('btnExportUnnecessary'),
             // Integrity Check
             integrityCheckResults: document.getElementById('integrityCheckResults'),
             integrityStats: document.getElementById('integrityStats')
@@ -847,6 +851,8 @@
                 appState.currentPreset = VOICE_PRESETS.find(p => p.id === pid);
                 appState.selectedIds.clear();
                 renderTable(); // Re-render with new preset view
+                renderIntegrityResults(); // Sync integrity panel highlight
+                updateExportUnnecessaryButton(); // Update export button state
             };
 
             // File Upload
@@ -881,6 +887,7 @@
             els.btnExportCancel.onclick = closeExportModal;
             els.btnExportCurrentPreset.onclick = () => executeExport('current');
             els.btnExportAllPresets.onclick = () => executeExport('all');
+            els.btnExportUnnecessary.onclick = exportUnnecessaryAssets;
 
             // Cleanup button
             els.btnCleanup.onclick = cleanupExistingTasks;
@@ -1619,6 +1626,7 @@
                 els.exportDirLabel.textContent = `📂 ${exportState.directoryName}`;
                 els.btnExportCurrentPreset.disabled = false;
                 els.btnExportAllPresets.disabled = false;
+                updateExportUnnecessaryButton();
                 // Show cached integrity results if available
                 renderIntegrityResults();
             } else {
@@ -1626,6 +1634,7 @@
                 els.exportDirLabel.textContent = '📁 点击选择导出目录';
                 els.btnExportCurrentPreset.disabled = true;
                 els.btnExportAllPresets.disabled = true;
+                els.btnExportUnnecessary.disabled = true;
                 els.integrityCheckResults.style.display = 'none';
             }
             els.exportModal.classList.remove('hidden');
@@ -1643,6 +1652,7 @@
                 els.exportDirLabel.textContent = `📂 ${handle.name}`;
                 els.btnExportCurrentPreset.disabled = false;
                 els.btnExportAllPresets.disabled = false;
+                updateExportUnnecessaryButton();
 
                 // Auto-trigger integrity check
                 await checkAssetIntegrity();
@@ -1719,6 +1729,7 @@
             exportState.cachedLangFilter = langFilter;
             renderIntegrityResults();
             updateStatus(); // Update cleanup button state
+            updateExportUnnecessaryButton(); // Update export unnecessary button state
         }
 
         function renderIntegrityResults() {
@@ -1729,12 +1740,17 @@
 
             els.integrityCheckResults.style.display = 'block';
 
+            const currentPresetName = appState.currentPreset?.name;
+
             let html = '';
             for (const [presetName, result] of Object.entries(exportState.integrityResults)) {
                 const isComplete = result.missing.length === 0 && result.extra.length === 0;
                 const status = result.notFound ? '❓' : (isComplete ? '✅' : '⚠️');
+                const isSelected = presetName === currentPresetName;
+                const borderStyle = isSelected ? 'border: 2px solid #0078d4;' : 'border: 1px solid transparent;';
+                const bgStyle = isSelected ? 'background: #1a3a5a;' : 'background: #1a1a1a;';
 
-                html += `<div style="margin-bottom: 8px; padding: 8px; background: #1a1a1a; border-radius: 4px;">
+                html += `<div style="margin-bottom: 8px; padding: 8px; ${bgStyle} ${borderStyle} border-radius: 4px; transition: all 0.2s;">
                     <strong>${status} ${presetName}</strong>: 
                     缺失 <span style="color: ${result.missing.length > 0 ? '#ff6b6b' : '#4caf50'};">${result.missing.length}</span> | 
                     多余 <span style="color: ${result.extra.length > 0 ? '#ffa726' : '#4caf50'};">${result.extra.length}</span> | 
@@ -1744,6 +1760,46 @@
             }
 
             els.integrityStats.innerHTML = html;
+        }
+
+        // Check if current preset has unnecessary assets
+        function updateExportUnnecessaryButton() {
+            if (!exportState.integrityResults || !appState.currentPreset) {
+                els.btnExportUnnecessary.disabled = true;
+                return;
+            }
+            const result = exportState.integrityResults[appState.currentPreset.name];
+            els.btnExportUnnecessary.disabled = !result || result.extra.length === 0;
+        }
+
+        // Export unnecessary assets list as JSON
+        async function exportUnnecessaryAssets() {
+            if (!exportState.directoryHandle || !appState.currentPreset) {
+                showToast('请先选择导出目录', 'error');
+                return;
+            }
+
+            const presetName = appState.currentPreset.name;
+            const result = exportState.integrityResults?.[presetName];
+
+            if (!result || result.extra.length === 0) {
+                showToast('当前预设没有多余资产', 'info');
+                return;
+            }
+
+            try {
+                const presetDir = await exportState.directoryHandle.getDirectoryHandle(presetName, { create: true });
+                const fileName = `${presetName}_unnecessary.json`;
+                const fileHandle = await presetDir.getFileHandle(fileName, { create: true });
+                const writable = await fileHandle.createWritable();
+                await writable.write(JSON.stringify(result.extra, null, 2));
+                await writable.close();
+
+                showToast(`已导出 ${result.extra.length} 个多余资产到 ${fileName}`, 'info');
+            } catch (e) {
+                console.error(e);
+                showToast('导出失败: ' + e.message, 'error');
+            }
         }
 
         async function executeExport(mode) {
