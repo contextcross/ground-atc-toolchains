@@ -701,8 +701,16 @@
             savedEditorParams: null // { vol, rate, pitch, hpf, lpf, dist, radioEnabled }
         };
 
-        const MAX_CONCURRENCY = 2; // Lowered from 3 to 2
-        const REQUEST_INTERVAL = 300; // New: 300ms minimum interval between requests
+        // Provider-specific rate limits
+        const RATE_LIMITS = {
+            minimax: { interval: 800, maxConcurrency: 1 },   // 75 RPM, single-threaded
+            elevenlabs: { interval: 400, maxConcurrency: 2 } // 150 RPM, 2 concurrent
+        };
+        // Tracking per-provider processing state
+        const providerState = {
+            minimax: { processingCount: 0, lastRequestTime: 0 },
+            elevenlabs: { processingCount: 0, lastRequestTime: 0 }
+        };
 
         // Export State
         let exportState = {
@@ -1404,14 +1412,23 @@
         }
 
         function processQueue() {
-            if (appState.processingCount >= MAX_CONCURRENCY) return;
             if (appState.queue.length === 0) return;
 
-            // Rate Limiting Check
+            // Peek at the next item to determine provider
+            const nextItem = appState.queue[0];
+            const preset = VOICE_PRESETS.find(p => p.id === nextItem.presetId);
+            const provider = preset?.provider || 'minimax';
+            const limits = RATE_LIMITS[provider] || RATE_LIMITS.minimax;
+            const state = providerState[provider] || providerState.minimax;
+
+            // Check concurrency limit for this provider
+            if (state.processingCount >= limits.maxConcurrency) return;
+
+            // Rate Limiting Check for this provider
             const now = Date.now();
-            const timeSinceLast = now - appState.lastRequestTime;
-            if (timeSinceLast < REQUEST_INTERVAL) {
-                const delay = REQUEST_INTERVAL - timeSinceLast;
+            const timeSinceLast = now - state.lastRequestTime;
+            if (timeSinceLast < limits.interval) {
+                const delay = limits.interval - timeSinceLast;
                 setTimeout(processQueue, delay);
                 return;
             }
@@ -1428,13 +1445,13 @@
             }
             task.results[presetId].status = 'processing';
 
-            appState.processingCount++;
-            appState.lastRequestTime = Date.now(); // Update timestamp
+            state.processingCount++;
+            state.lastRequestTime = Date.now(); // Update timestamp for this provider
             renderTable();
 
             // Call API
             generateAudio(task, presetId).finally(() => {
-                appState.processingCount--;
+                state.processingCount--;
                 processQueue();
             });
         }
